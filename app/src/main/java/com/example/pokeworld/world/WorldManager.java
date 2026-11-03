@@ -136,11 +136,15 @@ public class WorldManager {
     }
 
     private void spawnBasic(String[] s, int base, int color) {
-        for (int i = 0; i < 35; i++) {
-            double ex = 500 + random.nextInt(5500), ey = 500 + random.nextInt(2500);
+        // Spawn inicial otimizado (10 pokémons ao redor do jogador em vez de 35)
+        for (int i = 0; i < 10; i++) {
+            double angle = random.nextDouble() * 2 * Math.PI;
+            double distance = 150 + random.nextInt(600);
+            double ex = 3000 + Math.cos(angle) * distance;
+            double ey = 1500 + Math.sin(angle) * distance;
             double d = Math.sqrt(Math.pow(ex-3000, 2) + Math.pow(ey-1500, 2));
             int lv = base + (int)(d/400);
-            addEnemy(s[random.nextInt(s.length)], ex, ey, 32, color, false, random.nextDouble()<0.05, lv, random.nextInt(2));
+            addEnemy(s[random.nextInt(s.length)], ex, ey, 32, color, false, random.nextDouble()<0.05, Math.max(1, lv), random.nextInt(2));
         }
     }
 
@@ -195,11 +199,104 @@ public class WorldManager {
         npcs.add(new NPC("Mestre da Base", "Gerencie o estoque!", TileMap.TILE_SIZE * 40, TileMap.TILE_SIZE * 31, NPC.Type.GUARD));
     }
 
+    private long lastDynamicSpawnCheck = 0;
+
     public void update(Player p, Companion c, GameView gv) {
         if (tileMap.isPortal(p.getPositionX(), p.getPositionY())) handlePortal(p, c, gv);
         currentZoom += (targetZoom - currentZoom) * 0.05f;
+
+        // Atualização de spawn dinâmico por proximidade do jogador (a cada 1 segundo)
+        if (System.currentTimeMillis() - lastDynamicSpawnCheck > 1000) {
+            updateDynamicSpawning(p, tileMap.getMapName());
+            lastDynamicSpawnCheck = System.currentTimeMillis();
+        }
+
         updateEnemies(c, gv); handleRespawns(); updateLoots(p, gv);
         if (tileMap.getMapName().equals("HOME")) for (Building b : buildings) b.update(activity);
+    }
+
+    private void updateDynamicSpawning(Player p, String mapName) {
+        if (mapName.equals("CITY") || mapName.equals("HOME")) return;
+
+        double px = p.getPositionX();
+        double py = p.getPositionY();
+
+        // 1. Remove inimigos que ficaram muito distantes do jogador (> 2400 pixels) para poupar memória e CPU
+        Iterator<Enemy> it = enemies.iterator();
+        while (it.hasNext()) {
+            Enemy e = it.next();
+            double dist = Math.sqrt(Math.pow(e.positionX - px, 2) + Math.pow(e.positionY - py, 2));
+            if (dist > 2400 && !e.isBoss) {
+                it.remove();
+            }
+        }
+
+        // 2. Conta quantos inimigos estão próximos (num raio de 1200 pixels)
+        int nearbyCount = 0;
+        for (Enemy e : enemies) {
+            double dist = Math.sqrt(Math.pow(e.positionX - px, 2) + Math.pow(e.positionY - py, 2));
+            if (dist < 1200) {
+                nearbyCount++;
+            }
+        }
+
+        // 3. Se houver menos de 10 inimigos próximos, spawna novos ao redor do jogador enquanto ele anda
+        if (nearbyCount < 10) {
+            String[] speciesList = getSpeciesForMap(mapName);
+            int baseLevel = getBiomeBaseLevel(mapName);
+            int color = getBiomeColor(mapName);
+
+            for (int i = 0; i < 3; i++) {
+                double angle = random.nextDouble() * 2 * Math.PI;
+                double distance = 500 + random.nextInt(600); // Entre 500 e 1100 pixels do player
+                double ex = px + Math.cos(angle) * distance;
+                double ey = py + Math.sin(angle) * distance;
+
+                double mapMaxX = tileMap.getCols() * TileMap.TILE_SIZE;
+                double mapMaxY = tileMap.getRows() * TileMap.TILE_SIZE;
+
+                if (ex > 100 && ex < mapMaxX - 100 && ey > 100 && ey < mapMaxY - 100) {
+                    double dCenter = Math.sqrt(Math.pow(ex - mapMaxX/2, 2) + Math.pow(ey - mapMaxY/2, 2));
+                    int lv = baseLevel + (int)(dCenter / 400);
+                    String sName = speciesList[random.nextInt(speciesList.length)];
+                    addEnemy(sName, ex, ey, 32, color, false, random.nextDouble() < 0.05, Math.max(1, lv), random.nextInt(2));
+                }
+            }
+        }
+    }
+
+    private String[] getSpeciesForMap(String name) {
+        switch (name) {
+            case "FOREST": return new String[]{"Bulbasaur", "Caterpie", "Metapod", "Butterfree", "Weedle", "Kakuna", "Pidgey", "Pidgeotto", "Oddish", "Bellsprout", "Rattata", "Meowth", "Spearow"};
+            case "JUNGLE": return new String[]{"Ivysaur", "Venusaur", "Gloom", "Vileplume", "Weepinbell", "Victreebel", "Pinsir", "Scyther", "Beedril", "Paras", "Parasect", "Tangela", "Venonat", "Venomoth"};
+            case "SMALL_LAKE": return new String[]{"Squirtle", "Poliwag", "Poliwhirl", "Psyduck", "Slowpoke", "Magikarp"};
+            case "RIO": return new String[]{"Wartortle", "Golduck", "Slowpoke", "Slowking", "Poliwhirl", "Tentacool", "Magikarp"};
+            case "OCEAN": return new String[]{"Blastoise", "Vaporeon", "Lapras", "Gyarados", "Tentacruel", "Poliwrath"};
+            case "ROCKY_PATH": return new String[]{"Sandshrew", "Sandslash", "Diglett", "Dugtrio", "Mankey", "Primeape", "Nidoranf", "Nidoranm", "Nidorina", "Nidorino"};
+            case "MINE": return new String[]{"Onix", "Machop", "Rhydon", "Diglett", "Dugtrio", "Zubat", "Golbat"};
+            case "VALE_ROCHOSO": return new String[]{"Abra", "Kadabra", "Alakazam", "Spearow", "Fearow", "Pidgeot", "Clefairy", "Clefable", "Jigglypuff", "Wigglytuff"};
+            case "FIRE_CAVE": return new String[]{"Charmander", "Vulpix", "Ponyta", "Growlithe", "Flareon", "Houndour"};
+            case "MAGMA_CAVE": return new String[]{"Charmeleon", "Magmar", "Rapidash", "Arcanine", "Ninetales"};
+            case "VOLCANO": return new String[]{"Charizard", "Magmar", "Rapidash", "Arcanine", "Flareon", "Aerodactyl"};
+            case "SEWERS": return new String[]{"Rattata", "Raticate", "Ekans", "Arbok", "Grimer", "Muk", "Koffing", "Weezing", "Zubat"};
+            case "SWAMP": return new String[]{"Arbok", "Weezing", "Muk", "Nidoking", "Nidoqueen", "Gloom", "Victreebel"};
+            case "SNOW_MOUNTAIN": return new String[]{"Piloswine", "Cloyster", "Lapras", "Jynx"};
+            case "DESERT": return new String[]{"Sandshrew", "Sandslash", "Vulpix", "Ninetales", "Ponyta"};
+            case "FEAR_ISLAND": return new String[]{"Gastly", "Haunter", "Gengar", "Golbat", "Arbok", "Muk"};
+            default: return new String[]{"Pikachu", "Rattata", "Pidgey"};
+        }
+    }
+
+    private int getBiomeColor(String biome) {
+        switch (biome) {
+            case "FOREST": case "JUNGLE": return Color.GREEN;
+            case "SMALL_LAKE": case "RIO": case "OCEAN": return Color.BLUE;
+            case "ROCKY_PATH": case "MINE": return Color.GRAY;
+            case "FIRE_CAVE": case "MAGMA_CAVE": case "VOLCANO": return Color.RED;
+            case "SNOW_MOUNTAIN": return Color.CYAN;
+            case "DESERT": case "VALE_ROCHOSO": return Color.YELLOW;
+            default: return Color.GREEN;
+        }
     }
 
     private void updateEnemies(Companion c, GameView gv) {
