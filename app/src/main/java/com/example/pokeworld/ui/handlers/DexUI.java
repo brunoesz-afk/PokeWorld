@@ -8,6 +8,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import com.example.pokeworld.core.GameView;
 import com.example.pokeworld.entities.CapturedCreature;
+import com.example.pokeworld.entities.PetData;
 import com.example.pokeworld.managers.SpriteManager;
 import com.example.pokeworld.ui.UIManager;
 import java.util.List;
@@ -106,18 +107,18 @@ public class DexUI extends BaseUI {
     }
 
     private void drawDexCenterPanel(Canvas canvas, CapturedCreature c, int w, int h) {
-        // Setas de Navegação (Ajustadas para as setas na imagem)
+        // Setas de Navegação
         prevBtn.set(w * 0.35f, h * 0.45f, w * 0.38f, h * 0.55f);
         nextBtn.set(w * 0.62f, h * 0.45f, w * 0.65f, h * 0.55f);
 
-        // Sprite Central (Tamanho aumentado para melhor visualização)
+        // Sprite Central
         Bitmap sprite = SpriteManager.getInstance().getUnitSprite(c.name, 0, 0, c.isShiny);
         if (sprite != null) {
             float size = w * 0.22f;
             canvas.drawBitmap(sprite, null, new Rect((int)(w * 0.40f), (int)(h * 0.32f), (int)(w * 0.40f + size), (int)(h * 0.32f + size)), null);
         }
 
-        // Círculos de Tipos (Topo central)
+        // Círculos de Tipos
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2);
         paint.setColor(Color.WHITE);
@@ -132,7 +133,7 @@ public class DexUI extends BaseUI {
         paint.setTextAlign(Paint.Align.LEFT);
         paint.setStyle(Paint.Style.FILL);
         
-        // Nome e Gênero (No topo da área de detalhes)
+        // Nome e Gênero
         int nameColor = c.gender == 0 ? Color.rgb(100, 150, 255) : Color.rgb(255, 150, 200);
         if (c.isShiny) nameColor = Color.rgb(255, 215, 0);
         paint.setColor(nameColor);
@@ -140,32 +141,53 @@ public class DexUI extends BaseUI {
         String genderIcon = c.gender == 0 ? "♂" : "♀";
         canvas.drawText(c.name.toUpperCase() + " " + genderIcon, startX, h * 0.11f, paint);
 
-        // Tipos (Badge formatada)
-        paint.setColor(Color.WHITE); paint.setTextSize(18);
-        canvas.drawText("TIPOS: [NORMAL]", startX, h * 0.17f, paint);
-        
+        // Capturados
         int count = gv.activity.dbHelper.getCaptureCount(c.name);
-        canvas.drawText("CAPTURADOS: " + count, startX, h * 0.22f, paint);
+        paint.setColor(Color.WHITE); paint.setTextSize(18);
+        canvas.drawText("CAPTURADOS: " + count, startX, h * 0.18f, paint);
 
-        // Valores de exemplo baseados na espécie
+        // Pega dados reais do Pet se o jogador possuir
+        PetData pet = gv.activity.dbHelper.getPetData(c.name);
+        int level = pet != null ? pet.level : 1;
+        int hp = 100 + (level * 15);
+        int attack = 30 + (level * 8);
+
+        // Exibe Vida e Força reais
+        paint.setColor(Color.GREEN); paint.setTextSize(20);
+        canvas.drawText("❤️ VIDA (HP): " + hp + " (Nv." + level + ")", startX, h * 0.24f, paint);
+        paint.setColor(Color.RED);
+        canvas.drawText("⚔️ FORÇA (ATK): " + attack, startX, h * 0.29f, paint);
+
+        // Valores de stats estelares
         int[] values = getStatsForSpecies(c.name);
-        float yStart = h * 0.355f;
-        float rowSpacing = h * 0.082f;
+        float yStart = h * 0.36f;
+        float rowSpacing = h * 0.075f;
 
         for (int i = 0; i < 6; i++) {
             float rowY = yStart + i * rowSpacing;
-            // Estrelas (Alinhadas com o grid da imagem)
             drawStatStars(canvas, w * 0.78f, rowY - 10, values[i]);
             
-            // Valor numérico
             paint.setColor(Color.WHITE);
             paint.setTextSize(18);
             canvas.drawText("[" + (values[i] * 20) + "]", w * 0.92f, rowY, paint);
         }
 
-        // Nível Necessário
-        paint.setColor(Color.WHITE); paint.setTextSize(26);
-        canvas.drawText("Nv. 80", startX + 10, h * 0.93f, paint);
+        // Nível Necessário para Evolução
+        paint.setColor(Color.YELLOW); paint.setTextSize(22);
+        canvas.drawText("EVOLUÇÃO: " + getEvolutionLevelText(c.name), startX + 10, h * 0.93f, paint);
+    }
+
+    private String getEvolutionLevelText(String name) {
+        String n = name.toUpperCase();
+        if (n.contains("CHARMANDER") || n.contains("BULBASAUR") || n.contains("SQUIRTLE") || n.contains("ABRA") || n.contains("MACHOP")) return "Nv. 16";
+        if (n.contains("CHARMELEON") || n.contains("WARTORTLE") || n.contains("PIDGEOTTO") || n.contains("KADABRA")) return "Nv. 36";
+        if (n.contains("IVYSAUR")) return "Nv. 32";
+        if (n.contains("PIKACHU")) return "Nv. 30 (ou Pedra)";
+        if (n.contains("CATERPIE") || n.contains("WEEDLE")) return "Nv. 7";
+        if (n.contains("METAPOD") || n.contains("KAKUNA")) return "Nv. 10";
+        if (n.contains("PIDGEY")) return "Nv. 18";
+        if (n.contains("CHARIZARD") || n.contains("VENUSAUR") || n.contains("BLASTOISE") || n.contains("ALAKAZAM") || n.contains("BUTTERFREE") || n.contains("BEEDRILL") || n.contains("PIDGEOT") || n.contains("RAICHU")) return "Forma Final";
+        return "Nv. 30";
     }
 
     private int[] getStatsForSpecies(String name) {
