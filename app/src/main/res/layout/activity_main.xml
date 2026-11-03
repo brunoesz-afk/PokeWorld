@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/home_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/layout_main"
+    tools:context=".MainActivity">
+
+    <!-- 1. Top-Left Level & EXP (Inside top-left parchment banner) -->
+    <TextView
+        android:id="@+id/tv_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⭐ NÍVEL 1 | EXP: 0"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:shadowColor="#000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="3"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="45dp"
+        android:layout_marginTop="16dp" />
+
+    <!-- 2. Top-Right Gold & Gems (Inside top-right coin slots) -->
+    <LinearLayout
+        android:id="@+id/layout_top_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="35dp"
+        android:layout_marginTop="14dp">
+
+        <TextView
+            android:id="@+id/tv_gold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🪙 1100    💎 14"
+            android:textColor="#FFD600"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:shadowColor="#000000"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="3" />
+    </LinearLayout>
+
+    <!-- 3. Left Side: Party Pokémons (Placed over the grass/grid area on the left) -->
+    <HorizontalScrollView
+        android:id="@+id/scroll_pokemon"
+        android:layout_width="380dp"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="none"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btn_mapa"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="40dp">
+
+        <LinearLayout
+            android:id="@+id/layout_pokemon_list"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:baselineAligned="false" />
+    </HorizontalScrollView>
+
+    <!-- 4. Right Side: Player Avatar Box (Aligned inside the right grey framed box) -->
+    <LinearLayout
+        android:id="@+id/layout_player_card"
+        android:layout_width="160dp"
+        android:layout_height="200dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btn_mapa"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="55dp"
+        android:layout_marginTop="50dp">
+
+        <ImageView
+            android:id="@+id/iv_player_avatar"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="Avatar do Treinador" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="👤 TREINADOR"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="15dp"
+            android:shadowColor="#000000"
+            android:shadowDx="1"
+            android:shadowDy="1"
+            android:shadowRadius="2" />
+    </LinearLayout>
+
+    <!-- 5. Bottom Center: "ENTRAR NO MAPA" Button (Placed over the bottom center golden button frame) -->
+
+    <!-- 6. Bottom 3 Panels (Aligned inside the 3 bottom slot frames) -->
+    <Button
+        android:id="@+id/btn_mapa"
+        android:layout_width="270dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="28dp"
+        android:backgroundTint="#FFD700"
+        android:text="🗺 ENTRAR NO MAPA"
+        android:textColor="#000000"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/layout_bottom_buttons"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.496"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/layout_bottom_buttons"
+        android:layout_width="460dp"
+        android:layout_height="42dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="14dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.505"
+        android:baselineAligned="false">
+
+        <TextView
+            android:id="@+id/btn_home_inventory"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="🎒 Inventário"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginEnd="10dp" />
+
+        <TextView
+            android:id="@+id/btn_home_creatures"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="🐾 Pokémons"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginEnd="10dp" />
+
+        <TextView
+            android:id="@+id/btn_home_config"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="⚙ Configurações"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

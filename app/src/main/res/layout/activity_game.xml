@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Ferramenta de Inspeção (Descomente para usar) -->
+    <com.example.pokeworld.ui.SpriteInspectorView
+        android:id="@+id/spriteInspector"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- Interface do Jogo (Oculte se estiver usando o Inspetor) -->
+    <com.example.pokeworld.ui.GameInterfaceOverlay
+        android:id="@+id/uiOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FF228B22"
+        android:visibility="visible" />
+
+</FrameLayout>
