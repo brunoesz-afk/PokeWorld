@@ -37,9 +37,44 @@ public class MainActivity extends AppCompatActivity {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             dbHelper = new DatabaseHelper(this);
             showHomeScreen();
+            checkForUpdates();
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro no onCreate: " + e.getMessage(), e);
         }
+    }
+
+    private void checkForUpdates() {
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("https://raw.githubusercontent.com/brunoesz-afk/PokeWorld/master/version.json");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(4000);
+                conn.setReadTimeout(4000);
+                conn.setRequestMethod("GET");
+                
+                if (conn.getResponseCode() == 200) {
+                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line);
+                    }
+                    reader.close();
+
+                    org.json.JSONObject json = new org.json.JSONObject(sb.toString());
+                    int remoteVersion = json.getInt("versionCode");
+                    int localVersion = 1;
+
+                    if (remoteVersion > localVersion) {
+                        runOnUiThread(() -> {
+                            android.widget.Toast.makeText(this, "🔄 Nova atualização disponível na nuvem!", android.widget.Toast.LENGTH_LONG).show();
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                android.util.Log.e("MainActivity", "Erro ao verificar atualizações: " + e.getMessage());
+            }
+        }).start();
     }
 
     private final android.os.Handler animHandler = new android.os.Handler(android.os.Looper.getMainLooper());
