@@ -366,4 +366,6 @@ public class Player {
     public boolean hasSeenDaycareIntro() { return daycareIntroSeen; }
     public void setDaycareIntroSeen(boolean seen) { this.daycareIntroSeen = seen; }
     public List<TrainerSkill> getTrainerSkills() { return trainerSkills; }
+    public int getDirection() { return direction; }
+    public int getFrameIndex() { return frameIndex; }
 }

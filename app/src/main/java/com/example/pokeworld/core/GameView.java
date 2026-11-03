@@ -23,6 +23,7 @@ import com.example.pokeworld.managers.FarmingManager;
 import com.example.pokeworld.managers.FishingManager;
 import com.example.pokeworld.managers.FusionManager;
 import com.example.pokeworld.managers.MissionManager;
+import com.example.pokeworld.managers.MultiplayerManager;
 import com.example.pokeworld.managers.ParticleManager;
 import com.example.pokeworld.managers.RandomEventManager;
 import com.example.pokeworld.managers.SoundManager;
@@ -212,6 +213,17 @@ public class GameView {
             time.update();
             fishing.update();
             if (tutorial != null) tutorial.update();
+
+            // Envia estado do jogador local via Multiplayer
+            MultiplayerManager.getInstance().sendPlayerState(
+                world.tileMap.getMapName(),
+                player.getPositionX(),
+                player.getPositionY(),
+                player.getDirection(),
+                player.getFrameIndex(),
+                companion != null ? companion.getSpecies() : "personagem",
+                companion != null && companion.isShiny()
+            );
         }
     }
 

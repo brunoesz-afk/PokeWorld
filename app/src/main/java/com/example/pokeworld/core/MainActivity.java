@@ -17,6 +17,7 @@ import com.example.pokeworld.entities.CapturedCreature;
 import com.example.pokeworld.entities.Companion;
 import com.example.pokeworld.entities.PetData;
 import com.example.pokeworld.entities.Player;
+import com.example.pokeworld.managers.MultiplayerManager;
 import com.example.pokeworld.managers.SpriteManager;
 import com.example.pokeworld.ui.UIManager;
 
@@ -203,12 +204,16 @@ public class MainActivity extends AppCompatActivity {
 
         isInGame = true;
         hideSystemUI();
+
+        // Conecta ao servidor multiplayer
+        MultiplayerManager.getInstance().connect("Treinador");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         stopHomeAnimation();
+        MultiplayerManager.getInstance().disconnect();
         if (isInGame && gameView != null) {
             saveCurrentGame();
         }
@@ -254,6 +259,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        MultiplayerManager.getInstance().disconnect();
     }
 
     private void hideSystemUI() {

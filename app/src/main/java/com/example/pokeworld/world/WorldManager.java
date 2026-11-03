@@ -16,6 +16,8 @@ import com.example.pokeworld.entities.NPC;
 import com.example.pokeworld.entities.Player;
 import com.example.pokeworld.entities.BuildingData;
 import com.example.pokeworld.entities.PetData;
+import com.example.pokeworld.entities.RemotePlayer;
+import com.example.pokeworld.managers.MultiplayerManager;
 import com.example.pokeworld.managers.SpriteManager;
 
 import java.util.ArrayList;
@@ -264,6 +266,15 @@ public class WorldManager {
         for (NPC n : npcs) n.draw(canvas);
         for (Loot l : loots) l.draw(canvas);
         for (Enemy e : enemies) e.draw(canvas);
+
+        // Desenha outros jogadores conectados no mesmo mapa
+        for (RemotePlayer rp : MultiplayerManager.getInstance().getRemotePlayers()) {
+            if (rp.mapName != null && rp.mapName.equals(tileMap.getMapName())) {
+                rp.update();
+                rp.draw(canvas);
+            }
+        }
+
         p.draw(canvas, c); if (!p.isMounted()) c.draw(canvas);
         if (gv.effects != null) gv.effects.draw(canvas);
         if (gv.particles != null) gv.particles.draw(canvas);

@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.kotlin.stdlib)
+    implementation("io.socket:socket.io-client:2.1.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
