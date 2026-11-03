@@ -94,7 +94,9 @@ public class WorldManager {
         enemies.clear(); npcs.clear(); loots.clear(); buildings.clear();
         int r = 50, col = 100;
         if (name.equals("HOME")) { r = 80; col = 160; }
-        tileMap = new TileMap(name, r, col); targetZoom = 1.0f;
+        tileMap = new TileMap(name, r, col); 
+        targetZoom = 1.3f; 
+        currentZoom = 1.3f;
         setMapDark(name.contains("CAVE") || name.contains("MINE") || name.equals("SEWERS") || name.equals("DUNGEON"));
         setupPlayerSpawn(p, c, side);
         spawnEntitiesForMap(name, p);
@@ -355,9 +357,17 @@ public class WorldManager {
     }
 
     public void draw(Canvas canvas, Player p, Companion c, GameView gv) {
-        updateCamera(p, canvas.getWidth(), canvas.getHeight());
-        canvas.save(); canvas.scale(currentZoom, currentZoom, canvas.getWidth()/2f, canvas.getHeight()/2f);
-        canvas.translate(-cameraX, -cameraY);
+        float sw = canvas.getWidth();
+        float sh = canvas.getHeight();
+
+        cameraX = (float) p.getPositionX() - (sw / 2f) / currentZoom;
+        cameraY = (float) p.getPositionY() - (sh / 2f) / currentZoom;
+
+        canvas.save();
+        canvas.translate(sw / 2f, sh / 2f);
+        canvas.scale(currentZoom, currentZoom);
+        canvas.translate((float) -p.getPositionX(), (float) -p.getPositionY());
+
         if (tileMap != null) tileMap.draw(canvas);
         for (Building b : buildings) b.draw(canvas, p);
         for (NPC n : npcs) n.draw(canvas);
@@ -379,9 +389,7 @@ public class WorldManager {
     }
 
     private void updateCamera(Player p, int sw, int sh) {
-        float vw = sw / currentZoom, vh = sh / currentZoom;
-        float tx = (float) p.getPositionX() - vw / 2f, ty = (float) p.getPositionY() - vh / 2f;
-        cameraX += (tx - cameraX) * 0.1f; cameraY += (ty - cameraY) * 0.1f;
+        // Câmera perfeitamente centralizada via canvas.translate no draw()
     }
 
     public void changeZoom(float d) { targetZoom = Math.max(0.4f, Math.min(1.8f, targetZoom + d)); }
