@@ -29,8 +29,14 @@ io.on("connection", (socket) => {
             x: 0,
             y: 0,
             direction: 0,
-            animFrame: 0,
-            spriteName: "personagem",
+            frameIndex: 1,
+            skinColor: -1,
+            isMounted: false,
+            petSpecies: "",
+            petX: 0,
+            petY: 0,
+            petDirection: 0,
+            petFrameIndex: 1,
             isShiny: false
         };
 

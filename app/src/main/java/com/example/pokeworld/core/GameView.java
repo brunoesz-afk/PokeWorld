@@ -214,14 +214,20 @@ public class GameView {
             fishing.update();
             if (tutorial != null) tutorial.update();
 
-            // Envia estado do jogador local via Multiplayer
+            // Envia estado do jogador local e do acompanhante via Multiplayer
             MultiplayerManager.getInstance().sendPlayerState(
                 world.tileMap.getMapName(),
                 player.getPositionX(),
                 player.getPositionY(),
                 player.getDirection(),
                 player.getFrameIndex(),
-                companion != null ? companion.getSpecies() : "personagem",
+                player.getSkinColor(),
+                player.isMounted(),
+                companion != null ? companion.getSpecies() : "",
+                companion != null ? companion.getPositionX() : player.getPositionX() - 45,
+                companion != null ? companion.getPositionY() : player.getPositionY(),
+                companion != null ? companion.getDirection() : 0,
+                companion != null ? companion.getFrameIndex() : 1,
                 companion != null && companion.isShiny()
             );
         }

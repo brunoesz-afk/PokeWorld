@@ -918,6 +918,8 @@ public class Companion {
     public ElementalType getType1() { return type1; }
     public ElementalType getType2() { return type2; }
     public FieldAbility getFieldAbility() { return fieldAbility; }
+    public int getDirection() { return direction; }
+    public int getFrameIndex() { return frameIndex; }
     public boolean isShiny() { return isShiny; }
     public double getRadius() { return radius; }
     public int getAttackPower() { return attackPower; }

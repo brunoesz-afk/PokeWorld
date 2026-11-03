@@ -1,5 +1,6 @@
 package com.example.pokeworld.managers;
 
+import android.graphics.Color;
 import android.util.Log;
 
 import com.example.pokeworld.entities.RemotePlayer;
@@ -51,7 +52,6 @@ public class MultiplayerManager {
                 isConnected = true;
                 Log.d("MultiplayerManager", "Conectado ao servidor multiplayer!");
 
-                // Envia pacote de entrada no servidor
                 try {
                     JSONObject playerInfo = new JSONObject();
                     playerInfo.put("name", playerName);
@@ -109,24 +109,33 @@ public class MultiplayerManager {
             double y = data.optDouble("y", 0);
             String map = data.optString("mapName", "CITY");
 
+            double petX = data.optDouble("petX", x - 45);
+            double petY = data.optDouble("petY", y);
+
             RemotePlayer rp = remotePlayers.get(id);
             if (rp == null) {
                 rp = new RemotePlayer(id, name, x, y, map);
                 remotePlayers.put(id, rp);
             }
 
-            rp.setTargetPosition(x, y);
+            rp.setTargetPosition(x, y, petX, petY);
             rp.mapName = map;
             rp.direction = data.optInt("direction", 0);
-            rp.animFrame = data.optInt("animFrame", 0);
-            rp.spriteName = data.optString("spriteName", "personagem");
+            rp.frameIndex = data.optInt("frameIndex", 1);
+            rp.skinColor = data.optInt("skinColor", Color.WHITE);
+            rp.isMounted = data.optBoolean("isMounted", false);
+
+            rp.petSpecies = data.optString("petSpecies", "");
+            rp.petDirection = data.optInt("petDirection", 0);
+            rp.petFrameIndex = data.optInt("petFrameIndex", 1);
             rp.isShiny = data.optBoolean("isShiny", false);
         } catch (JSONException e) {
             Log.e("MultiplayerManager", "Erro ao processar dados do jogador: " + e.getMessage());
         }
     }
 
-    public void sendPlayerState(String mapName, double x, double y, int direction, int animFrame, String spriteName, boolean isShiny) {
+    public void sendPlayerState(String mapName, double x, double y, int direction, int frameIndex, int skinColor, boolean isMounted,
+                                String petSpecies, double petX, double petY, int petDirection, int petFrameIndex, boolean isShiny) {
         if (!isConnected || socket == null) return;
 
         long now = System.currentTimeMillis();
@@ -139,8 +148,15 @@ public class MultiplayerManager {
             data.put("x", x);
             data.put("y", y);
             data.put("direction", direction);
-            data.put("animFrame", animFrame);
-            data.put("spriteName", spriteName);
+            data.put("frameIndex", frameIndex);
+            data.put("skinColor", skinColor);
+            data.put("isMounted", isMounted);
+
+            data.put("petSpecies", petSpecies != null ? petSpecies : "");
+            data.put("petX", petX);
+            data.put("petY", petY);
+            data.put("petDirection", petDirection);
+            data.put("petFrameIndex", petFrameIndex);
             data.put("isShiny", isShiny);
 
             socket.emit("move", data);
