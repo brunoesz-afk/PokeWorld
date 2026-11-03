@@ -19,7 +19,7 @@ public class MultiplayerManager {
     private static MultiplayerManager instance;
     private Socket socket;
     private boolean isConnected = false;
-    private String serverUrl = "https://pokeworld-server.onrender.com"; // URL do servidor
+    private String serverUrl = "https://pokeworld-wejp.onrender.com"; // URL do servidor Render
     private final Map<String, RemotePlayer> remotePlayers = new ConcurrentHashMap<>();
     private long lastSendTime = 0;
     private static final long SEND_INTERVAL = 50; // Envia a cada 50ms (20 pacotes/seg)
