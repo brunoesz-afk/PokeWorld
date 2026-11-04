@@ -236,7 +236,7 @@ public class ExploringUI extends BaseUI {
         }
 
         boolean enemySelected = false;
-        for (Enemy e : gv.world.enemies) if (e.isSelected()) enemySelected = true;
+        for (Enemy e : gv.world.enemies) if (e.isSelected() && !e.isPet) enemySelected = true;
 
         if (enemySelected) {
             drawSkills(canvas, comp);

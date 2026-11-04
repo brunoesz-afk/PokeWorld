@@ -11,22 +11,36 @@ public class StorageInput implements InputExtension {
     @Override
     public boolean handle(float x, float y, GameView gv) {
         StorageUI ui = (StorageUI) gv.ui.getHandler(UIManager.UIState.STORAGE);
-        if (ui != null && ui.exitBtn.contains(x, y)) {
+        if (ui == null) return false;
+
+        if (ui.exitBtn.contains(x, y)) {
             gv.ui.state = UIManager.UIState.EXPLORING;
+            return true;
+        }
+
+        if (ui.prevPageBtn.contains(x, y)) {
+            if (ui.storagePage > 0) ui.storagePage--;
+            return true;
+        }
+
+        if (ui.nextPageBtn.contains(x, y)) {
+            ui.storagePage++;
             return true;
         }
 
         float mid = gv.getWidth() / 2f;
         
-        if (y >= 180 && y < gv.getHeight() - 60) {
-            int index = (int)((y - 180) / 60);
+        if (y >= 170 && y < gv.getHeight() - 80) {
+            int lineIndex = (int)((y - 170) / 58);
             
             if (x < mid) {
                 // Toque na lista da BASE -> Move para o TIME (PARTY)
                 List<CapturedCreature> storage = gv.player.getStorage();
-                if (index >= 0 && index < storage.size()) {
+                int actualIndex = (ui.storagePage * StorageUI.ITEMS_PER_PAGE) + lineIndex;
+
+                if (actualIndex >= 0 && actualIndex < storage.size()) {
                     if (gv.player.getParty().size() < 6) {
-                        CapturedCreature c = storage.get(index);
+                        CapturedCreature c = storage.get(actualIndex);
                         c.isInParty = true;
                         gv.ui.showMessage("🎒 " + c.name + " adicionado ao seu TIME!");
                         gv.applyKingdomBonuses();
@@ -36,13 +50,14 @@ public class StorageInput implements InputExtension {
                     }
                 }
             } else {
-                // Toque na lista do TIME -> Move para a BASE
+                // Toque na lista do TIME -> Move para a BASE (GUARDA)
                 List<CapturedCreature> party = gv.player.getParty();
-                if (index >= 0 && index < party.size()) {
+                if (lineIndex >= 0 && lineIndex < party.size()) {
                     if (party.size() > 1) {
-                        CapturedCreature c = party.get(index);
+                        CapturedCreature c = party.get(lineIndex);
                         c.isInParty = false;
-                        gv.ui.showMessage("🏠 " + c.name + " guardado na BASE!");
+                        c.isGuard = true; // Ativa modo de guarda e proteção na base
+                        gv.ui.showMessage("🛡️ " + c.name + " guardado na BASE em modo GUARDA!");
                         gv.applyKingdomBonuses();
                         gv.activity.saveCurrentGame();
                     } else {

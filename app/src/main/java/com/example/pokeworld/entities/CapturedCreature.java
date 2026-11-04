@@ -9,6 +9,7 @@ public class CapturedCreature {
     public Rarity rarity;
     public boolean isInParty;
     public int gender; // 0: Macho, 1: Fêmea
+    public boolean isGuard = true; // Se está em modo de guarda e proteção na base
 
     public CapturedCreature(String name, boolean isShiny, Rarity rarity, boolean isInParty, int gender) {
         this.name = name;

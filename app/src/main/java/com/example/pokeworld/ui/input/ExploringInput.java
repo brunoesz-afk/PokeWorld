@@ -500,8 +500,13 @@ public class ExploringInput implements InputExtension {
             if (e.isTouched(worldX, worldY)) {
                 for (Enemy o : gv.world.enemies) o.setSelected(false);
                 e.setSelected(true);
-                gv.companion.setTargetEnemy(e);
-                gv.ui.showMessage("🎯 Alvo: " + e.name + " (Atacando!)");
+                if (e.isPet) {
+                    gv.companion.setTargetEnemy(null);
+                    gv.ui.showMessage("🛡️ " + e.name + " (Pokémon Guardião da Base)");
+                } else {
+                    gv.companion.setTargetEnemy(e);
+                    gv.ui.showMessage("🎯 Alvo: " + e.name + " (Atacando!)");
+                }
                 return;
             }
         }
