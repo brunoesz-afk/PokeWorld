@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "pokemon": [
+    { "name": "Pikachu", "level": 5, "hp": 100, "attack": 35 },
+    { "name": "Charmander", "level": 5, "hp": 110, "attack": 38 },
+    { "name": "Bulbasaur", "level": 5, "hp": 120, "attack": 32 },
+    { "name": "Squirtle", "level": 5, "hp": 115, "attack": 33 },
+    { "name": "Rattata", "level": 1, "hp": 60, "attack": 20 }
+  ]
+}

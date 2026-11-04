@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "quests": [
+    { "title": "O Despertar", "description": "Derrote 3 Pokémons na Floresta", "target": "Pokemon", "amount": 3, "reward": 150 },
+    { "title": "O Chamado da Base", "description": "Construa a Oficina na sua Base", "target": "Oficina", "amount": 1, "reward": 300 },
+    { "title": "Mestre dos Mares", "description": "Pesque 1 peixe no Lago", "target": "Magikarp", "amount": 1, "reward": 100 }
+  ]
+}

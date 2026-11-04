@@ -1,4 +1,15 @@
 {
   "version": 1,
-  "files": []
+  "files": [
+    {
+      "name": "pokedata.json",
+      "url": "https://raw.githubusercontent.com/brunoesz-afk/PokeWorld/master/data/pokedata.json",
+      "path": "data/pokedata.json"
+    },
+    {
+      "name": "quests.json",
+      "url": "https://raw.githubusercontent.com/brunoesz-afk/PokeWorld/master/data/quests.json",
+      "path": "data/quests.json"
+    }
+  ]
 }
