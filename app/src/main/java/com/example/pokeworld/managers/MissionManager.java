@@ -54,13 +54,36 @@ public class MissionManager {
 
     public void checkRewards(NPC npc) {
         if (npc.getName().equals("Mestre") || npc.getType() == NPC.Type.GUARD) {
+            boolean allAto1Completed = true;
             for (Mission m : player.getActiveMissions()) {
-                if (m.isCompleted() && !m.isRewarded()) {
-                    m.setRewarded(true);
-                    player.addGold(m.getRewardGold());
-                    ui.showMessage("💰 Recompensa: +" + m.getRewardGold() + " Ouro");
+                if (m.getTitle().equals("O Despertar") || m.getTitle().equals("O Chamado da Base") || m.getTitle().equals("Mestre dos Mares")) {
+                    if (m.isCompleted() && !m.isRewarded()) {
+                        m.setRewarded(true);
+                        player.addGold(m.getRewardGold());
+                        ui.showMessage("💰 Recompensa: +" + m.getRewardGold() + " Ouro");
+                    }
+                    if (!m.isRewarded()) allAto1Completed = false;
                 }
             }
+
+            if (allAto1Completed) {
+                giveAto2MissionsIfNeeded();
+            }
+        }
+    }
+
+    private void giveAto2MissionsIfNeeded() {
+        boolean hasAto2 = false;
+        for (Mission m : player.getActiveMissions()) {
+            if (m.getTitle().equals("Desbravando as Minas")) {
+                hasAto2 = true;
+                break;
+            }
+        }
+        if (!hasAto2) {
+            player.addMission(new Mission("Desbravando as Minas", "Explore a Caverna MINE e colete minérios", "Ferro", 5, 250));
+            player.addMission(new Mission("O Guardião de Pedra", "Derrote o Chefe Onix Corrompido na Mina", "Onix", 1, 500));
+            ui.showMessage("📜 NOVO CAPÍTULO DESBLOQUEADO: Ato II - A Expansão do Domínio!");
         }
     }
 }
