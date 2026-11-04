@@ -159,7 +159,14 @@ public class ExploringInput implements InputExtension {
             gv.ui.state = UIManager.UIState.CRAFTING;
             return true;
         }
-        if (ui.teleportBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.TELEPORT; return true; }
+        if (ui.teleportBtn.contains(x, y)) {
+            if (gv.tutorial != null && gv.tutorial.getCurrentState() == com.example.pokeworld.managers.TutorialManager.State.CLICK_COMPASS_TUTORIAL) {
+                gv.tutorial.onCompassClicked();
+                return true;
+            }
+            gv.ui.state = UIManager.UIState.TELEPORT;
+            return true;
+        }
         
         // Pesca
         if (ui.fishingBtn.contains(x, y)) {
@@ -357,7 +364,8 @@ public class ExploringInput implements InputExtension {
                     for (int i = 0; i < ferroReq; i++) gv.player.useItem("Ferro");
                     
                     long duration = 30000;
-                    if (b.getName().equalsIgnoreCase("Laboratorio")) duration = 60000;
+                    if (b.getName().equalsIgnoreCase("Oficina")) duration = 5000; // 5 segundos de construção
+                    else if (b.getName().equalsIgnoreCase("Laboratorio")) duration = 60000;
                     
                     b.setConstructionFinishTime(System.currentTimeMillis() + duration);
                     gv.activity.dbHelper.updateBuilding(b.getName(), b.getLevel(), 0, b.getPositionX(), b.getPositionY(), b.getConstructionFinishTime());
