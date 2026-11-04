@@ -55,6 +55,9 @@ public class MissionManager {
     public void checkRewards(NPC npc) {
         if (npc.getName().equals("Mestre") || npc.getType() == NPC.Type.GUARD) {
             boolean allAto1Completed = true;
+            boolean allAto2Completed = true;
+            boolean hasAto2Started = false;
+
             for (Mission m : player.getActiveMissions()) {
                 if (m.getTitle().equals("O Despertar") || m.getTitle().equals("O Chamado da Base") || m.getTitle().equals("Mestre dos Mares")) {
                     if (m.isCompleted() && !m.isRewarded()) {
@@ -64,10 +67,22 @@ public class MissionManager {
                     }
                     if (!m.isRewarded()) allAto1Completed = false;
                 }
+
+                if (m.getTitle().equals("Desbravando as Minas") || m.getTitle().equals("O Guardião de Pedra")) {
+                    hasAto2Started = true;
+                    if (m.isCompleted() && !m.isRewarded()) {
+                        m.setRewarded(true);
+                        player.addGold(m.getRewardGold());
+                        ui.showMessage("💰 Recompensa: +" + m.getRewardGold() + " Ouro");
+                    }
+                    if (!m.isRewarded()) allAto2Completed = false;
+                }
             }
 
-            if (allAto1Completed) {
+            if (allAto1Completed && !hasAto2Started) {
                 giveAto2MissionsIfNeeded();
+            } else if (hasAto2Started && allAto2Completed) {
+                giveAto3MissionsIfNeeded();
             }
         }
     }
@@ -84,6 +99,22 @@ public class MissionManager {
             player.addMission(new Mission("Desbravando as Minas", "Explore a Caverna MINE e colete minérios", "Ferro", 5, 250));
             player.addMission(new Mission("O Guardião de Pedra", "Derrote o Chefe Onix Corrompido na Mina", "Onix", 1, 500));
             ui.showMessage("📜 NOVO CAPÍTULO DESBLOQUEADO: Ato II - A Expansão do Domínio!");
+        }
+    }
+
+    private void giveAto3MissionsIfNeeded() {
+        boolean hasAto3 = false;
+        for (Mission m : player.getActiveMissions()) {
+            if (m.getTitle().equals("Desafio de Gelo")) {
+                hasAto3 = true;
+                break;
+            }
+        }
+        if (!hasAto3) {
+            player.addMission(new Mission("Desafio de Gelo", "Sobreviva à Montanha Nevada SNOW_MOUNTAIN", "Articuno", 1, 600));
+            player.addMission(new Mission("Fúria do Vulcão", "Derrote o Charizard de Magma no Vulcão", "Charizard", 1, 800));
+            player.addMission(new Mission("O Mestre do Ginásio", "Derrote o Mestre de Batalha no Ginásio", "Charizard", 1, 1000));
+            ui.showMessage("📜 NOVO CAPÍTULO DESBLOQUEADO: Ato III - Mestres e Feras Elementais!");
         }
     }
 }
