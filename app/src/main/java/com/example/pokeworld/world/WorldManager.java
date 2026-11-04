@@ -176,7 +176,7 @@ public class WorldManager {
 
     private void spawnHome(Player p) {
         for (CapturedCreature c : p.getStorage()) {
-            double ex = TileMap.TILE_SIZE * (22 + random.nextInt(36)), ey = TileMap.TILE_SIZE * (12 + random.nextInt(16));
+            double ex = TileMap.TILE_SIZE * (68 + random.nextInt(24)), ey = TileMap.TILE_SIZE * (28 + random.nextInt(22));
             PetData d = activity.dbHelper.getPetData(c.name);
             addEnemy(c.name, ex, ey, 32, Color.GREEN, false, c.isShiny, d.level, c.gender, true);
         }
@@ -229,7 +229,7 @@ public class WorldManager {
         while (it.hasNext()) {
             Enemy e = it.next();
             double dist = Math.sqrt(Math.pow(e.positionX - px, 2) + Math.pow(e.positionY - py, 2));
-            if (dist > 1200 && !e.isBoss) {
+            if (dist > 1200 && !e.isBoss && !e.isPet) {
                 if (gv != null && gv.particles != null) {
                     gv.particles.addExplosion(e.positionX, e.positionY, Color.WHITE, 10);
                 }
