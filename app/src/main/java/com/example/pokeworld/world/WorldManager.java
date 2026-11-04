@@ -223,12 +223,12 @@ public class WorldManager {
         double px = p.getPositionX();
         double py = p.getPositionY();
 
-        // 1. Remove inimigos que ficaram muito distantes do jogador (> 2400 pixels) com efeito de partícula
+        // 1. Remove inimigos que saíram da área de visão/proximidade (> 1200 pixels) com efeito de partícula
         Iterator<Enemy> it = enemies.iterator();
         while (it.hasNext()) {
             Enemy e = it.next();
             double dist = Math.sqrt(Math.pow(e.positionX - px, 2) + Math.pow(e.positionY - py, 2));
-            if (dist > 2400 && !e.isBoss) {
+            if (dist > 1200 && !e.isBoss) {
                 if (gv != null && gv.particles != null) {
                     gv.particles.addExplosion(e.positionX, e.positionY, Color.WHITE, 10);
                 }
@@ -236,24 +236,24 @@ public class WorldManager {
             }
         }
 
-        // 2. Conta quantos inimigos estão próximos (num raio de 1200 pixels)
+        // 2. Conta quantos inimigos estão visíveis na tela (num raio de 800 pixels)
         int nearbyCount = 0;
         for (Enemy e : enemies) {
             double dist = Math.sqrt(Math.pow(e.positionX - px, 2) + Math.pow(e.positionY - py, 2));
-            if (dist < 1200) {
+            if (dist < 800) {
                 nearbyCount++;
             }
         }
 
-        // 3. Se houver menos de 10 inimigos próximos, spawna novos ao redor do jogador enquanto ele anda
-        if (nearbyCount < 10) {
+        // 3. Se houver menos de 8 inimigos na tela, spawna novos na borda da visão do jogador
+        if (nearbyCount < 8) {
             String[] speciesList = getSpeciesForMap(mapName);
             int baseLevel = getBiomeBaseLevel(mapName);
             int color = getBiomeColor(mapName);
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 2; i++) {
                 double angle = random.nextDouble() * 2 * Math.PI;
-                double distance = 500 + random.nextInt(600); // Entre 500 e 1100 pixels do player
+                double distance = 400 + random.nextInt(400); // Na borda da tela (entre 400 e 800 pixels)
                 double ex = px + Math.cos(angle) * distance;
                 double ey = py + Math.sin(angle) * distance;
 
