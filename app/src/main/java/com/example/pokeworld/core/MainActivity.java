@@ -63,18 +63,66 @@ public class MainActivity extends AppCompatActivity {
 
                     org.json.JSONObject json = new org.json.JSONObject(sb.toString());
                     int remoteVersion = json.getInt("versionCode");
+                    String apkUrl = json.optString("apkUrl", "");
                     int localVersion = 1;
 
-                    if (remoteVersion > localVersion) {
-                        runOnUiThread(() -> {
-                            android.widget.Toast.makeText(this, "🔄 Nova atualização disponível na nuvem!", android.widget.Toast.LENGTH_LONG).show();
-                        });
+                    if (remoteVersion > localVersion && !apkUrl.isEmpty()) {
+                        runOnUiThread(() -> showUpdateDialog(apkUrl));
                     }
                 }
             } catch (Exception e) {
                 android.util.Log.e("MainActivity", "Erro ao verificar atualizações: " + e.getMessage());
             }
         }).start();
+    }
+
+    private void showUpdateDialog(String apkUrl) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("🔄 Nova Atualização Disponível")
+            .setMessage("Uma nova versão do PokeWorld está pronta para ser baixada. Deseja atualizar agora?")
+            .setPositiveButton("Atualizar", (dialog, which) -> downloadAndInstallApk(apkUrl))
+            .setNegativeButton("Depois", null)
+            .show();
+    }
+
+    private void downloadAndInstallApk(String apkUrl) {
+        android.widget.Toast.makeText(this, "📥 Baixando atualização...", android.widget.Toast.LENGTH_LONG).show();
+
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(apkUrl);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.connect();
+
+                java.io.File outputFile = new java.io.File(getExternalCacheDir(), "update.apk");
+                if (outputFile.exists()) outputFile.delete();
+
+                java.io.InputStream inputStream = conn.getInputStream();
+                java.io.FileOutputStream fileOutputStream = new java.io.FileOutputStream(outputFile);
+
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = inputStream.read(buffer)) != -1) {
+                    fileOutputStream.write(buffer, 0, len);
+                }
+                fileOutputStream.close();
+                inputStream.close();
+
+                runOnUiThread(() -> installApk(outputFile));
+            } catch (Exception e) {
+                android.util.Log.e("MainActivity", "Erro ao baixar APK: " + e.getMessage());
+                runOnUiThread(() -> android.widget.Toast.makeText(this, "❌ Erro ao baixar atualização.", android.widget.Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
+    private void installApk(java.io.File file) {
+        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+        android.net.Uri apkUri = androidx.core.content.FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
+        intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+        intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     private final android.os.Handler animHandler = new android.os.Handler(android.os.Looper.getMainLooper());

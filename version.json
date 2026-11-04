@@ -2,5 +2,6 @@
   "versionCode": 1,
   "versionName": "1.0",
   "minAppVersion": 1,
-  "updateUrl": "https://github.com/brunoesz-afk/PokeWorld/releases"
+  "updateUrl": "https://github.com/brunoesz-afk/PokeWorld/releases",
+  "apkUrl": "https://github.com/brunoesz-afk/PokeWorld/releases/latest/download/app-release.apk"
 }
