@@ -62,8 +62,8 @@ public class ExploringInput implements InputExtension {
     }
 
     private void handleBallDrop(float x, float y, GameView gv) {
-        float worldX = x + gv.world.getCameraX();
-        float worldY = y + gv.world.getCameraY();
+        float worldX = getWorldX(x, gv);
+        float worldY = getWorldY(y, gv);
         
         com.example.pokeworld.entities.Loot target = null;
         for (com.example.pokeworld.entities.Loot l : gv.world.loots) {
@@ -235,8 +235,8 @@ public class ExploringInput implements InputExtension {
             }
         }
 
-        float worldX = x + gv.world.getCameraX();
-        float worldY = y + gv.world.getCameraY();
+        float worldX = getWorldX(x, gv);
+        float worldY = getWorldY(y, gv);
         int tile = gv.world.tileMap.getTileType(worldX, worldY);
         
         if (tile == TileMap.SOIL) {
@@ -465,8 +465,8 @@ public class ExploringInput implements InputExtension {
     }
 
     private void checkSelection(float x, float y, GameView gv) {
-        float worldX = x + gv.world.getCameraX();
-        float worldY = y + gv.world.getCameraY();
+        float worldX = getWorldX(x, gv);
+        float worldY = getWorldY(y, gv);
 
         // Se estiver na base, permite mover pets selecionados
         if (gv.world.tileMap.getMapName().equals("HOME")) {
@@ -494,5 +494,17 @@ public class ExploringInput implements InputExtension {
             }
         }
         for (Enemy e : gv.world.enemies) e.setSelected(false);
+    }
+
+    private float getWorldX(float x, GameView gv) {
+        float sw = gv.getWidth();
+        float zoom = gv.world.getCurrentZoom();
+        return (float) gv.player.getPositionX() + (x - sw / 2f) / zoom;
+    }
+
+    private float getWorldY(float y, GameView gv) {
+        float sh = gv.getHeight();
+        float zoom = gv.world.getCurrentZoom();
+        return (float) gv.player.getPositionY() + (y - sh / 2f) / zoom;
     }
 }

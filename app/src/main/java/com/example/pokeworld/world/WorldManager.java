@@ -399,6 +399,7 @@ public class WorldManager {
     }
 
     public void changeZoom(float d) { targetZoom = Math.max(0.4f, Math.min(1.8f, targetZoom + d)); }
+    public float getCurrentZoom() { return currentZoom; }
     public boolean isCollidingWithBuilding(double x, double y) { return false; }
     public float getCameraX() { return cameraX; } public float getCameraY() { return cameraY; }
 }
