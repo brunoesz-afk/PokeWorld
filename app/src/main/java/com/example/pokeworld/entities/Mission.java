@@ -22,7 +22,7 @@ public class Mission {
     }
 
     public void updateProgress(String type) {
-        if (!isCompleted && type.equalsIgnoreCase(targetType)) {
+        if (!isCompleted && (type.equalsIgnoreCase(targetType) || targetType.equalsIgnoreCase("Pokemon") || targetType.equalsIgnoreCase("Wild"))) {
             currentAmount++;
             if (currentAmount >= requiredAmount) {
                 isCompleted = true;

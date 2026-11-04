@@ -316,6 +316,11 @@ public class WorldManager {
                 c.gainExp(xp); if (gv.player.gainExp(xp/2)) gv.ui.showMessage("🎊 NÍVEL UP!");
                 Loot d = new Loot(e.name, e.positionX, e.positionY, Loot.Type.DEFEATED); d.setOwnerSpecies(e.name); d.setShiny(e.isShiny); d.setRadius(Math.max(65, e.radius * 1.5)); loots.add(d);
                 dropLoot(e, gv); respawnQueue.add(new RespawnInfo(e.name, e.startX, e.startY, 32, e.color, e.isBoss, e.isShiny, System.currentTimeMillis() + 30000));
+                
+                // Atualiza progresso das missões ao derrotar qualquer Pokémon selvagem
+                gv.missions.updateProgress("Pokemon");
+                gv.missions.updateProgress(e.name);
+
                 it.remove();
             } else e.update(c, gv.effects, gv.particles, tileMap, gv.time.isNight());
         }
