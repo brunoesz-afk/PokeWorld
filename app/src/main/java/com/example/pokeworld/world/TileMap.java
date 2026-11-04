@@ -47,7 +47,30 @@ public class TileMap {
             case "SNOW_PEAK": generateSnowPeakMap(); break;
             case "FEAR_ISLAND": generateFearIslandMap(); break;
             case "HOME": generateHomeMap(); break;
+            case "STARTER_FOREST": generateStarterForestMap(); break;
             default: generateForestMap(); break;
+        }
+    }
+
+    private void generateStarterForestMap() {
+        Random rand = new Random();
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (r == 0 || r == rows - 1 || c == 0 || c == cols - 1 || r == 1 || r == rows - 2 || c == 1 || c == cols - 2) {
+                    mapData[r][c] = TREE;
+                } else if (rand.nextDouble() < 0.12) {
+                    mapData[r][c] = TREE;
+                } else {
+                    mapData[r][c] = GRASS;
+                }
+            }
+        }
+        for (int r = rows/2 - 4; r <= rows/2 + 4; r++) {
+            for (int c = cols/2 - 4; c <= cols/2 + 4; c++) {
+                if (r >= 0 && r < rows && c >= 0 && c < cols) {
+                    mapData[r][c] = GRASS;
+                }
+            }
         }
     }
 

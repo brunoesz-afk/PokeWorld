@@ -100,8 +100,9 @@ public class TutorialManager {
 
     private void finishTutorial() {
         gv.activity.dbHelper.setTutorialCompleted(true);
-        gv.ui.showMessage("🎉 TUTORIAL CONCLUÍDO! BEM-VINDO AO MUNDO ABERTO!");
-        gv.missions.updateProgress("Pikachu");
+        gv.ui.showMessage("🎉 TUTORIAL CONCLUÍDO! BEM-VINDO À SUA BASE!");
+        gv.missions.giveInitialMission();
+        gv.world.loadMap("HOME", gv.player, gv.companion, "CENTER");
     }
 
     public void drawOverlay(Canvas canvas) {

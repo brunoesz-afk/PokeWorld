@@ -119,10 +119,11 @@ public class GameView {
         if (uiOverlay != null) uiOverlay.setGameView(this);
 
         // Inicia carregando o mapa
-        world.loadMap("CITY", player, companion);
-
         if (!activity.dbHelper.isTutorialCompleted()) {
+            world.loadMap("STARTER_FOREST", player, companion, "CENTER");
             tutorial.startTutorial();
+        } else {
+            world.loadMap("CITY", player, companion, "CENTER");
         }
     }
 
