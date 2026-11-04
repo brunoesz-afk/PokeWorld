@@ -246,7 +246,7 @@ public class WorldManager {
         }
 
         // 3. Se houver menos de 10 inimigos na tela, spawna novos na borda da visão do jogador (limite máximo de 10)
-        if (nearbyCount < 10) {
+        if (nearbyCount < 5) {
             String[] speciesList = getSpeciesForMap(mapName);
             int baseLevel = getBiomeBaseLevel(mapName);
             int color = getBiomeColor(mapName);

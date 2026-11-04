@@ -16,9 +16,9 @@ public class MissionManager {
 
     public void giveInitialMission() {
         if (player.getActiveMissions().isEmpty()) {
-            player.addMission(new Mission("Primeira Caçada", "Capture 1 Slime", "Slime", 1, 100));
-            player.addMission(new Mission("Pescador", "Pesque 2 Peixes", "Peixe", 2, 50));
-            player.addMission(new Mission("Construir Oficina", "Construa a Oficina na sua Base", "Oficina", 1, 200));
+            player.addMission(new Mission("O Despertar", "Derrote 3 Pokémons na Floresta", "Bulbasaur", 3, 150));
+            player.addMission(new Mission("O Chamado da Base", "Construa a Oficina na sua Base", "Oficina", 1, 300));
+            player.addMission(new Mission("Mestre dos Mares", "Pesque 1 peixe no Lago", "Magikarp", 1, 100));
         }
     }
 
