@@ -18,6 +18,10 @@ public class ContentDownloader {
     private static ContentDownloader instance;
     private static final String MANIFEST_URL = "https://raw.githubusercontent.com/brunoesz-afk/PokeWorld/master/assets_manifest.json";
 
+    public interface ProgressCallback {
+        void onProgress(String status, int percent);
+    }
+
     private ContentDownloader() {}
 
     public static synchronized ContentDownloader getInstance() {
@@ -27,14 +31,16 @@ public class ContentDownloader {
         return instance;
     }
 
-    public void syncContentSilently(Context context, Runnable onComplete) {
+    public void syncContentSilently(Context context, ProgressCallback callback, Runnable onComplete) {
         new Thread(() -> {
             try {
-                Log.d("ContentDownloader", "Buscando atualizações de conteúdo silenciosas...");
-                URL url = new URL(MANIFEST_URL);
+                if (callback != null) callback.onProgress("Verificando atualizações de conteúdo...", 40);
+
+                URL url = new URL(MANIFEST_URL + "?t=" + System.currentTimeMillis());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setConnectTimeout(4000);
                 conn.setReadTimeout(4000);
+                conn.setUseCaches(false);
 
                 if (conn.getResponseCode() == 200) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -48,11 +54,15 @@ public class ContentDownloader {
                     JSONObject manifest = new JSONObject(sb.toString());
                     JSONArray files = manifest.optJSONArray("files");
 
-                    if (files != null) {
+                    if (files != null && files.length() > 0) {
                         for (int i = 0; i < files.length(); i++) {
                             JSONObject item = files.getJSONObject(i);
                             String fileName = item.getString("name");
                             String fileUrl = item.getString("url");
+                            
+                            if (callback != null) {
+                                callback.onProgress("Baixando arquivo (" + (i + 1) + "/" + files.length() + ")...", 50 + (i * 20 / files.length()));
+                            }
                             downloadFileIfNeeded(context, fileName, fileUrl);
                         }
                     }
@@ -60,6 +70,7 @@ public class ContentDownloader {
             } catch (Exception e) {
                 Log.e("ContentDownloader", "Erro ao sincronizar conteúdo: " + e.getMessage());
             } finally {
+                if (callback != null) callback.onProgress("Carregamento concluído (100%)", 100);
                 if (onComplete != null) {
                     onComplete.run();
                 }
@@ -70,13 +81,15 @@ public class ContentDownloader {
     private void downloadFileIfNeeded(Context context, String fileName, String fileUrl) {
         try {
             File targetFile = new File(context.getFilesDir(), fileName);
-            URL url = new URL(fileUrl);
+            URL url = new URL(fileUrl + "?t=" + System.currentTimeMillis());
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
+            conn.setUseCaches(false);
             conn.connect();
 
             if (conn.getResponseCode() == 200) {
+                int fileSize = conn.getContentLength();
                 InputStream is = conn.getInputStream();
                 FileOutputStream fos = new FileOutputStream(targetFile);
                 byte[] buffer = new byte[2048];
@@ -86,7 +99,7 @@ public class ContentDownloader {
                 }
                 fos.close();
                 is.close();
-                Log.d("ContentDownloader", "Arquivo baixado com sucesso: " + fileName);
+                Log.d("ContentDownloader", "Arquivo baixado: " + fileName + " (" + fileSize + " bytes)");
             }
         } catch (Exception e) {
             Log.e("ContentDownloader", "Erro ao baixar " + fileName + ": " + e.getMessage());

@@ -37,37 +37,50 @@ public class MainActivity extends AppCompatActivity {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             setContentView(R.layout.activity_splash);
 
-            com.example.pokeworld.managers.ContentDownloader.getInstance().syncContentSilently(this, null);
+            android.widget.TextView tvStatus = findViewById(R.id.tv_loading_status);
+            android.widget.ProgressBar progressBar = findViewById(R.id.progressBar);
 
-            new Thread(() -> {
-                try {
-                    dbHelper = new DatabaseHelper(this);
-                    SpriteManager.getInstance().loadSprites(this);
-                } catch (Exception e) {
-                    android.util.Log.e("MainActivity", "Erro ao carregar recursos: " + e.getMessage());
-                }
-
+            com.example.pokeworld.managers.ContentDownloader.getInstance().syncContentSilently(this, (status, percent) -> {
                 runOnUiThread(() -> {
-                    showHomeScreen();
-                    checkForUpdates();
+                    if (tvStatus != null) tvStatus.setText(status + " (" + percent + "%)");
+                    if (progressBar != null) progressBar.setProgress(percent);
                 });
-            }).start();
+            }, () -> {
+                new Thread(() -> {
+                    try {
+                        runOnUiThread(() -> {
+                            if (tvStatus != null) tvStatus.setText("Carregando recursos e sprites (70%)...");
+                            if (progressBar != null) progressBar.setProgress(70);
+                        });
+
+                        dbHelper = new DatabaseHelper(this);
+                        SpriteManager.getInstance().loadSprites(this);
+
+                        runOnUiThread(() -> {
+                            if (tvStatus != null) tvStatus.setText("Iniciando PokeWorld (100%)...");
+                            if (progressBar != null) progressBar.setProgress(100);
+                            showHomeScreen();
+                            checkForUpdatesWithDetails(tvStatus);
+                        });
+                    } catch (Exception e) {
+                        android.util.Log.e("MainActivity", "Erro ao carregar recursos: " + e.getMessage());
+                    }
+                }).start();
+            });
+
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro no onCreate: " + e.getMessage(), e);
         }
     }
 
-    private void checkForUpdates() {
+    private void checkForUpdatesWithDetails(android.widget.TextView tvStatus) {
         new Thread(() -> {
             try {
-                // Adiciona timestamp para evitar o cache de CDN do GitHub raw
                 java.net.URL url = new java.net.URL("https://raw.githubusercontent.com/brunoesz-afk/PokeWorld/master/version.json?t=" + System.currentTimeMillis());
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(5000);
-                conn.setReadTimeout(5000);
+                conn.setConnectTimeout(4000);
+                conn.setReadTimeout(4000);
                 conn.setUseCaches(false);
-                conn.setRequestProperty("Cache-Control", "no-cache");
-                conn.setRequestProperty("Pragma", "no-cache");
                 conn.setRequestMethod("GET");
                 
                 if (conn.getResponseCode() == 200) {
@@ -81,17 +94,21 @@ public class MainActivity extends AppCompatActivity {
 
                     org.json.JSONObject json = new org.json.JSONObject(sb.toString());
                     int remoteVersion = json.getInt("versionCode");
+                    String versionName = json.optString("versionName", "1.0");
                     String apkUrl = json.optString("apkUrl", "");
                     
-                    int localVersion = 1;
+                    int localVersion = 20;
                     try {
                         localVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
                     } catch (Exception ignored) {}
 
-                    android.util.Log.d("MainActivity", "Checando atualização -> Remoto: " + remoteVersion + " | Local: " + localVersion);
-
                     if (remoteVersion > localVersion && !apkUrl.isEmpty()) {
-                        runOnUiThread(() -> showUpdateDialog(apkUrl));
+                        runOnUiThread(() -> {
+                            if (tvStatus != null) {
+                                tvStatus.setText("Nova atualização v" + versionName + " disponível! (~15 MB)");
+                            }
+                            showUpdateDialog(apkUrl);
+                        });
                     }
                 }
             } catch (Exception e) {

@@ -12,7 +12,9 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="50dp"
-        android:indeterminate="true"
+        android:indeterminate="false"
+        android:max="100"
+        android:progress="0"
         android:progressTint="#FFD700" />
 
     <TextView
@@ -22,7 +24,7 @@
         android:layout_above="@id/progressBar"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="12dp"
-        android:text="Carregando PokeWorld..."
+        android:text="Iniciando PokeWorld (0%)..."
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
