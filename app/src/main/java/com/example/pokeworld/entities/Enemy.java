@@ -128,6 +128,9 @@ public class Enemy {
 
             double multiplier = ElementalType.getMultiplier(type, comp.getType1(), comp.getType2());
             int finalDmg = (int)(dmg * multiplier);
+            if (level <= 1 && name.equalsIgnoreCase("Rattata")) {
+                finalDmg = 2; // Rattata do tutorial causa dano inofensivo
+            }
 
             if (effects != null) {
                 float fixedEffectSize = (float)TileMap.TILE_SIZE * 1.5f;

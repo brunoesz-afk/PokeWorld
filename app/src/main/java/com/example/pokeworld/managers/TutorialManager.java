@@ -140,7 +140,7 @@ public class TutorialManager {
         }
 
         // Checagem de primeiro desmaio do Pokémon em batalha
-        if (gv.companion != null && gv.companion.getHp() <= 0 && !hasExperiencedFaint && currentState == State.FINISHED) {
+        if (gv.companion != null && gv.companion.getHp() <= 0 && !hasExperiencedFaint) {
             onPetFainted();
         }
     }
@@ -171,7 +171,7 @@ public class TutorialManager {
         float sh = canvas.getHeight();
 
         if (currentState == State.CAPTURING_RATTATA) {
-            drawGuideBanner(canvas, "💡 DICA DO PROFESSOR:", "Arraste a Pokébola do botão inferior até o Rattata para capturá-lo!");
+            drawGuideBanner(canvas, "💡 DICA DO PROFESSOR:", "Ataque o Rattata para derrotá-lo e depois arraste a Pokébola até ele!");
         } else if (currentState == State.BUILDING_WORKSHOP) {
             drawGuideBanner(canvas, "🏗️ PRIMEIRA CONSTRUÇÃO:", "Aproxime-se e toque para construir a Oficina (Leva apenas 5s)!");
             drawArrow(canvas, sw * 0.70f, sh * 0.40f, "CONSTRUA AQUI!");
