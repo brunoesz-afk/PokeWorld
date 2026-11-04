@@ -37,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             setContentView(R.layout.activity_splash);
 
+            com.example.pokeworld.managers.ContentDownloader.getInstance().syncContentSilently(this, null);
+
             new Thread(() -> {
                 try {
                     dbHelper = new DatabaseHelper(this);

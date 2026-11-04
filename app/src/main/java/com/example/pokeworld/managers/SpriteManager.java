@@ -116,20 +116,32 @@ public class SpriteManager {
         }
     }
 
-    private void loadTileSprite(Context context, String name, int tileType) {
+    private Bitmap decodeSpriteBitmap(Context context, String name) {
+        try {
+            String filename = name.toLowerCase().replace(" ", "_") + ".png";
+            java.io.File downloadedFile = new java.io.File(context.getFilesDir(), filename);
+            if (downloadedFile.exists()) {
+                Bitmap bmp = BitmapFactory.decodeFile(downloadedFile.getAbsolutePath());
+                if (bmp != null) return bmp;
+            }
+        } catch (Exception ignored) {}
         int resId = context.getResources().getIdentifier(name.toLowerCase(), "drawable", context.getPackageName());
         if (resId != 0) {
-            tileSprites.put(tileType, BitmapFactory.decodeResource(context.getResources(), resId));
+            return BitmapFactory.decodeResource(context.getResources(), resId);
         }
+        return null;
+    }
+
+    private void loadTileSprite(Context context, String name, int tileType) {
+        Bitmap bmp = decodeSpriteBitmap(context, name);
+        if (bmp != null) tileSprites.put(tileType, bmp);
     }
 
     private Bitmap[][] lavaTileset = null;
 
     public void loadLavaTileset(Context context) {
         try {
-            int resId = context.getResources().getIdentifier("tiled_lava", "drawable", context.getPackageName());
-            if (resId == 0) return;
-            Bitmap sheet = BitmapFactory.decodeResource(context.getResources(), resId);
+            Bitmap sheet = decodeSpriteBitmap(context, "tiled_lava");
             if (sheet != null) {
                 int rows = 32;
                 int cols = 32;
@@ -164,10 +176,8 @@ public class SpriteManager {
     }
 
     private void loadSpellSprite(Context context, String name) {
-        int resId = context.getResources().getIdentifier(name.toLowerCase(), "drawable", context.getPackageName());
-        if (resId != 0) {
-            spellSprites.put(name.toLowerCase(), BitmapFactory.decodeResource(context.getResources(), resId));
-        }
+        Bitmap bmp = decodeSpriteBitmap(context, name);
+        if (bmp != null) spellSprites.put(name.toLowerCase(), bmp);
     }
 
     public Bitmap getSpellSprite(String name) {
@@ -176,10 +186,8 @@ public class SpriteManager {
 
     private final Map<String, Bitmap> miscSprites = new HashMap<>();
     private void loadMiscSprite(Context context, String name) {
-        int resId = context.getResources().getIdentifier(name.toLowerCase(), "drawable", context.getPackageName());
-        if (resId != 0) {
-            miscSprites.put(name.toLowerCase(), BitmapFactory.decodeResource(context.getResources(), resId));
-        }
+        Bitmap bmp = decodeSpriteBitmap(context, name);
+        if (bmp != null) miscSprites.put(name.toLowerCase(), bmp);
     }
 
     public Bitmap getMiscSprite(String name) {
@@ -199,9 +207,7 @@ public class SpriteManager {
     }
 
     private void loadUnitSheet(Context context, String name, int rows, int cols) {
-        int resId = context.getResources().getIdentifier(name.toLowerCase(), "drawable", context.getPackageName());
-        if (resId == 0) return;
-        Bitmap sheet = BitmapFactory.decodeResource(context.getResources(), resId);
+        Bitmap sheet = decodeSpriteBitmap(context, name);
         if (sheet != null) {
             String key = normalizeName(name);
             if (key.contains("charizard_shiny")) {
