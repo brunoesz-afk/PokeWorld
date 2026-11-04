@@ -35,9 +35,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         try {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            dbHelper = new DatabaseHelper(this);
-            showHomeScreen();
-            checkForUpdates();
+            setContentView(R.layout.activity_splash);
+
+            new Thread(() -> {
+                try {
+                    dbHelper = new DatabaseHelper(this);
+                    SpriteManager.getInstance().loadSprites(this);
+                } catch (Exception e) {
+                    android.util.Log.e("MainActivity", "Erro ao carregar recursos: " + e.getMessage());
+                }
+
+                runOnUiThread(() -> {
+                    showHomeScreen();
+                    checkForUpdates();
+                });
+            }).start();
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro no onCreate: " + e.getMessage(), e);
         }
