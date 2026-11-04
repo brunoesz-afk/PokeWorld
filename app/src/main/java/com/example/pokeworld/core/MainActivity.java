@@ -60,10 +60,14 @@ public class MainActivity extends AppCompatActivity {
     private void checkForUpdates() {
         new Thread(() -> {
             try {
-                java.net.URL url = new java.net.URL("https://raw.githubusercontent.com/brunoesz-afk/PokeWorld/master/version.json");
+                // Adiciona timestamp para evitar o cache de CDN do GitHub raw
+                java.net.URL url = new java.net.URL("https://raw.githubusercontent.com/brunoesz-afk/PokeWorld/master/version.json?t=" + System.currentTimeMillis());
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(4000);
-                conn.setReadTimeout(4000);
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+                conn.setUseCaches(false);
+                conn.setRequestProperty("Cache-Control", "no-cache");
+                conn.setRequestProperty("Pragma", "no-cache");
                 conn.setRequestMethod("GET");
                 
                 if (conn.getResponseCode() == 200) {
@@ -79,10 +83,12 @@ public class MainActivity extends AppCompatActivity {
                     int remoteVersion = json.getInt("versionCode");
                     String apkUrl = json.optString("apkUrl", "");
                     
-                    int localVersion = 13;
+                    int localVersion = 1;
                     try {
                         localVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
                     } catch (Exception ignored) {}
+
+                    android.util.Log.d("MainActivity", "Checando atualização -> Remoto: " + remoteVersion + " | Local: " + localVersion);
 
                     if (remoteVersion > localVersion && !apkUrl.isEmpty()) {
                         runOnUiThread(() -> showUpdateDialog(apkUrl));
