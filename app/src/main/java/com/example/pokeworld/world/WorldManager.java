@@ -209,7 +209,7 @@ public class WorldManager {
 
         // Atualização de spawn dinâmico por proximidade do jogador (a cada 1 segundo)
         if (System.currentTimeMillis() - lastDynamicSpawnCheck > 1000) {
-            updateDynamicSpawning(p, tileMap.getMapName());
+            updateDynamicSpawning(p, tileMap.getMapName(), gv);
             lastDynamicSpawnCheck = System.currentTimeMillis();
         }
 
@@ -217,18 +217,21 @@ public class WorldManager {
         if (tileMap.getMapName().equals("HOME")) for (Building b : buildings) b.update(activity);
     }
 
-    private void updateDynamicSpawning(Player p, String mapName) {
+    private void updateDynamicSpawning(Player p, String mapName, GameView gv) {
         if (mapName.equals("CITY") || mapName.equals("HOME")) return;
 
         double px = p.getPositionX();
         double py = p.getPositionY();
 
-        // 1. Remove inimigos que ficaram muito distantes do jogador (> 2400 pixels) para poupar memória e CPU
+        // 1. Remove inimigos que ficaram muito distantes do jogador (> 2400 pixels) com efeito de partícula
         Iterator<Enemy> it = enemies.iterator();
         while (it.hasNext()) {
             Enemy e = it.next();
             double dist = Math.sqrt(Math.pow(e.positionX - px, 2) + Math.pow(e.positionY - py, 2));
             if (dist > 2400 && !e.isBoss) {
+                if (gv != null && gv.particles != null) {
+                    gv.particles.addExplosion(e.positionX, e.positionY, Color.WHITE, 10);
+                }
                 it.remove();
             }
         }
@@ -262,6 +265,9 @@ public class WorldManager {
                     int lv = baseLevel + (int)(dCenter / 400);
                     String sName = speciesList[random.nextInt(speciesList.length)];
                     addEnemy(sName, ex, ey, 32, color, false, random.nextDouble() < 0.05, Math.max(1, lv), random.nextInt(2));
+                    if (gv != null && gv.particles != null) {
+                        gv.particles.addExplosion(ex, ey, color, 12);
+                    }
                 }
             }
         }

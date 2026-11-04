@@ -488,7 +488,8 @@ public class ExploringInput implements InputExtension {
             if (e.isTouched(worldX, worldY)) {
                 for (Enemy o : gv.world.enemies) o.setSelected(false);
                 e.setSelected(true);
-                gv.ui.showMessage("🎯 Alvo: " + e.name);
+                gv.companion.setTargetEnemy(e);
+                gv.ui.showMessage("🎯 Alvo: " + e.name + " (Atacando!)");
                 return;
             }
         }

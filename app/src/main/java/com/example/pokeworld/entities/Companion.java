@@ -923,6 +923,7 @@ public class Companion {
     public boolean isShiny() { return isShiny; }
     public double getRadius() { return radius; }
     public int getAttackPower() { return attackPower; }
+    public void setTargetEnemy(Enemy e) { this.targetEnemy = e; }
     public void setAttackPower(int attackPower) { this.attackPower = attackPower; }
     public void heal(int amount) { this.hp = Math.min(maxHp, this.hp + amount); }
     public void setShield(long durationMs) { this.hasShield = true; this.shieldEndTime = System.currentTimeMillis() + durationMs; }
