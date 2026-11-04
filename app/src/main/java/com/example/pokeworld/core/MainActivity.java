@@ -76,7 +76,11 @@ public class MainActivity extends AppCompatActivity {
                     org.json.JSONObject json = new org.json.JSONObject(sb.toString());
                     int remoteVersion = json.getInt("versionCode");
                     String apkUrl = json.optString("apkUrl", "");
-                    int localVersion = 1;
+                    
+                    int localVersion = 13;
+                    try {
+                        localVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+                    } catch (Exception ignored) {}
 
                     if (remoteVersion > localVersion && !apkUrl.isEmpty()) {
                         runOnUiThread(() -> showUpdateDialog(apkUrl));
