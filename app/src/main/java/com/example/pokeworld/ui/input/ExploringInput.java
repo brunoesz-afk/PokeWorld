@@ -225,6 +225,10 @@ public class ExploringInput implements InputExtension {
 
             for (NPC n : gv.world.npcs) {
                 if (n.isNearby(gv.player)) {
+                    if (n.getName().contains("Time") || n.getName().contains("Base") || n.getName().contains("Estoque")) {
+                        gv.ui.state = UIManager.UIState.STORAGE;
+                        return true;
+                    }
                     gv.ui.isDialogueActive = true;
                     gv.ui.currentSpeaker = n.getName();
                     gv.ui.currentDialogue = n.getDialogue();
