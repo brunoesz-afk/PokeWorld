@@ -18,13 +18,15 @@ public class TutorialManager {
         STARTER_SELECTION,
         GIVE_BALLS_DIALOGUE,
         SPAWN_RATTATA,
-        CAPTURING_RATTATA,
-        TUTORIAL_COMPLETED_DIALOGUE,
+        ATTACKING_RATTATA,
+        DRAG_POKEBALL_TUTORIAL,
+        CAPTURED_RATTATA_DIALOGUE,
         ARRIVED_AT_BASE_DIALOGUE,
         BUILDING_WORKSHOP,
         WORKSHOP_BUILT_DIALOGUE,
         CLICK_COMPASS_TUTORIAL,
         NURSE_JOY_FAINT_DIALOGUE,
+        NURSE_JOY_HEALED_DIALOGUE,
         FINISHED
     }
 
@@ -54,7 +56,7 @@ public class TutorialManager {
             currentState = State.SPAWN_RATTATA;
             gv.ui.isDialogueActive = false;
             spawnTutorialRattata();
-        } else if (currentState == State.TUTORIAL_COMPLETED_DIALOGUE) {
+        } else if (currentState == State.CAPTURED_RATTATA_DIALOGUE) {
             currentState = State.ARRIVED_AT_BASE_DIALOGUE;
             gv.activity.dbHelper.setTutorialCompleted(true);
             gv.world.loadMap("HOME", gv.player, gv.companion, "CENTER");
@@ -64,17 +66,20 @@ public class TutorialManager {
         } else if (currentState == State.ARRIVED_AT_BASE_DIALOGUE) {
             currentState = State.BUILDING_WORKSHOP;
             gv.ui.isDialogueActive = false;
-            // Garante que o jogador possui recursos para a primeira Oficina do tutorial
-            if (gv.player.getInventory().getOrDefault("Madeira", 0) < 5) {
-                gv.player.addItem("Madeira", 5);
-            }
-            if (gv.player.getInventory().getOrDefault("Ferro", 0) < 2) {
-                gv.player.addItem("Ferro", 2);
-            }
+            if (gv.player.getInventory().getOrDefault("Madeira", 0) < 5) gv.player.addItem("Madeira", 5);
+            if (gv.player.getInventory().getOrDefault("Ferro", 0) < 2) gv.player.addItem("Ferro", 2);
         } else if (currentState == State.WORKSHOP_BUILT_DIALOGUE) {
             currentState = State.CLICK_COMPASS_TUTORIAL;
             gv.ui.isDialogueActive = false;
         } else if (currentState == State.NURSE_JOY_FAINT_DIALOGUE) {
+            // Teleporta para a Enfermeira Joy na Cidade e cura o time
+            gv.companion.healFull();
+            gv.world.loadMap("CITY", gv.player, gv.companion, "CENTER");
+            currentState = State.NURSE_JOY_HEALED_DIALOGUE;
+            gv.ui.isDialogueActive = true;
+            gv.ui.currentSpeaker = "Enfermeira Joy";
+            gv.ui.currentDialogue = "Olá! Cuidei do seu parceiro com muito carinho!\nEle está com a saúde 100% restaurada e pronto para novas aventuras!";
+        } else if (currentState == State.NURSE_JOY_HEALED_DIALOGUE) {
             currentState = State.FINISHED;
             gv.ui.isDialogueActive = false;
         }
@@ -93,7 +98,7 @@ public class TutorialManager {
         gv.ui.isDialogueActive = true;
         gv.ui.currentSpeaker = "Prof. Invocador";
         gv.ui.currentDialogue = "Excelente escolha! " + starterSpecies + " é um parceiro incrível!\n" +
-                "Tome 5 Pokébolas de presente! Olhe, um Rattata selvagem apareceu! Vamos aprender a capturar!";
+                "Tome 5 Pokébolas de presente! Olhe, um Rattata selvagem apareceu! Vamos aprender a batalhar!";
     }
 
     private void spawnTutorialRattata() {
@@ -107,26 +112,29 @@ public class TutorialManager {
                 break;
             }
         }
-        currentState = State.CAPTURING_RATTATA;
+        currentState = State.ATTACKING_RATTATA;
     }
 
-    public void onBuildingStarted(String name) {
-        if (name.equalsIgnoreCase("Oficina") && currentState == State.BUILDING_WORKSHOP) {
-            // A construção de 5s no ExploringInput.java terminará logo em breve
+    public void onTutorialRattataCaptured() {
+        if (currentState == State.DRAG_POKEBALL_TUTORIAL) {
+            currentState = State.CAPTURED_RATTATA_DIALOGUE;
+            gv.ui.isDialogueActive = true;
+            gv.ui.currentSpeaker = "Prof. Invocador";
+            gv.ui.currentDialogue = "Incrível! Você capturou seu primeiro Pokémon com sucesso!\n" +
+                    "Agora vamos viajar juntos para a sua nova Base Central!";
         }
     }
 
     public void update() {
-        if (currentState == State.CAPTURING_RATTATA) {
+        if (currentState == State.ATTACKING_RATTATA) {
             if (tutorialRattata != null && (!tutorialRattata.isAlive || !gv.world.enemies.contains(tutorialRattata))) {
-                currentState = State.TUTORIAL_COMPLETED_DIALOGUE;
+                currentState = State.DRAG_POKEBALL_TUTORIAL;
                 gv.ui.isDialogueActive = true;
                 gv.ui.currentSpeaker = "Prof. Invocador";
-                gv.ui.currentDialogue = "Parabéns! Você aprendeu os passos básicos de um verdadeiro Treinador!\n" +
-                        "Agora vamos viajar para a sua Base Central!";
+                gv.ui.currentDialogue = "Perfeito! O Rattata foi derrotado e caiu no chão!\n" +
+                        "Agora segure o botão de Pokébola no menu inferior e arraste até o corpo do Rattata para capturá-lo!";
             }
         } else if (currentState == State.BUILDING_WORKSHOP) {
-            // Verifica se a oficina foi construída na base
             for (Building b : gv.world.buildings) {
                 if (b.getName().equalsIgnoreCase("Oficina") && b.isConstructed()) {
                     currentState = State.WORKSHOP_BUILT_DIALOGUE;
@@ -148,13 +156,11 @@ public class TutorialManager {
     public void onPetFainted() {
         if (!hasExperiencedFaint) {
             hasExperiencedFaint = true;
-            gv.companion.healFull();
-            gv.world.loadMap("CITY", gv.player, gv.companion, "CENTER");
             currentState = State.NURSE_JOY_FAINT_DIALOGUE;
             gv.ui.isDialogueActive = true;
-            gv.ui.currentSpeaker = "Enfermeira Joy";
-            gv.ui.currentDialogue = "Oh não! Seu Pokémon desmaiou em batalha por exaustão!\n" +
-                    "Trouxe vocês imediatamente ao Centro de Cura! Seu parceiro foi totalmente restaurado!";
+            gv.ui.currentSpeaker = "Prof. Invocador";
+            gv.ui.currentDialogue = "Oh não! O seu Pokémon ficou sem forças e foi derrotado em batalha!\n" +
+                    "Quando isso acontecer, você deve ir imediatamente até o Centro de Cura na Cidade falar com a Enfermeira Joy!";
         }
     }
 
@@ -170,8 +176,15 @@ public class TutorialManager {
         float sw = canvas.getWidth();
         float sh = canvas.getHeight();
 
-        if (currentState == State.CAPTURING_RATTATA) {
-            drawGuideBanner(canvas, "💡 DICA DO PROFESSOR:", "Ataque o Rattata para derrotá-lo e depois arraste a Pokébola até ele!");
+        if (currentState == State.ATTACKING_RATTATA) {
+            drawGuideBanner(canvas, "⚔️ PASSO 1 - BATALHA:", "Toque no Rattata para que seu Pokémon o ataque até derrotá-lo!");
+        } else if (currentState == State.DRAG_POKEBALL_TUTORIAL) {
+            drawGuideBanner(canvas, "🔴 PASSO 2 - CAPTURA:", "Arraste a Pokébola do botão inferior até o corpo do Rattata!");
+            if (tutorialRattata != null) {
+                float rx = (float) (tutorialRattata.getPositionX() - gv.world.getCameraX());
+                float ry = (float) (tutorialRattata.getPositionY() - gv.world.getCameraY());
+                drawArrow(canvas, rx, ry - 30, "ARRASTE A POKÉBOLA AQUI!");
+            }
         } else if (currentState == State.BUILDING_WORKSHOP) {
             drawGuideBanner(canvas, "🏗️ PRIMEIRA CONSTRUÇÃO:", "Aproxime-se e toque para construir a Oficina (Leva apenas 5s)!");
             drawArrow(canvas, sw * 0.70f, sh * 0.40f, "CONSTRUA AQUI!");

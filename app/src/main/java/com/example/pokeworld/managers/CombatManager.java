@@ -57,6 +57,7 @@ public class CombatManager {
             gv.world.loots.remove(target);
             gv.ui.showMessage("✨ " + target.getName() + " CAPTURADO!");
             gv.missions.updateProgress(target.getName());
+            if (gv.tutorial != null) gv.tutorial.onTutorialRattataCaptured();
             gv.particles.addExplosion(target.getPositionX(), target.getPositionY(), android.graphics.Color.GREEN, 40);
         } else {
             gv.player.useItem("Pokébola");
