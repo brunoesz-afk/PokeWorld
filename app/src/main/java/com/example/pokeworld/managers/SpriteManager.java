@@ -35,7 +35,9 @@ public class SpriteManager {
                 "oddish", "caterpie", "pidgey", "sandshrew", "onix", "ekans", "arbok",
                 "magmar", "ponyta", "lapras", "snorlax", "psyduck", "magikarp","spearow","fearow",
                 "gastly", "haunter", "articuno", "venusaur", "ivysaur", "wartortle","sandslash","nidoranm","nidorina","nidoranf","nidorino","nidoking","nidoqueen",
-                "abra", "aerodactyl", "alakazam", "bellsprout", "clefable", "clefairy", "diglett", "dugtrio", "gengar", "gloom", "golbat", "grimer", "jigglypuff", "kadabra", "koffing", "machop", "mankey", "meowth", "paras", "parasect", "persian", "poliwag", "poliwhirl", "primeape", "rhydon", "tangela", "tentacool", "tentacruel", "venomoth", "venonat", "victreebel", "vileplume", "weedle", "weepinbell", "wigglytuff", "zubat",
+                "abra", "aerodactyl", "alakazam", "bellsprout", "clefable", "clefairy", "diglett", "dugtrio", "gengar", "gloom", "golbat", "grimer", "jigglypuff", "kadabra",
+                    "koffing", "machop", "mankey", "meowth", "paras", "parasect", "persian", "poliwag", "poliwhirl", "primeape", "rhydon", "tangela", "tentacool", "tentacruel",
+                    "venomoth", "venonat", "victreebel", "vileplume", "weedle", "weepinbell", "wigglytuff", "zubat",
                 "charizard_shiny", "venosaur", "charmander_shiny", "charmeleon_shiny", "venosaur_shiny",
                 "kakuna", "pidgeot", "pidgeotto", "blastoise_shiny", "bulbasaur_shiny", "ivysaur_shiny",
                 "squirtle_shiny", "wartortle_shiny", "butterfree", "squirtle_jatodeagua", "squirtle_shiny_jatodeagua", "pokebola",
@@ -93,7 +95,7 @@ public class SpriteManager {
                 "oddish_death", "gloom_death", "vileplume_death",
                 "chikorita_death", "croconaw_death", "growlithe_death",
                 "houndour_death", "poliwag_death", "tangela_death", "ovo",
-                "rattata_death", "arcanine_death", "growlithe_shiny_death", "weedle_death"
+                "rattata_death", "arcanine_death", "growlithe_shiny_death", "weedle_death", "meowth_death"
             };
             for (String d : deaths) {
                 loadMiscSprite(context, d);

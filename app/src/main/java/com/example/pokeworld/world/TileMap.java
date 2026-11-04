@@ -418,6 +418,26 @@ public class TileMap {
         mapData[0][cols/2] = PORTAL;
     }
 
+    private final Rect reusableDest = new Rect();
+    private final Rect reusableSrc = new Rect();
+
+    public void draw(Canvas canvas, com.example.pokeworld.entities.Player p, float screenWidth, float screenHeight, float zoom) {
+        SpriteManager sm = SpriteManager.getInstance();
+        float visibleW = screenWidth / zoom;
+        float visibleH = screenHeight / zoom;
+
+        int minCol = Math.max(0, (int) ((p.getPositionX() - visibleW / 2f) / TILE_SIZE) - 2);
+        int maxCol = Math.min(cols, (int) ((p.getPositionX() + visibleW / 2f) / TILE_SIZE) + 2);
+        int minRow = Math.max(0, (int) ((p.getPositionY() - visibleH / 2f) / TILE_SIZE) - 2);
+        int maxRow = Math.min(rows, (int) ((p.getPositionY() + visibleH / 2f) / TILE_SIZE) + 2);
+
+        for (int r = minRow; r < maxRow; r++) {
+            for (int c = minCol; c < maxCol; c++) {
+                drawTileAt(canvas, mapData[r][c], r, c, sm);
+            }
+        }
+    }
+
     public void draw(Canvas canvas) {
         SpriteManager sm = SpriteManager.getInstance();
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) drawTileAt(canvas, mapData[r][c], r, c, sm);
@@ -425,7 +445,8 @@ public class TileMap {
 
     private void drawTileAt(Canvas canvas, int type, int r, int c, SpriteManager sm) {
         int x = c * TILE_SIZE, y = r * TILE_SIZE;
-        Rect dest = new Rect(x, y, x + TILE_SIZE, y + TILE_SIZE);
+        reusableDest.set(x, y, x + TILE_SIZE, y + TILE_SIZE);
+        Rect dest = reusableDest;
         if (type == TREE || type == BERRY_TREE) {
             Bitmap grass = sm.getTileSprite(GRASS);
             if (grass != null) canvas.drawBitmap(grass, null, dest, null);
@@ -439,7 +460,8 @@ public class TileMap {
             Bitmap snow = sm.getTileSprite(SNOW);
             if (snow != null) {
                 int fw = snow.getWidth() / 3, fh = snow.getHeight() / 3;
-                canvas.drawBitmap(snow, new Rect(fw, fh, fw * 2, fh * 2), dest, null);
+                reusableSrc.set(fw, fh, fw * 2, fh * 2);
+                canvas.drawBitmap(snow, reusableSrc, dest, null);
             }
             int crySize = (int)(TILE_SIZE * 2.0f);
             int off = (crySize - TILE_SIZE) / 2;
@@ -454,11 +476,11 @@ public class TileMap {
                 int frameCount = 3;
                 int frameIndex = (int)((System.currentTimeMillis() / 400) % frameCount);
                 int fw = sheet.getWidth() / frameCount;
-                Rect src = new Rect(frameIndex * fw, 0, (frameIndex + 1) * fw, sheet.getHeight());
+                reusableSrc.set(frameIndex * fw, 0, (frameIndex + 1) * fw, sheet.getHeight());
                 
                 // Overlap para evitar frestas
                 Rect destTile = new Rect(x - 2, y - 2, x + TILE_SIZE + 2, y + TILE_SIZE + 2);
-                canvas.drawBitmap(sheet, src, destTile, null);
+                canvas.drawBitmap(sheet, reusableSrc, destTile, null);
             } else if (sheet != null && sheet.getWidth() >= TILE_SIZE * 3 && sheet.getHeight() >= TILE_SIZE * 3) {
                 // Fallback para Autotiling 3x3 se a imagem for quadrada
                 int sr = 1, sc = 1; 
@@ -467,7 +489,8 @@ public class TileMap {
                 if (!t && !l) { sc = 0; sr = 0; } else if (!t && !rr) { sc = 2; sr = 0; } else if (!b && !l) { sc = 0; sr = 2; } else if (!b && !rr) { sc = 2; sr = 2; }
                 else if (!t) { sc = 1; sr = 0; } else if (!b) { sc = 1; sr = 2; } else if (!l) { sc = 0; sr = 1; } else if (!rr) { sc = 2; sr = 1; }
                 int fw = sheet.getWidth() / 3, fh = sheet.getHeight() / 3;
-                canvas.drawBitmap(sheet, new Rect(sc * fw, sr * fh, (sc + 1) * fw, (sr + 1) * fh), dest, null);
+                reusableSrc.set(sc * fw, sr * fh, (sc + 1) * fw, (sr + 1) * fh);
+                canvas.drawBitmap(sheet, reusableSrc, dest, null);
             } else {
                 Bitmap s = sm.getTileSprite(type);
                 if (s != null) canvas.drawBitmap(s, null, dest, null);
@@ -482,7 +505,8 @@ public class TileMap {
                 if (!t && !l) { sc = 0; sr = 0; } else if (!t && !rr) { sc = 2; sr = 0; } else if (!b && !l) { sc = 0; sr = 2; } else if (!b && !rr) { sc = 2; sr = 2; }
                 else if (!t) { sc = 1; sr = 0; } else if (!b) { sc = 1; sr = 2; } else if (!l) { sc = 0; sr = 1; } else if (!rr) { sc = 2; sr = 1; }
                 int fw = sheet.getWidth() / 3, fh = sheet.getHeight() / 3;
-                canvas.drawBitmap(sheet, new Rect(sc * fw, sr * fh, (sc + 1) * fw, (sr + 1) * fh), dest, null);
+                reusableSrc.set(sc * fw, sr * fh, (sc + 1) * fw, (sr + 1) * fh);
+                canvas.drawBitmap(sheet, reusableSrc, dest, null);
             } else {
                 Bitmap s = sm.getTileSprite(type);
                 if (s != null) canvas.drawBitmap(s, null, dest, null);

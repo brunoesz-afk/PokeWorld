@@ -47,8 +47,8 @@ public class GameInterfaceOverlay extends View {
                 gameView.input.joystick.draw(canvas);
             }
             
-            // Força o redesenho contínuo para manter o jogo rodando
-            invalidate();
+            // Força o redesenho sincronizado com VSYNC para máximo desempenho sem travar a CPU
+            postInvalidateOnAnimation();
         }
     }
 }

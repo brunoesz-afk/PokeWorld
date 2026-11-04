@@ -379,7 +379,7 @@ public class WorldManager {
         canvas.scale(currentZoom, currentZoom);
         canvas.translate((float) -p.getPositionX(), (float) -p.getPositionY());
 
-        if (tileMap != null) tileMap.draw(canvas);
+        if (tileMap != null) tileMap.draw(canvas, p, sw, sh, currentZoom);
         for (Building b : buildings) b.draw(canvas, p);
         for (NPC n : npcs) n.draw(canvas);
         for (Loot l : loots) l.draw(canvas);
