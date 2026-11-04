@@ -54,6 +54,13 @@ public class Player {
     private int fishingLevel = 1;
     private int fishingExp = 0;
 
+    public int getMaxGuardCapacity() {
+        if (level <= 10) return 6;
+        if (level <= 20) return 10;
+        if (level <= 30) return 15;
+        return 15 + (level - 30);
+    }
+
     // --- COLEÇÃO E MISSÕES ---
     private List<CapturedCreature> creatureCollection;
     private List<Mission> activeMissions = new ArrayList<>();

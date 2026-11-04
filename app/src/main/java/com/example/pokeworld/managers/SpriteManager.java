@@ -95,8 +95,11 @@ public class SpriteManager {
                 "oddish_death", "gloom_death", "vileplume_death",
                 "chikorita_death", "croconaw_death", "growlithe_death",
                 "houndour_death", "poliwag_death", "tangela_death", "ovo",
-                "rattata_death", "arcanine_death", "growlithe_shiny_death", "weedle_death",
-                    "weedle_death_shiny", "meowth_shiny_death", "meowth_death"
+                "rattata_death", "arcanine_death", "weedle_death", "meowth_death"
+
+
+                ,"squirtle_shiny_death","wartortle_shiny_death","weedle_shiny_death","meowth_shiny_death"
+                , "growlithe_shiny_death"
             };
             for (String d : deaths) {
                 loadMiscSprite(context, d);

@@ -54,6 +54,13 @@ public class StorageInput implements InputExtension {
                 List<CapturedCreature> party = gv.player.getParty();
                 if (lineIndex >= 0 && lineIndex < party.size()) {
                     if (party.size() > 1) {
+                        int currentGuards = gv.player.getStorage().size();
+                        int maxGuards = gv.player.getMaxGuardCapacity();
+                        if (currentGuards >= maxGuards) {
+                            gv.ui.showMessage("❌ Limite de Guardas na Base atingido (Máx: " + maxGuards + " para o Nível " + gv.player.getLevel() + ")!");
+                            return true;
+                        }
+
                         CapturedCreature c = party.get(lineIndex);
                         c.isInParty = false;
                         c.isGuard = true; // Ativa modo de guarda e proteção na base

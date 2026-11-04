@@ -175,10 +175,14 @@ public class WorldManager {
     private void spawnSnow() { spawnBasic(new String[]{"Piloswine", "Cloyster", "Lapras", "Jynx"}, getBiomeBaseLevel("SNOW_MOUNTAIN"), Color.CYAN); addEnemy("Articuno", 3200, 1600, 60, Color.WHITE, true, true, 75, 0); }
 
     private void spawnHome(Player p) {
+        int maxGuards = p.getMaxGuardCapacity();
+        int spawnedGuards = 0;
         for (CapturedCreature c : p.getStorage()) {
+            if (spawnedGuards >= maxGuards) break;
             double ex = TileMap.TILE_SIZE * (68 + random.nextInt(24)), ey = TileMap.TILE_SIZE * (28 + random.nextInt(22));
             PetData d = activity.dbHelper.getPetData(c.name);
             addEnemy(c.name, ex, ey, 32, Color.GREEN, false, c.isShiny, d.level, c.gender, true);
+            spawnedGuards++;
         }
         for (Map.Entry<String, BuildingData> entry : activity.dbHelper.getBuildings().entrySet()) {
             String n = entry.getKey(); BuildingData d = entry.getValue();
