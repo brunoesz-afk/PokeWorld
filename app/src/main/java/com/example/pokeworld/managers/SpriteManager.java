@@ -120,17 +120,23 @@ public class SpriteManager {
 
     private Bitmap decodeSpriteBitmap(Context context, String name) {
         try {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inPreferredConfig = Bitmap.Config.RGB_565; // Usa 50% menos memória RAM (evita fechamentos em celulares como Galaxy A31)
+
             String filename = name.toLowerCase().replace(" ", "_") + ".png";
             java.io.File downloadedFile = new java.io.File(context.getFilesDir(), filename);
             if (downloadedFile.exists()) {
-                Bitmap bmp = BitmapFactory.decodeFile(downloadedFile.getAbsolutePath());
+                Bitmap bmp = BitmapFactory.decodeFile(downloadedFile.getAbsolutePath(), options);
                 if (bmp != null) return bmp;
             }
+            int resId = context.getResources().getIdentifier(name.toLowerCase(), "drawable", context.getPackageName());
+            if (resId != 0) {
+                return BitmapFactory.decodeResource(context.getResources(), resId, options);
+            }
+        } catch (OutOfMemoryError oom) {
+            System.gc();
+            Log.e("SpriteManager", "OOM ao decodificar sprite " + name + ": " + oom.getMessage());
         } catch (Exception ignored) {}
-        int resId = context.getResources().getIdentifier(name.toLowerCase(), "drawable", context.getPackageName());
-        if (resId != 0) {
-            return BitmapFactory.decodeResource(context.getResources(), resId);
-        }
         return null;
     }
 
