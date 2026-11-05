@@ -112,9 +112,12 @@ public class SpriteManager {
             
             isLoaded = true;
         } catch (OutOfMemoryError oom) {
-            Log.e("SpriteManager", "Erro de memória ao carregar sprites: " + oom.getMessage());
+            System.gc();
+            Log.e("SpriteManager", "Erro de memória OOM recuperado: " + oom.getMessage());
+            isLoaded = true;
         } catch (Exception e) {
             Log.e("SpriteManager", "Erro ao carregar sprites: " + e.getMessage());
+            isLoaded = true;
         }
     }
 

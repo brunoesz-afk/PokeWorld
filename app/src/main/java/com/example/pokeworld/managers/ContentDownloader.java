@@ -38,8 +38,8 @@ public class ContentDownloader {
 
                 URL url = new URL(MANIFEST_URL + "?t=" + System.currentTimeMillis());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(4000);
-                conn.setReadTimeout(4000);
+                conn.setConnectTimeout(2000); // Timeout rápido de 2s para não travar sem internet
+                conn.setReadTimeout(2000);
                 conn.setUseCaches(false);
 
                 if (conn.getResponseCode() == 200) {
