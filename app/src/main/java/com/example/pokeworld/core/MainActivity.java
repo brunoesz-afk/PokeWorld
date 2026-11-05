@@ -305,26 +305,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startWorld() {
-        setContentView(R.layout.activity_game);
+        try {
+            setContentView(R.layout.activity_game);
 
-        int[] pStats = dbHelper.getPlayerStats();
-        List<CapturedCreature> collection = dbHelper.getCollection();
-        Map<String, Integer> inventory = dbHelper.getInventory();
-        String species = dbHelper.getActiveSpecies();
-        String clan = dbHelper.getClan();
+            int[] pStats = dbHelper.getPlayerStats();
+            List<CapturedCreature> collection = dbHelper.getCollection();
+            Map<String, Integer> inventory = dbHelper.getInventory();
+            String species = dbHelper.getActiveSpecies();
+            String clan = dbHelper.getClan();
 
-        PetData petData = dbHelper.getPetData(species);
+            PetData petData = dbHelper.getPetData(species);
 
-        gameView = new GameView(this, pStats[0], collection, inventory, species, petData);
-        gameView.player.loadProgress(pStats[1], pStats[2], pStats[3], pStats[4], clan, pStats[10]);
-        gameView.player.setFishingStats(pStats[7], pStats[8]);
-        gameView.aincrad.setMaxFloorReached(pStats[9]);
+            gameView = new GameView(this, pStats[0], collection, inventory, species, petData);
+            gameView.player.loadProgress(pStats[1], pStats[2], pStats[3], pStats[4], clan, pStats[10]);
+            gameView.player.setFishingStats(pStats[7], pStats[8]);
+            gameView.aincrad.setMaxFloorReached(pStats[9]);
 
-        isInGame = true;
-        hideSystemUI();
+            isInGame = true;
+            hideSystemUI();
 
-        // Conecta ao servidor multiplayer
-        MultiplayerManager.getInstance().connect("Treinador");
+            // Conecta ao servidor multiplayer
+            MultiplayerManager.getInstance().connect("Treinador");
+        } catch (Exception e) {
+            android.util.Log.e("MainActivity", "Erro ao iniciar o mundo: " + e.getMessage(), e);
+            android.widget.Toast.makeText(this, "Erro ao iniciar mapa: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+            showHomeScreen();
+        }
     }
 
     @Override
