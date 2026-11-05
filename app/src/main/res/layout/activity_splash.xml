@@ -33,4 +33,17 @@
         android:shadowDy="2"
         android:shadowRadius="3" />
 
+    <Button
+        android:id="@+id/btn_retry_connect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/tv_loading_status"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="15dp"
+        android:backgroundTint="#FFD700"
+        android:text="🔄 Tentar Conectar / Jogar Offline"
+        android:textColor="#000000"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
 </RelativeLayout>

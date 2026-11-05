@@ -22,6 +22,10 @@ public class ContentDownloader {
         void onProgress(String status, int percent);
     }
 
+    public interface ConnectionCallback {
+        void onResult(boolean isOnline);
+    }
+
     private ContentDownloader() {}
 
     public static synchronized ContentDownloader getInstance() {
@@ -31,18 +35,22 @@ public class ContentDownloader {
         return instance;
     }
 
-    public void syncContentSilently(Context context, ProgressCallback callback, Runnable onComplete) {
+    public void checkConnectionAndSync(Context context, ProgressCallback callback, ConnectionCallback listener) {
         new Thread(() -> {
+            boolean isOnline = false;
             try {
-                if (callback != null) callback.onProgress("Verificando atualizações de conteúdo...", 40);
+                if (callback != null) callback.onProgress("Verificando conexão com a internet...", 30);
 
                 URL url = new URL(MANIFEST_URL + "?t=" + System.currentTimeMillis());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(2000); // Timeout rápido de 2s para não travar sem internet
-                conn.setReadTimeout(2000);
+                conn.setConnectTimeout(2500);
+                conn.setReadTimeout(2500);
                 conn.setUseCaches(false);
 
                 if (conn.getResponseCode() == 200) {
+                    isOnline = true;
+                    if (callback != null) callback.onProgress("Conectado Online! Baixando dados...", 50);
+
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     StringBuilder sb = new StringBuilder();
                     String line;
@@ -59,20 +67,15 @@ public class ContentDownloader {
                             JSONObject item = files.getJSONObject(i);
                             String fileName = item.getString("name");
                             String fileUrl = item.getString("url");
-                            
-                            if (callback != null) {
-                                callback.onProgress("Baixando arquivo (" + (i + 1) + "/" + files.length() + ")...", 50 + (i * 20 / files.length()));
-                            }
                             downloadFileIfNeeded(context, fileName, fileUrl);
                         }
                     }
                 }
             } catch (Exception e) {
-                Log.e("ContentDownloader", "Erro ao sincronizar conteúdo: " + e.getMessage());
+                isOnline = false;
             } finally {
-                if (callback != null) callback.onProgress("Carregamento concluído (100%)", 100);
-                if (onComplete != null) {
-                    onComplete.run();
+                if (listener != null) {
+                    listener.onResult(isOnline);
                 }
             }
         }).start();
@@ -83,8 +86,8 @@ public class ContentDownloader {
             File targetFile = new File(context.getFilesDir(), fileName);
             URL url = new URL(fileUrl + "?t=" + System.currentTimeMillis());
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
             conn.setUseCaches(false);
             conn.connect();
 
