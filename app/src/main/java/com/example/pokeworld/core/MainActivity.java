@@ -40,47 +40,39 @@ public class MainActivity extends AppCompatActivity {
             android.widget.TextView tvStatus = findViewById(R.id.tv_loading_status);
             android.widget.ProgressBar progressBar = findViewById(R.id.progressBar);
             android.widget.Button btnRetry = findViewById(R.id.btn_retry_connect);
+            if (btnRetry != null) btnRetry.setVisibility(View.GONE);
 
-            Runnable loadGameProcess = () -> {
-                if (btnRetry != null) btnRetry.setVisibility(View.GONE);
-                com.example.pokeworld.managers.ContentDownloader.getInstance().checkConnectionAndSync(this, (status, percent) -> {
+            new Thread(() -> {
+                try {
                     runOnUiThread(() -> {
-                        if (tvStatus != null) tvStatus.setText(status + " (" + percent + "%)");
-                        if (progressBar != null) progressBar.setProgress(percent);
-                    });
-                }, isOnline -> {
-                    runOnUiThread(() -> {
-                        if (isOnline) {
-                            if (tvStatus != null) tvStatus.setText("🟢 Online (Conectado)! Carregando recursos...");
-                            if (btnRetry != null) btnRetry.setVisibility(View.GONE);
-                        } else {
-                            if (tvStatus != null) tvStatus.setText("🔴 Modo Offline. Toque para tentar reconectar:");
-                            if (btnRetry != null) btnRetry.setVisibility(View.VISIBLE);
-                        }
+                        if (tvStatus != null) tvStatus.setText("Carregando banco de dados (30%)...");
+                        if (progressBar != null) progressBar.setProgress(30);
                     });
 
-                    new Thread(() -> {
+                    dbHelper = new DatabaseHelper(this);
+
+                    runOnUiThread(() -> {
+                        if (tvStatus != null) tvStatus.setText("Carregando sprites e texturas (70%)...");
+                        if (progressBar != null) progressBar.setProgress(70);
+                    });
+
+                    SpriteManager.getInstance().loadSprites(this);
+
+                    runOnUiThread(() -> {
+                        if (tvStatus != null) tvStatus.setText("Iniciando PokeWorld (100%)...");
+                        if (progressBar != null) progressBar.setProgress(100);
+                        showHomeScreen();
+                        checkForUpdatesWithDetails(tvStatus);
+                    });
+                } catch (Exception e) {
+                    android.util.Log.e("MainActivity", "Erro no carregamento local: " + e.getMessage(), e);
+                    runOnUiThread(() -> {
                         try {
-                            dbHelper = new DatabaseHelper(this);
-                            SpriteManager.getInstance().loadSprites(this);
-
-                            runOnUiThread(() -> {
-                                if (progressBar != null) progressBar.setProgress(100);
-                                showHomeScreen();
-                                checkForUpdatesWithDetails(tvStatus);
-                            });
-                        } catch (Exception e) {
-                            android.util.Log.e("MainActivity", "Erro ao carregar recursos: " + e.getMessage());
-                        }
-                    }).start();
-                });
-            };
-
-            if (btnRetry != null) {
-                btnRetry.setOnClickListener(v -> loadGameProcess.run());
-            }
-
-            loadGameProcess.run();
+                            showHomeScreen();
+                        } catch (Exception ignored) {}
+                    });
+                }
+            }).start();
 
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro no onCreate: " + e.getMessage(), e);
