@@ -39,43 +39,31 @@ public class MainActivity extends AppCompatActivity {
 
             android.widget.TextView tvStatus = findViewById(R.id.tv_loading_status);
             android.widget.ProgressBar progressBar = findViewById(R.id.progressBar);
-            android.widget.Button btnRetry = findViewById(R.id.btn_retry_connect);
-            if (btnRetry != null) btnRetry.setVisibility(View.GONE);
+
+            dbHelper = new DatabaseHelper(this);
+            if (progressBar != null) progressBar.setProgress(50);
+            if (tvStatus != null) tvStatus.setText("Carregando recursos (50%)...");
 
             new Thread(() -> {
                 try {
+                    SpriteManager.getInstance().loadSprites(MainActivity.this);
                     runOnUiThread(() -> {
-                        if (tvStatus != null) tvStatus.setText("Carregando banco de dados (30%)...");
-                        if (progressBar != null) progressBar.setProgress(30);
-                    });
-
-                    dbHelper = new DatabaseHelper(this);
-
-                    runOnUiThread(() -> {
-                        if (tvStatus != null) tvStatus.setText("Carregando sprites e texturas (70%)...");
-                        if (progressBar != null) progressBar.setProgress(70);
-                    });
-
-                    SpriteManager.getInstance().loadSprites(this);
-
-                    runOnUiThread(() -> {
-                        if (tvStatus != null) tvStatus.setText("Iniciando PokeWorld (100%)...");
                         if (progressBar != null) progressBar.setProgress(100);
+                        if (tvStatus != null) tvStatus.setText("Pronto (100%)!");
                         showHomeScreen();
                         checkForUpdatesWithDetails(tvStatus);
                     });
                 } catch (Exception e) {
-                    android.util.Log.e("MainActivity", "Erro no carregamento local: " + e.getMessage(), e);
-                    runOnUiThread(() -> {
-                        try {
-                            showHomeScreen();
-                        } catch (Exception ignored) {}
-                    });
+                    android.util.Log.e("MainActivity", "Erro ao carregar sprites: " + e.getMessage());
+                    runOnUiThread(() -> showHomeScreen());
                 }
             }).start();
 
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro no onCreate: " + e.getMessage(), e);
+            try {
+                showHomeScreen();
+            } catch (Exception ignored) {}
         }
     }
 
