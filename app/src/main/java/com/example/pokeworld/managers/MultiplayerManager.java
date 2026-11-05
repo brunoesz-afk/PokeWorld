@@ -8,7 +8,6 @@ import com.example.pokeworld.entities.RemotePlayer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,62 +40,65 @@ public class MultiplayerManager {
     public void connect(String playerName) {
         if (isConnected && socket != null) return;
 
-        try {
-            IO.Options options = new IO.Options();
-            options.forceNew = true;
-            options.reconnection = true;
+        new Thread(() -> {
+            try {
+                IO.Options options = new IO.Options();
+                options.forceNew = true;
+                options.reconnection = true;
+                options.timeout = 3000; // Timeout de 3s para evitar qualquer travamento
 
-            socket = IO.socket(serverUrl, options);
+                socket = IO.socket(serverUrl, options);
 
-            socket.on(Socket.EVENT_CONNECT, args -> {
-                isConnected = true;
-                Log.d("MultiplayerManager", "Conectado ao servidor multiplayer!");
+                socket.on(Socket.EVENT_CONNECT, args -> {
+                    isConnected = true;
+                    Log.d("MultiplayerManager", "Conectado ao servidor multiplayer!");
 
-                try {
-                    JSONObject playerInfo = new JSONObject();
-                    playerInfo.put("name", playerName);
-                    socket.emit("join", playerInfo);
-                } catch (JSONException e) {
-                    Log.e("MultiplayerManager", "Erro ao enviar join: " + e.getMessage());
-                }
-            });
-
-            socket.on(Socket.EVENT_DISCONNECT, args -> {
-                isConnected = false;
-                remotePlayers.clear();
-                Log.d("MultiplayerManager", "Desconectado do servidor.");
-            });
-
-            socket.on("playerJoined", args -> {
-                if (args.length > 0 && args[0] instanceof JSONObject) {
-                    JSONObject data = (JSONObject) args[0];
-                    handlePlayerUpdate(data);
-                }
-            });
-
-            socket.on("playerMoved", args -> {
-                if (args.length > 0 && args[0] instanceof JSONObject) {
-                    JSONObject data = (JSONObject) args[0];
-                    handlePlayerUpdate(data);
-                }
-            });
-
-            socket.on("playerLeft", args -> {
-                if (args.length > 0 && args[0] instanceof String) {
-                    String id = (String) args[0];
-                    remotePlayers.remove(id);
-                } else if (args.length > 0 && args[0] instanceof JSONObject) {
                     try {
-                        String id = ((JSONObject) args[0]).getString("id");
-                        remotePlayers.remove(id);
-                    } catch (JSONException ignored) {}
-                }
-            });
+                        JSONObject playerInfo = new JSONObject();
+                        playerInfo.put("name", playerName);
+                        socket.emit("join", playerInfo);
+                    } catch (JSONException e) {
+                        Log.e("MultiplayerManager", "Erro ao enviar join: " + e.getMessage());
+                    }
+                });
 
-            socket.connect();
-        } catch (URISyntaxException e) {
-            Log.e("MultiplayerManager", "URL de servidor invalida: " + e.getMessage());
-        }
+                socket.on(Socket.EVENT_DISCONNECT, args -> {
+                    isConnected = false;
+                    remotePlayers.clear();
+                    Log.d("MultiplayerManager", "Desconectado do servidor.");
+                });
+
+                socket.on("playerJoined", args -> {
+                    if (args.length > 0 && args[0] instanceof JSONObject) {
+                        JSONObject data = (JSONObject) args[0];
+                        handlePlayerUpdate(data);
+                    }
+                });
+
+                socket.on("playerMoved", args -> {
+                    if (args.length > 0 && args[0] instanceof JSONObject) {
+                        JSONObject data = (JSONObject) args[0];
+                        handlePlayerUpdate(data);
+                    }
+                });
+
+                socket.on("playerLeft", args -> {
+                    if (args.length > 0 && args[0] instanceof String) {
+                        String id = (String) args[0];
+                        remotePlayers.remove(id);
+                    } else if (args.length > 0 && args[0] instanceof JSONObject) {
+                        try {
+                            String id = ((JSONObject) args[0]).getString("id");
+                            remotePlayers.remove(id);
+                        } catch (JSONException ignored) {}
+                    }
+                });
+
+                socket.connect();
+            } catch (Exception e) {
+                Log.e("MultiplayerManager", "Erro ao conectar ao servidor (modo offline): " + e.getMessage());
+            }
+        }).start();
     }
 
     private void handlePlayerUpdate(JSONObject data) {
