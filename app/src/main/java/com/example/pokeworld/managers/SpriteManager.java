@@ -86,20 +86,19 @@ public class SpriteManager {
 
             // Carrega Sprites de Morte/Derrota
             String[] deaths = {
-                "charmander_death", "charmeleon_death", "charizard_death",
-                "bulbasaur_death", "ivysaur_death", "venosaur_death",
-                "squirtle_death", "wartortle_death", "blastoise_death",
-                "caterpie_death", "metapod_death", "butterfree_death",
-                "pidgey_death", "pidgeotto_death", "pidgeot_death",
-                "kakuna_death", "bellsprout_death", "weepinbell_death", "victreebel_death",
-                "oddish_death", "gloom_death", "vileplume_death",
-                "chikorita_death", "croconaw_death", "growlithe_death",
-                "houndour_death", "poliwag_death", "tangela_death", "ovo",
-                "rattata_death", "arcanine_death", "weedle_death", "meowth_death"
-
-
-                ,"squirtle_shiny_death","wartortle_shiny_death","weedle_shiny_death","meowth_shiny_death"
-                , "growlithe_shiny_death"
+                "arcanine_death", "bellsprout_death", "blastoise_death", "blastoise_shiny_death",
+                "bulbasaur_death", "bulbasaur_shiny_death", "butterfree_death", "caterpie_death",
+                "charizard_death", "charizard_shiny_death", "charmander_death", "charmander_shiny_death",
+                "charmeleon_death", "charmeleon_shiny_death", "chikorita_death", "croconaw_death",
+                "gloom_death", "growlithe_death", "growlithe_shiny_death", "houndour_death",
+                "ivysaur_death", "ivysaur_shiny_death", "kakuna_death", "meowth_death",
+                "meowth_shiny_death", "metapod_death", "oddish_death", "pidgeot_death",
+                "pidgeotto_death", "pidgey_death", "pikachu_death", "pikachu_shiny_death",
+                "poliwag_death", "raichu_death", "raichu_shiny_death", "rattata_death",
+                "rattata_shiny_death", "squirtle_death", "squirtle_shiny_death", "tangela_death",
+                "venosaur_death", "venosaur_shiny_death", "victreebel_death", "vileplume_death",
+                "wartortle_death", "wartortle_shiny_death", "weedle_death", "weedle_shiny_death",
+                "weepinbell_death", "ovo"
             };
             for (String d : deaths) {
                 loadMiscSprite(context, d);
