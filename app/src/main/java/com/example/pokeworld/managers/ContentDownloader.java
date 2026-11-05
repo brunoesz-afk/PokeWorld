@@ -43,8 +43,8 @@ public class ContentDownloader {
 
                 URL url = new URL(MANIFEST_URL + "?t=" + System.currentTimeMillis());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(2500);
-                conn.setReadTimeout(2500);
+                conn.setConnectTimeout(6000); // Aumentado para 6s para conexões móveis (4G/5G)
+                conn.setReadTimeout(6000);
                 conn.setUseCaches(false);
 
                 if (conn.getResponseCode() == 200) {
@@ -86,8 +86,8 @@ public class ContentDownloader {
             File targetFile = new File(context.getFilesDir(), fileName);
             URL url = new URL(fileUrl + "?t=" + System.currentTimeMillis());
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(3000);
+            conn.setConnectTimeout(6000);
+            conn.setReadTimeout(6000);
             conn.setUseCaches(false);
             conn.connect();
 
