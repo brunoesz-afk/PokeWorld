@@ -101,6 +101,7 @@ public class WorldManager {
         setupPlayerSpawn(p, c, side);
         spawnEntitiesForMap(name, p);
         c.setPosition(p.getPositionX() - 50, p.getPositionY());
+        MultiplayerManager.getInstance().checkMapForMultiplayer(name);
     }
 
     private void setupPlayerSpawn(Player p, Companion c, String side) {

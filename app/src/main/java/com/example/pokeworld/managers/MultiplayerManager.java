@@ -184,4 +184,12 @@ public class MultiplayerManager {
         isConnected = false;
         remotePlayers.clear();
     }
+
+    public void checkMapForMultiplayer(String mapName) {
+        if (mapName.equals("CITY") || mapName.equals("HOME")) {
+            if (!isConnected) {
+                connect("Treinador");
+            }
+        }
+    }
 }
