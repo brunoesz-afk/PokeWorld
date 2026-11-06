@@ -57,6 +57,14 @@ public class ExploringUI extends BaseUI {
     public void draw(Canvas canvas, GameView gv) {
         updateButtonPositions(canvas.getWidth(), canvas.getHeight());
         updateFishingBarVisibility(gv);
+
+        // Indicador de Status Multiplayer na HUD
+        boolean isOnline = com.example.pokeworld.managers.MultiplayerManager.getInstance().isConnected();
+        String serverStatus = isOnline ? "🟢 Servidor Online" : "🟡 Conectando ao Servidor...";
+        paint.setColor(isOnline ? Color.GREEN : Color.YELLOW);
+        paint.setTextSize(16);
+        paint.setTextAlign(Paint.Align.RIGHT);
+        canvas.drawText(serverStatus, canvas.getWidth() - 30, 45, paint);
         
         drawHUD(canvas, gv.companion, gv.player, gv);
         drawMinimap(canvas, gv);
