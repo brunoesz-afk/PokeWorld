@@ -40,46 +40,28 @@ public class MainActivity extends AppCompatActivity {
             android.widget.TextView tvStatus = findViewById(R.id.tv_loading_status);
             android.widget.ProgressBar progressBar = findViewById(R.id.progressBar);
 
+            dbHelper = new DatabaseHelper(this);
+            if (progressBar != null) progressBar.setProgress(50);
+            if (tvStatus != null) tvStatus.setText("Carregando recursos (50%)...");
+
             new Thread(() -> {
                 try {
-                    runOnUiThread(() -> {
-                        if (tvStatus != null) tvStatus.setText("Carregando banco de dados (30%)...");
-                        if (progressBar != null) progressBar.setProgress(30);
-                    });
-
-                    dbHelper = new DatabaseHelper(MainActivity.this);
-
-                    runOnUiThread(() -> {
-                        if (tvStatus != null) tvStatus.setText("Carregando recursos e sprites (70%)...");
-                        if (progressBar != null) progressBar.setProgress(70);
-                    });
-
                     SpriteManager.getInstance().loadSprites(MainActivity.this);
-
                     runOnUiThread(() -> {
-                        if (tvStatus != null) tvStatus.setText("Iniciando PokeWorld (100%)...");
                         if (progressBar != null) progressBar.setProgress(100);
-                        
-                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                            showHomeScreen();
-                            checkForUpdatesWithDetails(null);
-                        }, 250);
+                        if (tvStatus != null) tvStatus.setText("Pronto (100%)!");
+                        showHomeScreen();
+                        checkForUpdatesWithDetails(tvStatus);
                     });
                 } catch (Exception e) {
-                    android.util.Log.e("MainActivity", "Erro no carregamento: " + e.getMessage(), e);
-                    runOnUiThread(() -> {
-                        try {
-                            dbHelper = new DatabaseHelper(MainActivity.this);
-                            showHomeScreen();
-                        } catch (Exception ignored) {}
-                    });
+                    android.util.Log.e("MainActivity", "Erro ao carregar sprites: " + e.getMessage());
+                    runOnUiThread(() -> showHomeScreen());
                 }
             }).start();
 
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro no onCreate: " + e.getMessage(), e);
             try {
-                dbHelper = new DatabaseHelper(this);
                 showHomeScreen();
             } catch (Exception ignored) {}
         }
