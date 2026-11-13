@@ -314,6 +314,32 @@ public class WorldManager {
     }
 
     private void updateEnemies(Companion c, GameView gv) {
+        // Separação entre entidades/pokémons para evitar sobreposição (ocupando cada um seu espaço)
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy e1 = enemies.get(i);
+            if (!e1.isAlive) continue;
+            for (int j = i + 1; j < enemies.size(); j++) {
+                Enemy e2 = enemies.get(j);
+                if (!e2.isAlive) continue;
+
+                double dx = e2.positionX - e1.positionX;
+                double dy = e2.positionY - e1.positionY;
+                double dist = Math.sqrt(dx * dx + dy * dy);
+                double minDst = TileMap.TILE_SIZE * 0.9;
+
+                if (dist < minDst && dist > 0) {
+                    double overlap = (minDst - dist) / 2.0;
+                    double nx = dx / dist;
+                    double ny = dy / dist;
+
+                    e1.positionX -= nx * overlap;
+                    e1.positionY -= ny * overlap;
+                    e2.positionX += nx * overlap;
+                    e2.positionY += ny * overlap;
+                }
+            }
+        }
+
         Iterator<Enemy> it = enemies.iterator();
         while (it.hasNext()) {
             Enemy e = it.next();
