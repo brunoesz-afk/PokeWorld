@@ -54,14 +54,20 @@ public class MainActivity extends AppCompatActivity {
                         checkForUpdatesWithDetails(tvStatus);
                     });
                 } catch (Exception e) {
-                    android.util.Log.e("MainActivity", "Erro ao carregar sprites: " + e.getMessage());
-                    runOnUiThread(() -> showHomeScreen());
+                    android.util.Log.e("MainActivity", "Erro ao carregar sprites: " + e.getMessage(), e);
+                    final String err = e.getMessage();
+                    runOnUiThread(() -> {
+                        android.widget.Toast.makeText(MainActivity.this, "Erro sprites: " + err, android.widget.Toast.LENGTH_LONG).show();
+                        showHomeScreen();
+                    });
                 }
             }).start();
 
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro no onCreate: " + e.getMessage(), e);
+            android.widget.Toast.makeText(this, "Erro onCreate: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
             try {
+                dbHelper = new DatabaseHelper(this);
                 showHomeScreen();
             } catch (Exception ignored) {}
         }
