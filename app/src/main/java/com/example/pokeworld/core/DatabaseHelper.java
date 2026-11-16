@@ -342,6 +342,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.update("player_stats", v, "id=1", null);
     }
 
+    public boolean hasFaintTutorialShown() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        try {
+            Cursor c = db.rawQuery("SELECT faint_tutorial_shown FROM player_stats WHERE id=1", null);
+            boolean shown = false;
+            if (c.moveToFirst()) {
+                shown = c.getInt(0) == 1;
+            }
+            c.close();
+            return shown;
+        } catch (Exception e) {
+            try { db.execSQL("ALTER TABLE player_stats ADD COLUMN faint_tutorial_shown INTEGER DEFAULT 0"); } catch (Exception ex) {}
+            return false;
+        }
+    }
+
+    public void setFaintTutorialShown() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put("faint_tutorial_shown", 1);
+        db.update("player_stats", v, "id=1", null);
+    }
+
     public Map<String, Integer> getInventory() {
         Map<String, Integer> map = new HashMap<>();
         SQLiteDatabase db = this.getReadableDatabase();

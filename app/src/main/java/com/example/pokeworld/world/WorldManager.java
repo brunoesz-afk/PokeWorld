@@ -205,6 +205,7 @@ public class WorldManager {
         }
         npcs.add(new NPC("Prof. de Time", "Gerencie os Pokémons do seu time e da sua base!", TileMap.TILE_SIZE * 80, TileMap.TILE_SIZE * 40, NPC.Type.GUARD));
         npcs.add(new NPC("Mestre da Base", "Gerencie o estoque!", TileMap.TILE_SIZE * 40, TileMap.TILE_SIZE * 31, NPC.Type.GUARD));
+        npcs.add(new NPC("Mestre da Torre", "Quer desafiar as ondas de Pokémons na Torre?", TileMap.TILE_SIZE * 75, TileMap.TILE_SIZE * 31, NPC.Type.GUARD));
     }
 
     private long lastDynamicSpawnCheck = 0;

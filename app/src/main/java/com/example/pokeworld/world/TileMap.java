@@ -48,6 +48,7 @@ public class TileMap {
             case "FEAR_ISLAND": generateFearIslandMap(); break;
             case "HOME": generateHomeMap(); break;
             case "STARTER_FOREST": generateStarterForestMap(); break;
+            case "TOWER": generateTowerMap(); break;
             default: generateForestMap(); break;
         }
     }
@@ -72,6 +73,19 @@ public class TileMap {
                 }
             }
         }
+    }
+
+    private void generateTowerMap() {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (r == 0 || r == rows - 1 || c == 0 || c == cols - 1) {
+                    mapData[r][c] = BRICK;
+                } else {
+                    mapData[r][c] = FLOOR;
+                }
+            }
+        }
+        mapData[rows - 1][cols / 2] = PORTAL;
     }
 
     private void generateHomeMap() {

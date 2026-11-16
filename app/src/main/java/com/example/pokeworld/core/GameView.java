@@ -30,6 +30,7 @@ import com.example.pokeworld.managers.SoundManager;
 import com.example.pokeworld.managers.SpriteManager;
 import com.example.pokeworld.managers.SummonManager;
 import com.example.pokeworld.managers.TimeManager;
+import com.example.pokeworld.managers.TowerManager;
 import com.example.pokeworld.managers.TutorialManager;
 import com.example.pokeworld.managers.VibrationManager;
 import com.example.pokeworld.managers.WeatherManager;
@@ -71,6 +72,7 @@ public class GameView {
     public BountyManager bounties;
     public FarmingManager farming;
     public TutorialManager tutorial;
+    public TowerManager tower;
     
     public Player player;
     public Companion companion;
@@ -112,6 +114,7 @@ public class GameView {
         this.bounties = new BountyManager(this);
         this.farming = new FarmingManager(this);
         this.tutorial = new TutorialManager(this);
+        this.tower = new TowerManager(this);
 
         missions.giveInitialMission();
 
@@ -200,6 +203,7 @@ public class GameView {
             world.update(player, companion, this);
             aincrad.update();
             farming.update();
+            tower.update();
             
             effects.update();
             particles.update();

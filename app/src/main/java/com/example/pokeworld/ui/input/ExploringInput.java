@@ -229,6 +229,10 @@ public class ExploringInput implements InputExtension {
                         gv.ui.state = UIManager.UIState.STORAGE;
                         return true;
                     }
+                    if (n.getName().contains("Torre")) {
+                        gv.tower.startTower();
+                        return true;
+                    }
                     gv.ui.isDialogueActive = true;
                     gv.ui.currentSpeaker = n.getName();
                     gv.ui.currentDialogue = n.getDialogue();
