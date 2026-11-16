@@ -47,8 +47,13 @@ public class SpriteManager {
                 "prof_oficina", "prof_daycare", "prof_laboratorio", "prof_montaria", "prof_bau", "prof_ginasio", "prof_mural", "prof_academia","beedril",
                 "treinador_laboratorio", "treinador_montaria", "treinador_daycare", "treinador_pokebola", "treinador_academia"
             };
+            int count = 0;
             for (String s : species) {
                 loadUnitSheet(context, s, 3, 3);
+                count++;
+                if (count % 12 == 0) {
+                    try { Thread.sleep(4); } catch (Exception ignored) {}
+                }
             }
 
             // Carrega Sheets de Magias (3x3)
