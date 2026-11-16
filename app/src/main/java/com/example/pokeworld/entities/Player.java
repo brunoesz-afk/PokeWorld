@@ -121,8 +121,8 @@ public class Player {
             
             boolean hasFireSaddle = inventory.containsKey("Sela de Fogo");
             boolean isFireResistant = mountSpecies.equalsIgnoreCase("Charizard") || mountSpecies.equalsIgnoreCase("Lobofogo") || hasFireSaddle;
-            if (tileMap.isWalkable(nextX, positionY, canSurf, canFly, isAquatic, isFireResistant) && !world.isCollidingWithBuilding(nextX, positionY)) positionX = nextX;
-            if (tileMap.isWalkable(positionX, nextY, canSurf, canFly, isAquatic, isFireResistant) && !world.isCollidingWithBuilding(positionX, nextY)) positionY = nextY;
+            if (tileMap.isWalkable(nextX, positionY, canSurf, canFly, isAquatic, isFireResistant) && !world.isCollidingWithBuilding(nextX, positionY) && !world.isCollidingWithEnemy(nextX, positionY, 25)) positionX = nextX;
+            if (tileMap.isWalkable(positionX, nextY, canSurf, canFly, isAquatic, isFireResistant) && !world.isCollidingWithBuilding(positionX, nextY) && !world.isCollidingWithEnemy(positionX, nextY, 25)) positionY = nextY;
             
             updateDirection(vx, vy);
         } else {

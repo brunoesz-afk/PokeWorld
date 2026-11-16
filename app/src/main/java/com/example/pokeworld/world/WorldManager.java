@@ -438,5 +438,16 @@ public class WorldManager {
     public void changeZoom(float d) { targetZoom = Math.max(0.4f, Math.min(1.8f, targetZoom + d)); }
     public float getCurrentZoom() { return currentZoom; }
     public boolean isCollidingWithBuilding(double x, double y) { return false; }
+    public boolean isCollidingWithEnemy(double x, double y, double padding) {
+        for (Enemy e : enemies) {
+            if (e.isAlive && !e.isPet) {
+                double dist = Math.sqrt(Math.pow(e.positionX - x, 2) + Math.pow(e.positionY - y, 2));
+                if (dist < e.radius + padding) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     public float getCameraX() { return cameraX; } public float getCameraY() { return cameraY; }
 }
