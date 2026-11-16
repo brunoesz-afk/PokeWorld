@@ -23,6 +23,7 @@ public class ExploringUI extends BaseUI {
     public RectF achBtn = new RectF();
     public RectF runesBtn = new RectF();
     public RectF teleportBtn = new RectF();
+    public RectF towerBtn = new RectF();
     public RectF settingsBtn = new RectF();
     public RectF homeBtn = new RectF();
     public RectF buildBtn = new RectF();
@@ -90,6 +91,7 @@ public class ExploringUI extends BaseUI {
         achBtn.set(w - (btnSize + spacing) * 2 + spacing - padding, h - btnSize - padding, w - btnSize - spacing - padding, h - padding);
         runesBtn.set(w - (btnSize + spacing) * 3 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 2 - padding, h - padding);
         teleportBtn.set(w - (btnSize + spacing) * 4 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 3 - padding, h - padding);
+        towerBtn.set(w - (btnSize + spacing) * 5 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 4 - padding, h - padding);
 
         creaturesBtn.set(w - btnSize - padding, h - (btnSize + spacing) * 2 + spacing - padding, w - padding, h - btnSize - spacing - padding);
         missionsBtn.set(w - (btnSize + spacing) * 2 + spacing - padding, h - (btnSize + spacing) * 2 + spacing - padding, w - btnSize - spacing - padding, h - btnSize - spacing - padding);
@@ -204,6 +206,7 @@ public class ExploringUI extends BaseUI {
         drawIcon(canvas, achBtn, "🏆");
         drawIcon(canvas, runesBtn, "🔷");
         drawIcon(canvas, teleportBtn, "🧭");
+        drawIcon(canvas, towerBtn, "🏰");
         
         drawIcon(canvas, creaturesBtn, "🐾");
         drawIcon(canvas, missionsBtn, "📜");

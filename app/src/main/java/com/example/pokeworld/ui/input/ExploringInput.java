@@ -167,6 +167,10 @@ public class ExploringInput implements InputExtension {
             gv.ui.state = UIManager.UIState.TELEPORT;
             return true;
         }
+        if (ui.towerBtn.contains(x, y)) {
+            gv.tower.startTower();
+            return true;
+        }
         
         // Pesca
         if (ui.fishingBtn.contains(x, y)) {
@@ -230,7 +234,11 @@ public class ExploringInput implements InputExtension {
                         return true;
                     }
                     if (n.getName().contains("Torre")) {
-                        gv.tower.startTower();
+                        if (gv.tower.isWaitingForNpcAdvance()) {
+                            gv.tower.advanceFloor();
+                        } else {
+                            gv.tower.startTower();
+                        }
                         return true;
                     }
                     gv.ui.isDialogueActive = true;

@@ -94,6 +94,7 @@ public class WorldManager {
         enemies.clear(); npcs.clear(); loots.clear(); buildings.clear();
         int r = 50, col = 100;
         if (name.equals("HOME")) { r = 80; col = 160; }
+        else if (name.equals("TOWER")) { r = 25; col = 25; }
         tileMap = new TileMap(name, r, col); 
         targetZoom = 1.3f; 
         currentZoom = 1.3f;
