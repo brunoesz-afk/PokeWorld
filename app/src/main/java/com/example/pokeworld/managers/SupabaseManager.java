@@ -2,6 +2,7 @@ package com.example.pokeworld.managers;
 
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -9,6 +10,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
+
+import com.example.pokeworld.entities.CapturedCreature;
 
 public class SupabaseManager {
     private static SupabaseManager instance;
@@ -67,7 +74,7 @@ public class SupabaseManager {
                         this.userId = userObj.optString("id", "");
                     }
 
-                    if (callback != null) callback.onResult(true, "Login realizado com sucesso!");
+                    if (callback != null) callback.onResult(true, "Conta vinculada com sucesso ao site!");
                 } else {
                     if (callback != null) callback.onResult(false, "E-mail ou senha incorretos.");
                 }
@@ -78,25 +85,35 @@ public class SupabaseManager {
         }).start();
     }
 
-    public void syncPlayerProfile(String playerName, int playerLevel, String region, String progressNote) {
+    public void syncPlayerProfile(int playerLevel, int experience, String progressSummary, List<String> badges) {
         if (!isLogged()) return;
         new Thread(() -> {
             try {
-                URL url = new URL(supabaseUrl + "/rest/v1/player_profiles");
+                // Sincroniza apenas os campos do game sem sobrescrever player_name, gender ou region do site
+                URL url = new URL(supabaseUrl + "/rest/v1/player_profiles?user_id=eq." + userId);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
+                conn.setRequestMethod("PATCH");
                 conn.setRequestProperty("apikey", supabaseAnonKey);
                 conn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
                 conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("Prefer", "resolution=merge-duplicates");
+                conn.setRequestProperty("Prefer", "return=minimal");
                 conn.setDoOutput(true);
 
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                String utcTime = sdf.format(new Date());
+
                 JSONObject json = new JSONObject();
-                json.put("user_id", userId);
-                json.put("player_name", playerName);
                 json.put("player_level", playerLevel);
-                json.put("region", region != null ? region : "Base Central");
-                json.put("progress_note", progressNote != null ? progressNote : "Jogando PokeWorld");
+                json.put("experience", experience);
+                json.put("progress_summary", progressSummary != null ? progressSummary : "Aventurando no PokeWorld");
+                
+                JSONArray badgesArray = new JSONArray();
+                if (badges != null) {
+                    for (String b : badges) badgesArray.put(b);
+                }
+                json.put("badges", badgesArray);
+                json.put("last_game_sync_at", utcTime);
 
                 OutputStream os = conn.getOutputStream();
                 os.write(json.toString().getBytes("UTF-8"));
@@ -109,12 +126,21 @@ public class SupabaseManager {
         }).start();
     }
 
-    public void syncParty(java.util.List<com.example.pokeworld.entities.CapturedCreature> party) {
+    public void syncParty(List<CapturedCreature> party) {
         if (!isLogged()) return;
         new Thread(() -> {
             try {
+                // 1. Remove slots antigos da equipe ativa para nunca mostrar pokémons desatualizados
+                URL deleteUrl = new URL(supabaseUrl + "/rest/v1/pokemon_party?user_id=eq." + userId);
+                HttpURLConnection delConn = (HttpURLConnection) deleteUrl.openConnection();
+                delConn.setRequestMethod("DELETE");
+                delConn.setRequestProperty("apikey", supabaseAnonKey);
+                delConn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+                delConn.getResponseCode();
+
+                // 2. Insere os até 6 pokémons da equipe ativa atual
                 for (int i = 0; i < Math.min(party.size(), 6); i++) {
-                    com.example.pokeworld.entities.CapturedCreature c = party.get(i);
+                    CapturedCreature c = party.get(i);
                     int slot = i + 1;
 
                     URL url = new URL(supabaseUrl + "/rest/v1/pokemon_party");
@@ -123,7 +149,6 @@ public class SupabaseManager {
                     conn.setRequestProperty("apikey", supabaseAnonKey);
                     conn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
                     conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setRequestProperty("Prefer", "resolution=merge-duplicates");
                     conn.setDoOutput(true);
 
                     JSONObject json = new JSONObject();
@@ -131,13 +156,15 @@ public class SupabaseManager {
                     json.put("slot", slot);
                     json.put("pokemon_name", c.name);
                     json.put("pokemon_level", 10);
+                    json.put("species_id", c.name.toLowerCase());
+                    json.put("nickname", c.isShiny ? c.name + " (Shiny)" : c.name);
 
                     OutputStream os = conn.getOutputStream();
                     os.write(json.toString().getBytes("UTF-8"));
                     os.close();
                     conn.getResponseCode();
                 }
-                Log.d("SupabaseManager", "Party sincronizada com sucesso no Supabase!");
+                Log.d("SupabaseManager", "pokemon_party sincronizada com sucesso!");
             } catch (Exception e) {
                 Log.e("SupabaseManager", "Erro ao sincronizar pokemon_party: " + e.getMessage());
             }

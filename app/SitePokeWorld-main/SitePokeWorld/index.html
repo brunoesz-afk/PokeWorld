@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f2f1e8">
+      <meta name="theme-color" content="#f3f2fc">
+    <meta name="description" content="Baixe o PokeWorld para Android e comece sua aventura.">
+    <title>PokeWorld | Sua aventura começa aqui</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="site.css">
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#inicio" aria-label="PokeWorld, início">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>POKE<span class="brand-accent">WORLD</span></span>
+      </a>
+      <a class="top-link" href="#conta">Minha conta <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main>
+      <section class="hero" id="inicio">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="eyebrow-dot"></span> SUA PRÓXIMA AVENTURA</p>
+          <h1>O mundo<br>te espera<span class="title-period">.</span></h1>
+          <p class="hero-description">Entre no PokeWorld pelo Android e explore um universo cheio de encontros, desafios e novas jornadas.</p>
+          <a class="download-button is-unavailable" id="download-button" href="PokeWorld.apk" download aria-disabled="true">
+            <span class="download-icon" aria-hidden="true"></span>
+            <span class="download-label">Verificando APK</span>
+          </a>
+          <p class="download-status" id="download-status" aria-live="polite">Procurando o arquivo de instalação...</p>
+          <div class="platform-note"><span class="android-mark" aria-hidden="true">A</span> Para Android <span class="note-separator">/</span> Arquivo APK</div>
+        </div>
+
+        <div class="world-scene">
+          <img class="field-art" src="fundo1trio.jpg" alt="Trio inicial do PokeWorld no campo de aventura">
+          <div class="scene-label"><span class="scene-label-dot"></span> TRIO INICIAL</div>
+          <div class="scene-coordinate">CAMPO / 01</div>
+          <div class="scene-frame"></div>
+        </div>
+        <div class="hero-index"><span>01</span> / 03</div>
+      </section>
+
+      <nav class="game-menu" aria-label="Navegação do jogo">
+        <a class="game-menu-primary" href="#inicio">Principal</a>
+        <a href="#conta">Minha conta</a>
+        <a href="#novidades">Novidades</a>
+        <a href="#instalar">Download</a>
+        <a href="#ajuda">Dúvidas</a>
+      </nav>
+
+      <section class="account-section" id="conta">
+        <div class="account-heading">
+          <p class="eyebrow dark-eyebrow">SUA JORNADA</p>
+          <h2>Seu personagem,<br>do seu jeito.</h2>
+          <p>Configure seu personagem. O progresso e a equipe serão exibidos a partir dos dados enviados pelo jogo.</p>
+        </div>
+
+        <div class="account-panel">
+          <div id="auth-view">
+            <h2 id="auth-title">Entrar na minha conta</h2>
+            <p class="account-hint">Use seu e-mail e senha para acessar seus dados.</p>
+            <form id="auth-form">
+              <label for="auth-email">E-mail</label>
+              <input id="auth-email" name="email" type="email" autocomplete="email" required>
+              <label for="auth-password">Senha</label>
+              <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="6" required>
+              <button class="account-submit" id="auth-submit" type="submit">Entrar</button>
+            </form>
+            <button class="auth-mode-toggle" id="auth-mode-toggle" type="button">Ainda não tem conta? Criar conta</button>
+          </div>
+
+          <div id="player-view" hidden>
+            <div class="player-view-heading">
+              <div>
+                <h2>Meu personagem</h2>
+                <p id="account-email" class="account-hint"></p>
+              </div>
+              <button class="sign-out-button" id="sign-out-button" type="button">Sair</button>
+            </div>
+            <form id="player-form">
+              <div class="profile-fields">
+                <label>Nome do personagem
+                  <input name="player_name" maxlength="60" required>
+                </label>
+                <label>Gênero
+                  <select name="gender" required>
+                    <option value="">Selecione</option>
+                    <option value="masculino">Masculino</option>
+                    <option value="feminino">Feminino</option>
+                  </select>
+                </label>
+                <label>Região
+                  <select name="region" required>
+                    <option value="">Selecione a região</option>
+                    <option value="Kanto">Kanto (1ª geração)</option>
+                  </select>
+                </label>
+              </div>
+              <button class="account-submit save-profile-button" type="submit">Salvar personagem</button>
+            </form>
+
+            <section class="game-sync-panel" aria-label="Progresso do jogo">
+              <div class="party-heading">
+                <h3>Progresso do jogo</h3>
+                <p id="game-sync-status">Aguardando integração do jogo.</p>
+              </div>
+              <div class="game-stats">
+                <div><span>REGIÃO</span><strong id="display-region">Kanto</strong></div>
+                <div><span>NÍVEL</span><strong id="display-level">—</strong></div>
+                <div><span>EXPERIÊNCIA</span><strong id="display-experience">—</strong></div>
+              </div>
+              <div class="game-progress">
+                <h4>Jornada</h4>
+                <p id="progress-summary">Após integrar o jogo, o progresso aparecerá aqui.</p>
+                <h4>Insígnias</h4>
+                <div class="badge-list" id="badge-list"></div>
+              </div>
+              <div class="party-heading">
+                <h3>Minha equipe</h3>
+                <p>Os seis Pokémon ativos serão carregados do jogo.</p>
+              </div>
+              <div class="party-grid" id="party-grid"></div>
+            </section>
+          </div>
+          <p class="account-status" id="account-status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="game-dashboard" id="novidades">
+        <div class="news-panel">
+          <div class="panel-heading">
+            <span class="panel-icon" aria-hidden="true">N</span>
+            <div>
+              <h2>Novidades do jogo</h2>
+              <p>Fique por dentro das últimas atualizações</p>
+            </div>
+          </div>
+          <article class="featured-news">
+            <img class="news-art" src="game.jpg" alt="Paisagem do mundo de PokeWorld">
+            <div class="news-content">
+              <p class="news-tag">ÚLTIMA ATUALIZAÇÃO</p>
+              <h3>Novidades da versão</h3>
+              <div class="release-meta">
+                <span>VERSÃO <strong id="release-version">Carregando...</strong></span>
+                <span>PUBLICADA <time id="release-date">—</time></span>
+              </div>
+              <p class="release-notes" id="release-notes" aria-live="polite">Buscando notas da atualização...</p>
+              <a class="release-link" id="release-page-link" href="https://github.com/brunoesz-afk/SitePokeWorld/releases/latest" target="_blank" rel="noopener noreferrer">Ver release no GitHub <span aria-hidden="true">↗</span></a>
+            </div>
+          </article>
+        </div>
+
+        <aside class="game-sidebar" aria-label="Acesso rápido ao jogo">
+          <div class="sidebar-card account-card">
+            <h2>Comece agora</h2>
+            <a class="sidebar-button primary" href="#instalar">Baixar para Android</a>
+            <a class="sidebar-button secondary" href="#instalar">Ver guia de instalação</a>
+          </div>
+          <div class="sidebar-card quick-card">
+            <h2>Explorar</h2>
+            <a href="#novidades"><span aria-hidden="true">✦</span> Novidades do mundo</a>
+            <a href="#instalar"><span aria-hidden="true">◈</span> Guia de instalação</a>
+            <a href="#inicio"><span aria-hidden="true">⌂</span> Voltar ao início</a>
+          </div>
+        </aside>
+      </section>
+
+      <section class="download-strip" aria-label="Detalhes do download">
+        <div class="strip-title"><span class="strip-symbol" aria-hidden="true">↓</span><span>COMECE POR AQUI</span></div>
+        <div class="strip-detail"><span class="detail-label">PLATAFORMA</span><strong>Android</strong></div>
+        <div class="strip-detail"><span class="detail-label">FORMATO</span><strong>APK</strong></div>
+        <div class="strip-detail"><span class="detail-label">ARQUIVO</span><strong id="file-state">Verificando disponibilidade</strong></div>
+      </section>
+
+      <section class="install-section" id="instalar">
+        <div class="install-heading">
+          <p class="eyebrow dark-eyebrow">PRONTO PARA PARTIR?</p>
+          <h2>Instale em<br>poucos passos.</h2>
+        </div>
+        <ol class="install-steps">
+          <li class="step">
+            <span class="step-number">01</span>
+            <div>
+              <h3>Baixe o APK</h3>
+              <p>Toque em <strong>Baixar APK</strong> e aguarde a transferência terminar.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-number">02</span>
+            <div>
+              <h3>Autorize a instalação</h3>
+              <p>Abra o arquivo baixado. Se o Android pedir, permita a instalação pelo navegador usado.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-number">03</span>
+            <div>
+              <h3>Comece a aventura</h3>
+              <p>Conclua a instalação e abra o PokeWorld para explorar um novo mundo.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="faq-section" id="ajuda">
+        <div class="faq-heading">
+          <p class="eyebrow dark-eyebrow">PRECISA DE AJUDA?</p>
+          <h2>Perguntas<br>frequentes.</h2>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Como instalo o APK no Android?</summary>
+            <p>Baixe o arquivo, abra-o e siga as instruções do Android. Se solicitado, permita temporariamente a instalação de apps pelo navegador usado no download.</p>
+          </details>
+          <details>
+            <summary>O Android bloqueou a instalação. O que faço?</summary>
+            <p>Nas configurações do Android, autorize a instalação de apps desconhecidos para o navegador usado e tente abrir o APK novamente. Os nomes dos menus podem variar conforme o aparelho.</p>
+          </details>
+          <details>
+            <summary>O botão de download não aparece ou não funciona?</summary>
+            <p>Verifique sua conexão e tente novamente. Você também pode abrir a <a href="https://github.com/brunoesz-afk/SitePokeWorld/releases/latest" target="_blank" rel="noopener noreferrer">página de releases do projeto</a> e baixar o APK publicado mais recentemente.</p>
+          </details>
+          <details>
+            <summary>Como vejo a versão e as novidades?</summary>
+            <p>A versão, a data de publicação e as notas são carregadas da release mais recente do projeto, na seção <a href="#novidades">Novidades do jogo</a>.</p>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a class="brand footer-brand" href="#inicio" aria-label="PokeWorld, voltar ao início">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>POKE<span class="brand-accent">WORLD</span></span>
+      </a>
+      <span class="footer-copy">Uma nova jornada começa com um passo.</span>
+      <a class="footer-top" href="#ajuda">Dúvidas <span aria-hidden="true">↗</span></a>
+      <a class="footer-top" href="#inicio">Voltar ao topo <span aria-hidden="true">↑</span></a>
+    </footer>
+  </body>
+</html>

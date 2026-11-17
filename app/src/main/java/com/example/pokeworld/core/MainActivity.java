@@ -360,9 +360,9 @@ public class MainActivity extends AppCompatActivity {
                 p.getClan(), p.getNgPlusLevel(), p.getSkinColor(), p.getTalents(), p.getCreatureCollection(), p.getInventory(),
                 p.getFishingLevel(), p.getFishingExp(), gameView.aincrad.getMaxFloorReached(), p.hasSeenDaycareIntro() ? 1 : 0);
         
-        // Sincroniza com Supabase para exibir automaticamente no site do jogador (`player_profiles` e `pokemon_party`)
+        // Sincroniza com Supabase (`player_profiles` e `pokemon_party`) mantendo intactos nome, gênero e região definidos no site
         com.example.pokeworld.managers.SupabaseManager.getInstance().syncPlayerProfile(
-                "Treinador", p.getLevel(), "Base Central", "Nível " + p.getLevel() + " | Ouro: " + p.getGold()
+                p.getLevel(), p.getExp(), "Nível " + p.getLevel() + " - Ouro: " + p.getGold(), null
         );
         com.example.pokeworld.managers.SupabaseManager.getInstance().syncParty(p.getParty());
         
