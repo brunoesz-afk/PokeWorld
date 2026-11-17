@@ -226,7 +226,7 @@ public class WorldManager {
     }
 
     private void updateDynamicSpawning(Player p, String mapName, GameView gv) {
-        if (mapName.equals("CITY") || mapName.equals("HOME")) return;
+        if (mapName.equals("CITY") || mapName.equals("HOME") || mapName.equals("TOWER")) return;
 
         double px = p.getPositionX();
         double py = p.getPositionY();
