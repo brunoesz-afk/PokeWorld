@@ -206,7 +206,7 @@ public class ExploringUI extends BaseUI {
         drawIcon(canvas, achBtn, "🏆");
         drawIcon(canvas, runesBtn, "🔷");
         drawIcon(canvas, teleportBtn, "🧭");
-        drawIcon(canvas, towerBtn, "🏰");
+        drawIcon(canvas, towerBtn, "🗼");
         
         drawIcon(canvas, creaturesBtn, "🐾");
         drawIcon(canvas, missionsBtn, "📜");

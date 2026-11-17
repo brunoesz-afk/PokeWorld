@@ -57,29 +57,24 @@ public class TutorialManager {
             gv.ui.isDialogueActive = false;
             spawnTutorialRattata();
         } else if (currentState == State.CAPTURED_RATTATA_DIALOGUE) {
-            currentState = State.ARRIVED_AT_BASE_DIALOGUE;
+            currentState = State.FINISHED;
+            gv.ui.isDialogueActive = false;
             gv.activity.dbHelper.setTutorialCompleted(true);
-            gv.world.loadMap("HOME", gv.player, gv.companion, "CENTER");
-            gv.ui.isDialogueActive = true;
-            gv.ui.currentSpeaker = "Mestre da Base";
-            gv.ui.currentDialogue = "Bem-vindo à sua nova Base Central!\nSua primeira tarefa é construir a Oficina para fabricar Pokébolas e suprimentos!";
-        } else if (currentState == State.ARRIVED_AT_BASE_DIALOGUE) {
-            currentState = State.BUILDING_WORKSHOP;
-            gv.ui.isDialogueActive = false;
-            if (gv.player.getInventory().getOrDefault("Madeira", 0) < 5) gv.player.addItem("Madeira", 5);
-            if (gv.player.getInventory().getOrDefault("Ferro", 0) < 2) gv.player.addItem("Ferro", 2);
-        } else if (currentState == State.WORKSHOP_BUILT_DIALOGUE) {
-            currentState = State.CLICK_COMPASS_TUTORIAL;
-            gv.ui.isDialogueActive = false;
+            gv.tower.startTower();
+            gv.ui.showMessage("🏰 Bem-vindo à Torre de Desafios!");
         } else if (currentState == State.NURSE_JOY_FAINT_DIALOGUE) {
-            // Teleporta para a Enfermeira Joy na Cidade e cura o time
             gv.companion.healFull();
             gv.world.loadMap("CITY", gv.player, gv.companion, "CENTER");
             currentState = State.NURSE_JOY_HEALED_DIALOGUE;
             gv.ui.isDialogueActive = true;
             gv.ui.currentSpeaker = "Enfermeira Joy";
-            gv.ui.currentDialogue = "Olá! Cuidei do seu parceiro com muito carinho!\nEle está com a saúde 100% restaurada e pronto para novas aventuras!";
+            gv.ui.currentDialogue = "Olá! Cuidei do seu parceiro com muito carinho no Centro de Cura da Cidade.\nSua saúde está 100% restaurada!";
         } else if (currentState == State.NURSE_JOY_HEALED_DIALOGUE) {
+            currentState = State.CLICK_COMPASS_TUTORIAL;
+            gv.ui.isDialogueActive = true;
+            gv.ui.currentSpeaker = "Prof. Invocador";
+            gv.ui.currentDialogue = "Excelente! Agora que seus Pokémons estão curados, toque no ícone da Bússola (🧭) no menu inferior para escolher os mapas de exploração do mundo aberto!";
+        } else if (currentState == State.CLICK_COMPASS_TUTORIAL) {
             currentState = State.FINISHED;
             gv.ui.isDialogueActive = false;
         }
@@ -121,8 +116,15 @@ public class TutorialManager {
             gv.ui.isDialogueActive = true;
             gv.ui.currentSpeaker = "Prof. Invocador";
             gv.ui.currentDialogue = "Incrível! Você capturou seu primeiro Pokémon com sucesso!\n" +
-                    "Agora vamos viajar juntos para a sua nova Base Central!";
+                    "Agora vamos direto para a Torre de Desafios testar sua força!";
         }
+    }
+
+    public void onTowerChallengeCompleted() {
+        currentState = State.NURSE_JOY_FAINT_DIALOGUE;
+        gv.ui.isDialogueActive = true;
+        gv.ui.currentSpeaker = "Prof. Invocador";
+        gv.ui.currentDialogue = "Parabéns por vencer o desafio da Torre com louvor!\nAgora vá até a Cidade falar com a Enfermeira Joy para curar os seus Pokémons!";
     }
 
     public void update() {

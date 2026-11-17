@@ -38,12 +38,15 @@ public class TowerManager {
                     double midY = gv.player.getPositionY() - 80;
                     gv.world.npcs.add(new NPC("Mestre da Torre", "Parabéns! Fale comigo para subir ao Nível 2!", midX, midY, NPC.Type.GUARD));
                 } else if (towerFloor == 2) {
-                    gv.ui.showMessage("🏆 PARABÉNS POR VENCER O DESAFIO DA TORRE!");
-                    gv.ui.isDialogueActive = true;
-                    gv.ui.currentSpeaker = "Mestre da Torre";
-                    gv.ui.currentDialogue = "Parabéns por vencer o desafio da Torre!\nAgora você está pronto para explorar a Cidade com a Enfermeira Joy e usar a Bússola nos mapas!";
                     towerFloor = 3; // Concluído
                     gv.activity.saveCurrentGame();
+                    if (gv.tutorial != null) {
+                        gv.tutorial.onTowerChallengeCompleted();
+                    } else {
+                        gv.ui.isDialogueActive = true;
+                        gv.ui.currentSpeaker = "Mestre da Torre";
+                        gv.ui.currentDialogue = "Parabéns por vencer o desafio da Torre!";
+                    }
                 }
             }
         }
