@@ -198,6 +198,7 @@ public class Player {
     public void addCreatureToCollection(String species, boolean isShiny, Rarity rarity, int gender) {
         boolean addToParty = getParty().size() < 6;
         creatureCollection.add(new CapturedCreature(species, isShiny, rarity, addToParty, gender));
+        com.example.pokeworld.managers.SupabaseManager.getInstance().syncCollection(species, isShiny, rarity.name(), addToParty, gender);
     }
 
     // --- RENDERIZAÇÃO ---
