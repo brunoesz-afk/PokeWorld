@@ -8,7 +8,8 @@ import com.example.pokeworld.entities.Loot;
 public class TowerManager {
     private final GameView gv;
     private int towerFloor = 1;
-    private final int maxUnlockedFloor = 20; // Até 20 andares
+    private int currentWave = 1;
+    private static final int TOTAL_WAVES = 3; // 3 hordas por andar
     private boolean waveActive = false;
     private boolean waitingForNpcAdvance = false;
 
@@ -22,10 +23,10 @@ public class TowerManager {
 
     public void startTowerAtFloor(int floor) {
         towerFloor = floor;
+        currentWave = 1;
         waveActive = false;
         waitingForNpcAdvance = false;
         
-        // Limpa todos os rastros de andares anteriores (corpos, itens, npcs)
         if (gv.world != null) {
             gv.world.enemies.clear();
             gv.world.loots.clear();
@@ -33,7 +34,7 @@ public class TowerManager {
         }
 
         gv.world.loadMap("TOWER", gv.player, gv.companion, "CENTER");
-        gv.ui.showMessage("🏰 TORRE DE DESAFIO - ANDAR " + towerFloor);
+        gv.ui.showMessage("🏰 TORRE - ANDAR " + towerFloor + " (Onda 1/" + TOTAL_WAVES + ")");
         spawnWave();
     }
 
@@ -41,28 +42,26 @@ public class TowerManager {
         if (gv.world.tileMap.getMapName().equals("TOWER")) {
             if (waveActive && gv.world.enemies.isEmpty()) {
                 waveActive = false;
-                int goldReward = towerFloor * 150;
-                gv.player.addGold(goldReward);
 
-                if (towerFloor < 20) {
-                    gv.ui.showMessage("🎉 ANDAR " + towerFloor + " VENCIDO! Fale com o NPC ou entre no portal para subir.");
+                if (currentWave < TOTAL_WAVES) {
+                    currentWave++;
+                    gv.ui.showMessage("⚡ ONDA " + currentWave + " / " + TOTAL_WAVES + " INICIANDO!");
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::spawnWave, 1500);
+                } else {
+                    int goldReward = towerFloor * 150;
+                    gv.player.addGold(goldReward);
+                    gv.ui.showMessage("🎉 ANDAR " + towerFloor + " CONCLUÍDO! Entre no portal ou fale com o NPC.");
                     waitingForNpcAdvance = true;
                     
                     double midX = gv.player.getPositionX();
                     double midY = gv.player.getPositionY() - 100;
                     
-                    // Spawna NPC Guardião
-                    gv.world.npcs.add(new NPC("Mestre da Torre", "Parabéns! Fale comigo ou entre no portal para subir ao próximo andar!", midX, midY, NPC.Type.GUARD));
+                    gv.world.npcs.add(new NPC("Mestre da Torre", "Parabéns! Entre no portal ou fale comigo para o Andar " + (towerFloor + 1), midX, midY, NPC.Type.GUARD));
                     
-                    // Spawna o Portal com a sprite aincrad_portal
-                    Loot portalLoot = new Loot("aincrad_portal", midX, midY + 50, Loot.Type.ITEM);
-                    portalLoot.setRadius(50);
+                    // Portal aincrad_portal no chão para avançar de fase
+                    Loot portalLoot = new Loot("aincrad_portal", midX, midY + 60, Loot.Type.ITEM);
+                    portalLoot.setRadius(55);
                     gv.world.loots.add(portalLoot);
-                } else {
-                    gv.ui.showMessage("🏆 PARABÉNS POR ZERAR A TORRE DE 20 ANDARES!");
-                    gv.ui.isDialogueActive = true;
-                    gv.ui.currentSpeaker = "Mestre da Torre";
-                    gv.ui.currentDialogue = "Inacreditável! Você conquistou todos os 20 andares da Torre de Desafios!\nSua bravura será lembrada em todo o PokeWorld!";
                     gv.activity.saveCurrentGame();
                 }
             }
@@ -72,9 +71,9 @@ public class TowerManager {
     public void advanceFloor() {
         if (waitingForNpcAdvance && towerFloor < 20) {
             towerFloor++;
+            currentWave = 1;
             waitingForNpcAdvance = false;
             
-            // Limpa o rastro de inimigos e loot do andar anterior ao subir
             if (gv.world != null) {
                 gv.world.enemies.clear();
                 gv.world.loots.clear();
@@ -82,7 +81,7 @@ public class TowerManager {
             }
 
             gv.world.loadMap("TOWER", gv.player, gv.companion, "CENTER");
-            gv.ui.showMessage("🏰 TORRE DE DESAFIO - ANDAR " + towerFloor);
+            gv.ui.showMessage("🏰 TORRE DE DESAFIO - ANDAR " + towerFloor + " (Onda 1/" + TOTAL_WAVES + ")");
             if (towerFloor == 2) {
                 gv.ui.showMessage("🧪 DICA: Use o botão de Poção na esquerda caso precise curar seu Pokémon!");
             }
@@ -92,11 +91,11 @@ public class TowerManager {
 
     private void spawnWave() {
         double px = gv.player.getPositionX();
-        double py = gv.player.getPositionY() - 250; // Nasce na parte superior da sala da torre
+        double py = gv.player.getPositionY() - 250;
 
         String[] pool = {"Rattata", "Pidgey", "Zubat", "Caterpie", "Ekans", "Oddish", "Pikachu", "Charmander"};
-        int count = (towerFloor == 1) ? 3 : (towerFloor == 2) ? 4 : Math.min(3 + (towerFloor / 2), 8);
-        int baseLevel = towerFloor * 2;
+        int count = (towerFloor == 1 && currentWave == 1) ? 3 : 2 + currentWave;
+        int baseLevel = towerFloor * 2 + currentWave;
         int color = Color.rgb(150, 50, 200);
 
         for (int i = 0; i < count; i++) {
@@ -116,7 +115,7 @@ public class TowerManager {
     }
 
     public int getMaxUnlockedFloor() {
-        return maxUnlockedFloor;
+        return 20;
     }
 
     public boolean isWaitingForNpcAdvance() {

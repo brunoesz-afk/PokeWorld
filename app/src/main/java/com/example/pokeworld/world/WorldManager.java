@@ -380,8 +380,13 @@ public class WorldManager {
             if (l.getType() == Loot.Type.DEFEATED) continue;
             if (l.isCollectedBy(p)) { 
                 if (l.getType() == Loot.Type.GOLD) p.addGold(100); 
-                else p.addItem(l.getName()); 
-                it.remove(); 
+                else if (l.getName().equalsIgnoreCase("aincrad_portal")) {
+                    gv.tower.advanceFloor();
+                    it.remove();
+                } else {
+                    p.addItem(l.getName()); 
+                    it.remove(); 
+                }
             }
         }
     }
