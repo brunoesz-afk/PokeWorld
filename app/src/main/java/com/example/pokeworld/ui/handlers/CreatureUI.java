@@ -19,54 +19,78 @@ import java.util.Map;
 public class CreatureUI extends BaseUI {
     public RectF evolveBtn = new RectF(400, 560, 800, 630);
     public RectF upgradeBtn = new RectF(820, 470, 1150, 540);
-    public RectF exitBtn = new RectF(1080, 40, 1240, 110);
+    public RectF exitBtn = new RectF();
 
     @Override
     public void draw(Canvas canvas, GameView gv) {
         Companion comp = gv.companion;
         Player p = gv.player;
-        drawOverlay(canvas, "MEU TIME (MÁX 6)", Color.argb(245, 0, 15, 45));
-        paint.setColor(Color.YELLOW); paint.setTextSize(30);
-        paint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("ATIVO: " + comp.getSpecies().toUpperCase() + " (Nv." + comp.getLevel() + ")", canvas.getWidth()/2f, 130, paint);
-        int y = 200;
+        float w = canvas.getWidth();
+        float h = canvas.getHeight();
+
+        drawOverlay(canvas, "MEU TIME DE POKÉMONS (MÁX 6)", Color.argb(245, 15, 25, 40));
+
+        exitBtn.set(w - 180, 30, w - 40, 90);
+        drawExitButton(canvas, exitBtn);
+
+        paint.setColor(Color.WHITE); paint.setTextSize(20); paint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText("Companheiro Atual: " + comp.getSpecies().toUpperCase() + " (Nv." + comp.getLevel() + ")", w / 2f, 115, paint);
+
         List<CapturedCreature> party = p.getParty();
+        float startY = 150;
+        float cardH = 80;
+        float spacing = 12;
+
+        // Animação muito devagar (ritmo lento a cada 800ms)
+        int slowAnimFrame = (int)((System.currentTimeMillis() / 800) % 3);
+
         for (int i = 0; i < party.size(); i++) {
             CapturedCreature creature = party.get(i);
             boolean isCurrent = creature.name.equalsIgnoreCase(comp.getSpecies());
-            Bitmap icon = SpriteManager.getInstance().getUnitSprite(creature.name, 0, 0, creature.isShiny);
-            
+
+            RectF card = new RectF(80, startY + (i * (cardH + spacing)), w - 80, startY + (i * (cardH + spacing)) + cardH);
+
+            // Fundo do card
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(isCurrent ? Color.argb(180, 50, 75, 50) : Color.argb(150, 30, 45, 65));
+            canvas.drawRoundRect(card, 16, 16, paint);
+
+            // Borda
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(isCurrent ? 4 : 2);
+            paint.setColor(isCurrent ? Color.GREEN : Color.YELLOW);
+            canvas.drawRoundRect(card, 16, 16, paint);
+
+            // Sprite em animação lenta (frente, slowAnimFrame)
+            Bitmap icon = SpriteManager.getInstance().getUnitSprite(creature.name, 0, slowAnimFrame, creature.isShiny);
             if (icon != null) {
-                Rect dest = new Rect((int)(canvas.getWidth() * 0.30f), y - 40, (int)(canvas.getWidth() * 0.37f), y + 10);
-                canvas.drawBitmap(icon, null, dest, null);
+                canvas.drawBitmap(icon, null, new Rect((int)card.left + 25, (int)card.top + 8, (int)card.left + 105, (int)card.bottom - 8), null);
             }
 
-            paint.setColor(creature.rarity.getColor());
-            paint.setTextSize(24);
-            paint.setTextAlign(Paint.Align.LEFT);
-            canvas.drawText("[" + creature.rarity.getLabel() + "]", canvas.getWidth() * 0.38f, y, paint);
-
+            // Nome e Gênero
             int nameColor = creature.gender == 0 ? Color.rgb(100, 150, 255) : Color.rgb(255, 150, 200);
             if (creature.isShiny) nameColor = Color.rgb(255, 215, 0);
             else if (isCurrent) nameColor = Color.CYAN;
-            
+
+            paint.setStyle(Paint.Style.FILL);
             paint.setColor(nameColor);
-            paint.setTextSize(32);
+            paint.setTextSize(24);
+            paint.setTextAlign(Paint.Align.LEFT);
             String genderIcon = creature.gender == 0 ? "♂" : "♀";
-            canvas.drawText(creature.name + " " + genderIcon + (creature.isShiny ? " ✨" : ""), canvas.getWidth() * 0.52f, y, paint);
-            
-            y += 60;
-        }
+            canvas.drawText(creature.name + " " + genderIcon + (creature.isShiny ? " ✨" : ""), card.left + 130, card.top + 35, paint);
 
-        if (!comp.isShiny() && p.getInventory().containsKey("Cristal") && comp.getSpecies().equalsIgnoreCase("Lobo")) {
-            drawButton(canvas, evolveBtn, "EVOLUIR LOBO (1 CRISTAL)");
-        }
+            // Raridade
+            paint.setColor(creature.rarity.getColor());
+            paint.setTextSize(14);
+            canvas.drawText("[" + creature.rarity.getLabel() + "]", card.left + 130, card.bottom - 18, paint);
 
-        if (hasPossibleUpgrade(party)) {
-            drawButton(canvas, upgradeBtn, "UPGRADE (4 IGUAIS)");
+            if (isCurrent) {
+                paint.setColor(Color.GREEN);
+                paint.setTextSize(16);
+                paint.setTextAlign(Paint.Align.RIGHT);
+                canvas.drawText("⭐ ATIVO", card.right - 30, card.centerY() + 6, paint);
+            }
         }
-        
-        drawExitButton(canvas, exitBtn);
     }
 
     private boolean hasPossibleUpgrade(List<CapturedCreature> collection) {
