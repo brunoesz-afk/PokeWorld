@@ -442,19 +442,13 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(() -> {
                             android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show();
                             if (success) {
-                                if (gameView != null) {
-                                    saveCurrentGame();
-                                } else {
-                                    int[] pStats = dbHelper.getPlayerStats();
-                                    List<CapturedCreature> collection = dbHelper.getCollection();
-                                    List<CapturedCreature> party = new java.util.ArrayList<>();
-                                    for (CapturedCreature c : collection) if (c.isInParty) party.add(c);
-
-                                    com.example.pokeworld.managers.SupabaseManager.getInstance().syncPlayerProfile(
-                                            pStats[1], pStats[2], "Nível " + pStats[1] + " - Ouro: " + pStats[0], null
-                                    );
-                                    com.example.pokeworld.managers.SupabaseManager.getInstance().syncParty(party);
-                                }
+                                android.widget.Toast.makeText(this, "Baixando save da nuvem...", android.widget.Toast.LENGTH_SHORT).show();
+                                com.example.pokeworld.managers.SupabaseManager.getInstance().fetchCloudSave(dbHelper, () -> {
+                                    runOnUiThread(() -> {
+                                        android.widget.Toast.makeText(this, "Save carregado com sucesso!", android.widget.Toast.LENGTH_SHORT).show();
+                                        showHomeScreen();
+                                    });
+                                });
                             }
                         });
                     });

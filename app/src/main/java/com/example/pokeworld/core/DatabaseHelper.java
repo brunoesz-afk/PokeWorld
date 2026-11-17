@@ -318,6 +318,32 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.update("player_stats", v, "id=1", null);
     }
 
+    public void updatePlayerStatsFromCloud(int level, int exp) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put("level", level);
+        v.put("exp", exp);
+        db.update("player_stats", v, "id=1", null);
+    }
+
+    public void clearParty() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put("is_in_party", 0);
+        db.update("collection", v, null, null);
+    }
+
+    public void addCreatureToCollectionDb(String name, boolean isShiny, Rarity rarity, boolean isInParty, int gender) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("creature_name", name);
+        cv.put("is_shiny", isShiny ? 1 : 0);
+        cv.put("rarity", rarity.name());
+        cv.put("is_in_party", isInParty ? 1 : 0);
+        cv.put("gender", gender);
+        db.insert("collection", null, cv);
+    }
+
     public boolean isTutorialCompleted() {
         SQLiteDatabase db = this.getReadableDatabase();
         try {

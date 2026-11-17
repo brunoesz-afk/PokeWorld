@@ -170,4 +170,65 @@ public class SupabaseManager {
             }
         }).start();
     }
+
+    public void fetchCloudSave(com.example.pokeworld.core.DatabaseHelper dbHelper, Runnable onComplete) {
+        if (!isLogged()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                URL profileUrl = new URL(supabaseUrl + "/rest/v1/player_profiles?user_id=eq." + userId + "&select=*");
+                HttpURLConnection conn = (HttpURLConnection) profileUrl.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("apikey", supabaseAnonKey);
+                conn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+
+                if (conn.getResponseCode() == 200) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    reader.close();
+
+                    JSONArray arr = new JSONArray(sb.toString());
+                    if (arr.length() > 0) {
+                        JSONObject profile = arr.getJSONObject(0);
+                        int level = profile.optInt("player_level", 1);
+                        int exp = profile.optInt("experience", 0);
+                        dbHelper.updatePlayerStatsFromCloud(level, exp);
+                    }
+                }
+
+                URL partyUrl = new URL(supabaseUrl + "/rest/v1/pokemon_party?user_id=eq." + userId + "&select=*");
+                HttpURLConnection pConn = (HttpURLConnection) partyUrl.openConnection();
+                pConn.setRequestMethod("GET");
+                pConn.setRequestProperty("apikey", supabaseAnonKey);
+                pConn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+
+                if (pConn.getResponseCode() == 200) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(pConn.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    reader.close();
+
+                    JSONArray partyArr = new JSONArray(sb.toString());
+                    if (partyArr.length() > 0) {
+                        dbHelper.clearParty();
+                        for (int i = 0; i < partyArr.length(); i++) {
+                            JSONObject poke = partyArr.getJSONObject(i);
+                            String pName = poke.optString("pokemon_name", "Pikachu");
+                            dbHelper.addCreatureToCollectionDb(pName, false, com.example.pokeworld.entities.Rarity.COMMON, true, 0);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("SupabaseManager", "Erro ao carregar save da nuvem: " + e.getMessage());
+            } finally {
+                if (onComplete != null) onComplete.run();
+            }
+        }).start();
+    }
 }
