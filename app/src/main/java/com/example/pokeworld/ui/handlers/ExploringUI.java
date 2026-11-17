@@ -205,16 +205,16 @@ public class ExploringUI extends BaseUI {
             canvas.drawText("🏰 ANDAR: " + gv.dungeon.getCurrentFloor(), canvas.getWidth()/2f, 50, paint);
         }
 
-        // --- QUICK PARTY SWITCHER (Atalho dos 6 Pokémons do Time) ---
+        // --- QUICK PARTY SWITCHER (Atalho dos 6 Pokémons do Time - Coluna Esquerda) ---
         List<CapturedCreature> party = p.getParty();
-        float slotW = 55, slotH = 55, startX = 60, startY = 80;
+        float slotW = 55, slotH = 55, startX = 40, startY = 130;
         for (int i = 0; i < party.size(); i++) {
             CapturedCreature c = party.get(i);
-            RectF slotRect = new RectF(startX + (i * (slotW + 8)), startY, startX + (i * (slotW + 8)) + slotW, startY + slotH);
+            RectF slotRect = new RectF(startX, startY + (i * (slotH + 8)), startX + slotW, startY + (i * (slotH + 8)) + slotH);
             
             paint.setStyle(Paint.Style.FILL);
             boolean isActive = c.name.equalsIgnoreCase(comp.getSpecies());
-            paint.setColor(isActive ? Color.argb(200, 255, 215, 0) : Color.argb(150, 20, 30, 40));
+            paint.setColor(isActive ? Color.argb(220, 255, 215, 0) : Color.argb(150, 20, 30, 40));
             canvas.drawRoundRect(slotRect, 8, 8, paint);
 
             paint.setStyle(Paint.Style.STROKE);
