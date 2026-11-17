@@ -360,10 +360,11 @@ public class MainActivity extends AppCompatActivity {
                 p.getClan(), p.getNgPlusLevel(), p.getSkinColor(), p.getTalents(), p.getCreatureCollection(), p.getInventory(),
                 p.getFishingLevel(), p.getFishingExp(), gameView.aincrad.getMaxFloorReached(), p.hasSeenDaycareIntro() ? 1 : 0);
         
-        // Sincroniza com Supabase para exibir automaticamente no site do jogador
+        // Sincroniza com Supabase para exibir automaticamente no site do jogador (`player_profiles` e `pokemon_party`)
         com.example.pokeworld.managers.SupabaseManager.getInstance().syncPlayerProfile(
-                p.getGold(), p.getLevel(), p.getExp(), p.getGems(), c != null ? c.getSpecies() : "Pikachu"
+                "Treinador", p.getLevel(), "Base Central", "Nível " + p.getLevel() + " | Ouro: " + p.getGold()
         );
+        com.example.pokeworld.managers.SupabaseManager.getInstance().syncParty(p.getParty());
         
         if (c != null) {
             // Salva os dados específicos do pet ativo
