@@ -26,6 +26,25 @@
         android:layout_marginStart="45dp"
         android:layout_marginTop="16dp" />
 
+    <TextView
+        android:id="@+id/tv_supabase_link"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🔗 Vincular Conta do Site"
+        android:textColor="#FFD700"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:clickable="true"
+        android:focusable="true"
+        android:shadowColor="#000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="3"
+        app:layout_constraintTop_toBottomOf="@id/tv_level"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="45dp"
+        android:layout_marginTop="6dp" />
+
     <!-- 2. Top-Right Gold & Gems (Inside top-right coin slots) -->
     <LinearLayout
         android:id="@+id/layout_top_status"

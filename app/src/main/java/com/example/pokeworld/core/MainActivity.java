@@ -189,6 +189,11 @@ public class MainActivity extends AppCompatActivity {
         TextView tvLevel = findViewById(R.id.tv_level);
         if (tvLevel != null) tvLevel.setText("⭐ NÍVEL " + level + " | EXP: " + exp);
 
+        TextView tvSupabaseLink = findViewById(R.id.tv_supabase_link);
+        if (tvSupabaseLink != null) {
+            tvSupabaseLink.setOnClickListener(v -> showSupabaseLoginDialog());
+        }
+
         TextView tvGold = findViewById(R.id.tv_gold);
         if (tvGold != null) tvGold.setText("🪙 " + gold + "   💎 " + gems);
 
@@ -408,5 +413,54 @@ public class MainActivity extends AppCompatActivity {
 
     public void saveGame(int gold, int level, int exp, int talentPoints, int gems, String clan, int ngPlus, int skinColor, Map<String, Integer> talents, List<CapturedCreature> collection, Map<String, Integer> inventory, int fishingLevel, int fishingExp, int aincrad, int daycareIntro) {
         dbHelper.savePlayerState(gold, level, exp, talentPoints, gems, clan, ngPlus, skinColor, talents, collection, inventory, fishingLevel, fishingExp, aincrad, daycareIntro);
+    }
+
+    private void showSupabaseLoginDialog() {
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 20);
+
+        final android.widget.EditText inputEmail = new android.widget.EditText(this);
+        inputEmail.setHint("E-mail da conta do site");
+        inputEmail.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        layout.addView(inputEmail);
+
+        final android.widget.EditText inputPassword = new android.widget.EditText(this);
+        inputPassword.setHint("Senha");
+        inputPassword.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        layout.addView(inputPassword);
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("🔗 Vincular com a Conta do Site")
+            .setView(layout)
+            .setPositiveButton("Conectar", (dialog, which) -> {
+                String email = inputEmail.getText().toString().trim();
+                String pass = inputPassword.getText().toString().trim();
+                if (!email.isEmpty() && !pass.isEmpty()) {
+                    android.widget.Toast.makeText(this, "Autenticando no Supabase...", android.widget.Toast.LENGTH_SHORT).show();
+                    com.example.pokeworld.managers.SupabaseManager.getInstance().signIn(email, pass, (success, message) -> {
+                        runOnUiThread(() -> {
+                            android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show();
+                            if (success) {
+                                if (gameView != null) {
+                                    saveCurrentGame();
+                                } else {
+                                    int[] pStats = dbHelper.getPlayerStats();
+                                    List<CapturedCreature> collection = dbHelper.getCollection();
+                                    List<CapturedCreature> party = new java.util.ArrayList<>();
+                                    for (CapturedCreature c : collection) if (c.isInParty) party.add(c);
+
+                                    com.example.pokeworld.managers.SupabaseManager.getInstance().syncPlayerProfile(
+                                            pStats[1], pStats[2], "Nível " + pStats[1] + " - Ouro: " + pStats[0], null
+                                    );
+                                    com.example.pokeworld.managers.SupabaseManager.getInstance().syncParty(party);
+                                }
+                            }
+                        });
+                    });
+                }
+            })
+            .setNegativeButton("Cancelar", null)
+            .show();
     }
 }
