@@ -19,6 +19,20 @@ public class ExploringInput implements InputExtension {
 
         switch (action) {
             case android.view.MotionEvent.ACTION_DOWN:
+                // Verifica toque nos atalhos rápidos do Time (Party) no canto superior esquerdo
+                java.util.List<com.example.pokeworld.entities.CapturedCreature> party = gv.player.getParty();
+                float slotW = 55, startX = 60, startY = 80;
+                for (int i = 0; i < party.size(); i++) {
+                    android.graphics.RectF slotRect = new android.graphics.RectF(startX + (i * (slotW + 8)), startY, startX + (i * (slotW + 8)) + slotW, startY + 55);
+                    if (slotRect.contains(x, y)) {
+                        com.example.pokeworld.entities.CapturedCreature c = party.get(i);
+                        gv.companion.setSpecies(c.name);
+                        gv.activity.dbHelper.updateActiveSpecies(c.name);
+                        gv.ui.showMessage("🔄 Pokémon ativo alterado para: " + c.name);
+                        return true;
+                    }
+                }
+
                 // Verifica se há alguma ação de construção próxima
                 boolean hasBuildingAction = false;
                 if (gv.world != null && gv.world.buildings != null) {
@@ -168,7 +182,7 @@ public class ExploringInput implements InputExtension {
             return true;
         }
         if (ui.towerBtn.contains(x, y)) {
-            gv.tower.startTower();
+            gv.ui.state = UIManager.UIState.TOWER_SELECT;
             return true;
         }
         

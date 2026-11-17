@@ -1,10 +1,13 @@
 package com.example.pokeworld.ui.handlers;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import com.example.pokeworld.core.GameView;
+import com.example.pokeworld.entities.CapturedCreature;
 import com.example.pokeworld.entities.Companion;
 import com.example.pokeworld.entities.Enemy;
 import com.example.pokeworld.entities.Mission;
@@ -200,6 +203,29 @@ public class ExploringUI extends BaseUI {
         if (gv.dungeon.isInDungeon()) {
             paint.setColor(Color.WHITE); paint.setTextSize(30); paint.setTextAlign(Paint.Align.CENTER);
             canvas.drawText("🏰 ANDAR: " + gv.dungeon.getCurrentFloor(), canvas.getWidth()/2f, 50, paint);
+        }
+
+        // --- QUICK PARTY SWITCHER (Atalho dos 6 Pokémons do Time) ---
+        List<CapturedCreature> party = p.getParty();
+        float slotW = 55, slotH = 55, startX = 60, startY = 80;
+        for (int i = 0; i < party.size(); i++) {
+            CapturedCreature c = party.get(i);
+            RectF slotRect = new RectF(startX + (i * (slotW + 8)), startY, startX + (i * (slotW + 8)) + slotW, startY + slotH);
+            
+            paint.setStyle(Paint.Style.FILL);
+            boolean isActive = c.name.equalsIgnoreCase(comp.getSpecies());
+            paint.setColor(isActive ? Color.argb(200, 255, 215, 0) : Color.argb(150, 20, 30, 40));
+            canvas.drawRoundRect(slotRect, 8, 8, paint);
+
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(isActive ? 3 : 1);
+            paint.setColor(isActive ? Color.WHITE : Color.DKGRAY);
+            canvas.drawRoundRect(slotRect, 8, 8, paint);
+
+            Bitmap icon = SpriteManager.getInstance().getUnitSprite(c.name, 0, 0, c.isShiny);
+            if (icon != null) {
+                canvas.drawBitmap(icon, null, new Rect((int)slotRect.left + 4, (int)slotRect.top + 4, (int)slotRect.right - 4, (int)slotRect.bottom - 4), null);
+            }
         }
 
         drawIcon(canvas, inventoryBtn, "🎒");

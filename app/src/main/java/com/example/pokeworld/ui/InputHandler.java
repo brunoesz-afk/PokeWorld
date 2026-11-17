@@ -47,6 +47,7 @@ public class InputHandler {
         handlers.put(UIManager.UIState.ITEM_STORAGE, new ItemStorageInput());
         handlers.put(UIManager.UIState.TRAINER_SKILLS, new TrainerSkillsInput());
         handlers.put(UIManager.UIState.STARTER_SELECTION, new com.example.pokeworld.ui.input.StarterSelectionInput());
+        handlers.put(UIManager.UIState.TOWER_SELECT, new TowerSelectInput());
         
         InputExtension exploreFallback = new InputExtension() {
             @Override
