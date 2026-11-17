@@ -109,6 +109,7 @@ public class WorldManager {
         int rows = tileMap.getRows(), cols = tileMap.getCols();
         double sx = TileMap.TILE_SIZE * (cols/2.0), sy = TileMap.TILE_SIZE * (rows/2.0);
         if (tileMap.getMapName().equals("HOME")) { sx = TileMap.TILE_SIZE * 80; sy = TileMap.TILE_SIZE * 57; }
+        else if (tileMap.getMapName().equals("TOWER")) { sx = TileMap.TILE_SIZE * (cols / 2.0); sy = TileMap.TILE_SIZE * (rows - 4.0); }
         else if (side.equals("TOP")) sy = TileMap.TILE_SIZE * 1.5;
         else if (side.equals("BOTTOM")) sy = TileMap.TILE_SIZE * (rows - 1.5);
         else if (side.equals("LEFT")) sx = TileMap.TILE_SIZE * 1.5;

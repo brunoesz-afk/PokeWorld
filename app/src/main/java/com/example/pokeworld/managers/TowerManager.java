@@ -24,6 +24,14 @@ public class TowerManager {
         towerFloor = floor;
         waveActive = false;
         waitingForNpcAdvance = false;
+        
+        // Limpa todos os rastros de andares anteriores (corpos, itens, npcs)
+        if (gv.world != null) {
+            gv.world.enemies.clear();
+            gv.world.loots.clear();
+            gv.world.npcs.clear();
+        }
+
         gv.world.loadMap("TOWER", gv.player, gv.companion, "CENTER");
         gv.ui.showMessage("🏰 TORRE DE DESAFIO - ANDAR " + towerFloor);
         spawnWave();
@@ -41,13 +49,13 @@ public class TowerManager {
                     waitingForNpcAdvance = true;
                     
                     double midX = gv.player.getPositionX();
-                    double midY = gv.player.getPositionY() - 80;
+                    double midY = gv.player.getPositionY() - 100;
                     
                     // Spawna NPC Guardião
                     gv.world.npcs.add(new NPC("Mestre da Torre", "Parabéns! Fale comigo ou entre no portal para subir ao próximo andar!", midX, midY, NPC.Type.GUARD));
                     
                     // Spawna o Portal com a sprite aincrad_portal
-                    Loot portalLoot = new Loot("aincrad_portal", midX, midY + 60, Loot.Type.ITEM);
+                    Loot portalLoot = new Loot("aincrad_portal", midX, midY + 50, Loot.Type.ITEM);
                     portalLoot.setRadius(50);
                     gv.world.loots.add(portalLoot);
                 } else {
@@ -65,24 +73,36 @@ public class TowerManager {
         if (waitingForNpcAdvance && towerFloor < 20) {
             towerFloor++;
             waitingForNpcAdvance = false;
+            
+            // Limpa o rastro de inimigos e loot do andar anterior ao subir
+            if (gv.world != null) {
+                gv.world.enemies.clear();
+                gv.world.loots.clear();
+                gv.world.npcs.clear();
+            }
+
+            gv.world.loadMap("TOWER", gv.player, gv.companion, "CENTER");
             gv.ui.showMessage("🏰 TORRE DE DESAFIO - ANDAR " + towerFloor);
+            if (towerFloor == 2) {
+                gv.ui.showMessage("🧪 DICA: Use o botão de Poção na esquerda caso precise curar seu Pokémon!");
+            }
             spawnWave();
         }
     }
 
     private void spawnWave() {
         double px = gv.player.getPositionX();
-        double py = gv.player.getPositionY();
+        double py = gv.player.getPositionY() - 250; // Nasce na parte superior da sala da torre
 
         String[] pool = {"Rattata", "Pidgey", "Zubat", "Caterpie", "Ekans", "Oddish", "Pikachu", "Charmander"};
-        int count = (towerFloor == 1) ? 3 : Math.min(3 + (towerFloor / 2), 8);
+        int count = (towerFloor == 1) ? 3 : (towerFloor == 2) ? 4 : Math.min(3 + (towerFloor / 2), 8);
         int baseLevel = towerFloor * 2;
         int color = Color.rgb(150, 50, 200);
 
         for (int i = 0; i < count; i++) {
             double angle = i * (2 * Math.PI / count);
-            double ex = px + Math.cos(angle) * 320;
-            double ey = py + Math.sin(angle) * 320;
+            double ex = px + Math.cos(angle) * 180;
+            double ey = py + Math.sin(angle) * 180;
             String species = pool[i % pool.length];
 
             gv.world.addEnemy(species, ex, ey, 32, color, false, false, baseLevel, 0);
