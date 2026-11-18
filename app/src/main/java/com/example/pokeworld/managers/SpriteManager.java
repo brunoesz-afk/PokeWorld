@@ -112,8 +112,10 @@ public class SpriteManager {
             loadMiscSprite(context, "pokebola_item");
             loadMiscSprite(context, "pokebola");
             
-            // Fatia o Tileset Completo de Lava (1024x1024 em 32x32 tiles de 32px)
+            // Fatia os Tilesets Vulcânicos e Magma (1024x1024 Lava e 4x4 Volcano)
             loadLavaTileset(context);
+            loadVolcanoTileset(context);
+            loadTileSprite(context, "tile_magma_vent_3x1", TileMap.MAGMA_VENT);
             
             isLoaded = true;
         } catch (OutOfMemoryError oom) {
@@ -171,6 +173,41 @@ public class SpriteManager {
             }
         } catch (Exception e) {
             Log.e("SpriteManager", "Erro ao fatiar tileset de lava: " + e.getMessage());
+        }
+    }
+
+    public void loadVolcanoTileset(Context context) {
+        try {
+            Bitmap sheet = decodeSpriteBitmap(context, "tileset_volcano_4x4");
+            if (sheet == null) {
+                int resId = context.getResources().getIdentifier("tileset_volcano_4x4", "drawable", context.getPackageName());
+                if (resId != 0) {
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inPreferredConfig = Bitmap.Config.RGB_565;
+                    sheet = BitmapFactory.decodeResource(context.getResources(), resId, options);
+                }
+            }
+            if (sheet != null) {
+                int cols = 4;
+                int rows = 4;
+                int tileW = sheet.getWidth() / cols;
+                int tileH = sheet.getHeight() / rows;
+
+                Bitmap basalt = Bitmap.createBitmap(sheet, 0 * tileW, 0 * tileH, tileW, tileH);
+                Bitmap ash = Bitmap.createBitmap(sheet, 1 * tileW, 0 * tileH, tileW, tileH);
+                Bitmap cracked = Bitmap.createBitmap(sheet, 2 * tileW, 0 * tileH, tileW, tileH);
+                Bitmap bridge = Bitmap.createBitmap(sheet, 3 * tileW, 0 * tileH, tileW, tileH);
+                Bitmap crystal = Bitmap.createBitmap(sheet, 0 * tileW, 1 * tileH, tileW, tileH);
+
+                tileSprites.put(TileMap.BASALT_FLOOR, basalt);
+                tileSprites.put(TileMap.ASH_GROUND, ash);
+                tileSprites.put(TileMap.CRACKED_OBSIDIAN, cracked);
+                tileSprites.put(TileMap.MAGMA_BRIDGE, bridge);
+                tileSprites.put(TileMap.SULFUR_CRYSTAL, crystal);
+                Log.d("SpriteManager", "Tileset volcano 4x4 fatiado com sucesso!");
+            }
+        } catch (Exception e) {
+            Log.e("SpriteManager", "Erro ao fatiar tileset_volcano_4x4: " + e.getMessage());
         }
     }
 
