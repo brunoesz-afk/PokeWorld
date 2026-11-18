@@ -44,6 +44,7 @@ public class TileMap {
             case "OCEAN": generateOceanMap(); break;
             case "DESERT": generateDesertMap(); break;
             case "VOLCANO": generateVolcanoMap(); break;
+            case "MOLTEN_SANCTUM_BEGINNER":
             case "MOLTEN_SANCTUM": generateMoltenSanctumMap(); break;
             case "SNOW_MOUNTAIN": generateSnowMountainMap(); break;
             case "SNOW_PEAK": generateSnowPeakMap(); break;

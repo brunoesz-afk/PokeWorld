@@ -41,6 +41,7 @@ public class TeleportUI implements UIHandler {
         points.add(new MapPoint("Caminho de Cascalho", "ROCKY_PATH", "⛏️", 3, Color.rgb(150, 150, 150), 0, 1));
         points.add(new MapPoint("Lagoa da Paz", "SMALL_LAKE", "💧", 4, Color.rgb(100, 180, 255), 0, 1));
         points.add(new MapPoint("Caverna de Brasa", "FIRE_CAVE", "🔥", 6, Color.rgb(255, 100, 0), 0, 1));
+        points.add(new MapPoint("Santuário de Magma (Iniciante)", "MOLTEN_SANCTUM_BEGINNER", "🌋", 10, Color.rgb(255, 120, 0), 0, 10));
         points.add(new MapPoint("Esgoto da Vila", "SEWERS", "🐀", 2, Color.rgb(120, 120, 80), 0, 1));
 
         // --- PÁGINA 2: Reino de Bronze (Lv. 11-25) ---
