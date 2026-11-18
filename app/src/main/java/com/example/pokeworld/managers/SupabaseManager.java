@@ -1,5 +1,6 @@
 package com.example.pokeworld.managers;
 
+import android.content.Context;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -42,7 +43,30 @@ public class SupabaseManager {
         return !userId.isEmpty();
     }
 
-    public void signIn(String email, String password, AuthCallback callback) {
+    public void saveSession(Context context) {
+        if (context == null) return;
+        context.getSharedPreferences("supabase_session", Context.MODE_PRIVATE)
+            .edit()
+            .putString("access_token", accessToken)
+            .putString("user_id", userId)
+            .apply();
+    }
+
+    public void loadSession(Context context) {
+        if (context == null) return;
+        accessToken = context.getSharedPreferences("supabase_session", Context.MODE_PRIVATE).getString("access_token", "");
+        userId = context.getSharedPreferences("supabase_session", Context.MODE_PRIVATE).getString("user_id", "");
+    }
+
+    public void signOut(Context context) {
+        if (context != null) {
+            context.getSharedPreferences("supabase_session", Context.MODE_PRIVATE).edit().clear().apply();
+        }
+        accessToken = "";
+        userId = "";
+    }
+
+    public void signIn(Context context, String email, String password, AuthCallback callback) {
         new Thread(() -> {
             try {
                 URL url = new URL(supabaseUrl + "/auth/v1/token?grant_type=password");
@@ -73,6 +97,7 @@ public class SupabaseManager {
                     if (userObj != null) {
                         this.userId = userObj.optString("id", "");
                     }
+                    saveSession(context);
 
                     if (callback != null) callback.onResult(true, "Conta vinculada com sucesso ao site!");
                 } else {
@@ -89,7 +114,6 @@ public class SupabaseManager {
         if (!isLogged()) return;
         new Thread(() -> {
             try {
-                // Sincroniza apenas os campos do game sem sobrescrever player_name, gender ou region do site
                 URL url = new URL(supabaseUrl + "/rest/v1/player_profiles?user_id=eq." + userId);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("PATCH");
@@ -130,7 +154,6 @@ public class SupabaseManager {
         if (!isLogged()) return;
         new Thread(() -> {
             try {
-                // 1. Remove slots antigos da equipe ativa para nunca mostrar pokémons desatualizados
                 URL deleteUrl = new URL(supabaseUrl + "/rest/v1/pokemon_party?user_id=eq." + userId);
                 HttpURLConnection delConn = (HttpURLConnection) deleteUrl.openConnection();
                 delConn.setRequestMethod("DELETE");
@@ -138,7 +161,6 @@ public class SupabaseManager {
                 delConn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
                 delConn.getResponseCode();
 
-                // 2. Insere os até 6 pokémons da equipe ativa atual
                 for (int i = 0; i < Math.min(party.size(), 6); i++) {
                     CapturedCreature c = party.get(i);
                     int slot = i + 1;

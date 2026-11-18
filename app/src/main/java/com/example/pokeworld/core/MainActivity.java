@@ -41,33 +41,37 @@ public class MainActivity extends AppCompatActivity {
             android.widget.ProgressBar progressBar = findViewById(R.id.progressBar);
 
             dbHelper = new DatabaseHelper(this);
-            if (progressBar != null) progressBar.setProgress(50);
-            if (tvStatus != null) tvStatus.setText("Carregando recursos (50%)...");
+            com.example.pokeworld.managers.SupabaseManager.getInstance().loadSession(this);
 
-            new Thread(() -> {
-                try {
-                    SpriteManager.getInstance().loadSprites(MainActivity.this);
-                    runOnUiThread(() -> {
-                        if (progressBar != null) progressBar.setProgress(100);
-                        if (tvStatus != null) tvStatus.setText("Pronto (100%)!");
-                        showHomeScreen();
-                        checkForUpdatesWithDetails(tvStatus);
-                    });
-                } catch (Exception e) {
-                    android.util.Log.e("MainActivity", "Erro ao carregar sprites: " + e.getMessage(), e);
-                    final String err = e.getMessage();
-                    runOnUiThread(() -> {
-                        android.widget.Toast.makeText(MainActivity.this, "Erro sprites: " + err, android.widget.Toast.LENGTH_LONG).show();
-                        showHomeScreen();
-                    });
-                }
-            }).start();
+            if (progressBar != null) progressBar.setProgress(30);
+            if (tvStatus != null) tvStatus.setText("Sincronizando com a nuvem Supabase...");
+
+            com.example.pokeworld.managers.SupabaseManager.getInstance().fetchCloudSave(dbHelper, () -> {
+                new Thread(() -> {
+                    try {
+                        runOnUiThread(() -> {
+                            if (tvStatus != null) tvStatus.setText("Carregando recursos e sprites (70%)...");
+                            if (progressBar != null) progressBar.setProgress(70);
+                        });
+
+                        SpriteManager.getInstance().loadSprites(MainActivity.this);
+
+                        runOnUiThread(() -> {
+                            if (progressBar != null) progressBar.setProgress(100);
+                            if (tvStatus != null) tvStatus.setText("Pronto (100%)!");
+                            showHomeScreen();
+                            checkForUpdatesWithDetails(tvStatus);
+                        });
+                    } catch (Exception e) {
+                        android.util.Log.e("MainActivity", "Erro ao carregar sprites: " + e.getMessage());
+                        runOnUiThread(() -> showHomeScreen());
+                    }
+                }).start();
+            });
 
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro no onCreate: " + e.getMessage(), e);
-            android.widget.Toast.makeText(this, "Erro onCreate: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
             try {
-                dbHelper = new DatabaseHelper(this);
                 showHomeScreen();
             } catch (Exception ignored) {}
         }
@@ -420,41 +424,66 @@ public class MainActivity extends AppCompatActivity {
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 20);
 
-        final android.widget.EditText inputEmail = new android.widget.EditText(this);
-        inputEmail.setHint("E-mail da conta do site");
-        inputEmail.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        layout.addView(inputEmail);
+        boolean isLogged = com.example.pokeworld.managers.SupabaseManager.getInstance().isLogged();
 
-        final android.widget.EditText inputPassword = new android.widget.EditText(this);
-        inputPassword.setHint("Senha");
-        inputPassword.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        layout.addView(inputPassword);
+        if (isLogged) {
+            android.widget.TextView tvInfo = new android.widget.TextView(this);
+            tvInfo.setText("🟢 Conta vinculada ao Supabase do site!\nSeu progresso é sincronizado na nuvem automaticamente ao salvar.");
+            tvInfo.setPadding(0, 10, 0, 20);
+            layout.addView(tvInfo);
 
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("🔗 Vincular com a Conta do Site")
-            .setView(layout)
-            .setPositiveButton("Conectar", (dialog, which) -> {
-                String email = inputEmail.getText().toString().trim();
-                String pass = inputPassword.getText().toString().trim();
-                if (!email.isEmpty() && !pass.isEmpty()) {
-                    android.widget.Toast.makeText(this, "Autenticando no Supabase...", android.widget.Toast.LENGTH_SHORT).show();
-                    com.example.pokeworld.managers.SupabaseManager.getInstance().signIn(email, pass, (success, message) -> {
-                        runOnUiThread(() -> {
-                            android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show();
-                            if (success) {
-                                android.widget.Toast.makeText(this, "Baixando save da nuvem...", android.widget.Toast.LENGTH_SHORT).show();
-                                com.example.pokeworld.managers.SupabaseManager.getInstance().fetchCloudSave(dbHelper, () -> {
-                                    runOnUiThread(() -> {
-                                        android.widget.Toast.makeText(this, "Save carregado com sucesso!", android.widget.Toast.LENGTH_SHORT).show();
-                                        showHomeScreen();
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("☁️ Gerenciar Conta & Save")
+                .setView(layout)
+                .setPositiveButton("💾 Salvar Agora", (dialog, which) -> {
+                    saveCurrentGame();
+                    android.widget.Toast.makeText(this, "✅ Progresso salvo na nuvem com sucesso!", android.widget.Toast.LENGTH_SHORT).show();
+                })
+                .setNeutralButton("🚪 Deslogar", (dialog, which) -> {
+                    saveCurrentGame(); // Força o salvamento antes de sair
+                    com.example.pokeworld.managers.SupabaseManager.getInstance().signOut(this);
+                    android.widget.Toast.makeText(this, "🚪 Conta deslogada com sucesso.", android.widget.Toast.LENGTH_SHORT).show();
+                    showHomeScreen();
+                })
+                .setNegativeButton("Fechar", null)
+                .show();
+        } else {
+            final android.widget.EditText inputEmail = new android.widget.EditText(this);
+            inputEmail.setHint("E-mail da conta do site");
+            inputEmail.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+            layout.addView(inputEmail);
+
+            final android.widget.EditText inputPassword = new android.widget.EditText(this);
+            inputPassword.setHint("Senha");
+            inputPassword.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            layout.addView(inputPassword);
+
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("🔗 Vincular com a Conta do Site")
+                .setView(layout)
+                .setPositiveButton("Conectar", (dialog, which) -> {
+                    String email = inputEmail.getText().toString().trim();
+                    String pass = inputPassword.getText().toString().trim();
+                    if (!email.isEmpty() && !pass.isEmpty()) {
+                        android.widget.Toast.makeText(this, "Autenticando no Supabase...", android.widget.Toast.LENGTH_SHORT).show();
+                        com.example.pokeworld.managers.SupabaseManager.getInstance().signIn(this, email, pass, (success, message) -> {
+                            runOnUiThread(() -> {
+                                android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show();
+                                if (success) {
+                                    android.widget.Toast.makeText(this, "Baixando save da nuvem...", android.widget.Toast.LENGTH_SHORT).show();
+                                    com.example.pokeworld.managers.SupabaseManager.getInstance().fetchCloudSave(dbHelper, () -> {
+                                        runOnUiThread(() -> {
+                                            android.widget.Toast.makeText(this, "Save carregado com sucesso!", android.widget.Toast.LENGTH_SHORT).show();
+                                            showHomeScreen();
+                                        });
                                     });
-                                });
-                            }
+                                }
+                            });
                         });
-                    });
-                }
-            })
-            .setNegativeButton("Cancelar", null)
-            .show();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+        }
     }
 }
