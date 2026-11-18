@@ -195,6 +195,8 @@ public class MainActivity extends AppCompatActivity {
 
         TextView tvSupabaseLink = findViewById(R.id.tv_supabase_link);
         if (tvSupabaseLink != null) {
+            boolean isLogged = com.example.pokeworld.managers.SupabaseManager.getInstance().isLogged();
+            tvSupabaseLink.setText(isLogged ? "🟢 Online: [Conta Vinculada]" : "🔗 Entrar na Conta / Jogar Offline");
             tvSupabaseLink.setOnClickListener(v -> showSupabaseLoginDialog());
         }
 
@@ -428,21 +430,21 @@ public class MainActivity extends AppCompatActivity {
 
         if (isLogged) {
             android.widget.TextView tvInfo = new android.widget.TextView(this);
-            tvInfo.setText("🟢 Conta vinculada ao Supabase do site!\nSeu progresso é sincronizado na nuvem automaticamente ao salvar.");
+            tvInfo.setText("🟢 Conta vinculada ao Supabase do site!\nSeu progresso é sincronizado na nuvem automaticamente.");
             tvInfo.setPadding(0, 10, 0, 20);
             layout.addView(tvInfo);
 
             new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("☁️ Gerenciar Conta & Save")
                 .setView(layout)
-                .setPositiveButton("💾 Salvar Agora", (dialog, which) -> {
+                .setPositiveButton("💾 Salvar na Nuvem", (dialog, which) -> {
                     saveCurrentGame();
                     android.widget.Toast.makeText(this, "✅ Progresso salvo na nuvem com sucesso!", android.widget.Toast.LENGTH_SHORT).show();
                 })
-                .setNeutralButton("🚪 Deslogar", (dialog, which) -> {
-                    saveCurrentGame(); // Força o salvamento antes de sair
+                .setNeutralButton("🎮 Mudar p/ Offline", (dialog, which) -> {
+                    saveCurrentGame();
                     com.example.pokeworld.managers.SupabaseManager.getInstance().signOut(this);
-                    android.widget.Toast.makeText(this, "🚪 Conta deslogada com sucesso.", android.widget.Toast.LENGTH_SHORT).show();
+                    android.widget.Toast.makeText(this, "🎮 Modo Offline ativado! Progresso salvo localmente.", android.widget.Toast.LENGTH_SHORT).show();
                     showHomeScreen();
                 })
                 .setNegativeButton("Fechar", null)
@@ -454,14 +456,14 @@ public class MainActivity extends AppCompatActivity {
             layout.addView(inputEmail);
 
             final android.widget.EditText inputPassword = new android.widget.EditText(this);
-            inputPassword.setHint("Senha");
+            inputPassword.setHint("Senha da conta");
             inputPassword.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
             layout.addView(inputPassword);
 
             new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("🔗 Vincular com a Conta do Site")
+                .setTitle("🔑 Entrar na Conta (Nuvem / Site)")
                 .setView(layout)
-                .setPositiveButton("Conectar", (dialog, which) -> {
+                .setPositiveButton("🌐 Entrar Online", (dialog, which) -> {
                     String email = inputEmail.getText().toString().trim();
                     String pass = inputPassword.getText().toString().trim();
                     if (!email.isEmpty() && !pass.isEmpty()) {
@@ -473,7 +475,7 @@ public class MainActivity extends AppCompatActivity {
                                     android.widget.Toast.makeText(this, "Baixando save da nuvem...", android.widget.Toast.LENGTH_SHORT).show();
                                     com.example.pokeworld.managers.SupabaseManager.getInstance().fetchCloudSave(dbHelper, () -> {
                                         runOnUiThread(() -> {
-                                            android.widget.Toast.makeText(this, "Save carregado com sucesso!", android.widget.Toast.LENGTH_SHORT).show();
+                                            android.widget.Toast.makeText(this, "Save da nuvem carregado!", android.widget.Toast.LENGTH_SHORT).show();
                                             showHomeScreen();
                                         });
                                     });
@@ -481,6 +483,11 @@ public class MainActivity extends AppCompatActivity {
                             });
                         });
                     }
+                })
+                .setNeutralButton("🎮 Jogar Offline", (dialog, which) -> {
+                    com.example.pokeworld.managers.SupabaseManager.getInstance().signOut(this);
+                    android.widget.Toast.makeText(this, "🎮 Jogando em Modo Offline (Save Local)!", android.widget.Toast.LENGTH_SHORT).show();
+                    showHomeScreen();
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();
