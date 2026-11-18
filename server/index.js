@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 const players = {};
 
 app.get("/", (req, res) => {
-    res.send("Servidor Multiplayer do PokeWorld está rodando online!");
+    res.send("Servidor Multiplayer do PokeWorld está rodando online com Co-op na Torre!");
 });
 
 io.on("connection", (socket) => {
@@ -40,10 +40,7 @@ io.on("connection", (socket) => {
             isShiny: false
         };
 
-        // Envia todos os jogadores atualmente conectados para o novo jogador
         socket.emit("currentPlayers", players);
-
-        // Notifica outros jogadores sobre o novo jogador
         socket.broadcast.emit("playerJoined", players[socket.id]);
     });
 
@@ -53,8 +50,29 @@ io.on("connection", (socket) => {
                 ...players[socket.id],
                 ...data
             };
-            // Retransmite os dados de movimento para os outros jogadores
             socket.broadcast.emit("playerMoved", players[socket.id]);
+        }
+    });
+
+    // --- SISTEMA DE CO-OP NA TORRE ---
+    socket.on("inviteTower", (data) => {
+        const targetId = data.targetId;
+        if (targetId) {
+            io.to(targetId).emit("towerInvitation", {
+                fromId: socket.id,
+                fromName: players[socket.id] ? players[socket.id].name : "Treinador",
+                floor: data.floor || 1
+            });
+        }
+    });
+
+    socket.on("acceptTower", (data) => {
+        const hostId = data.hostId;
+        if (hostId) {
+            io.to(hostId).emit("towerAccepted", {
+                friendId: socket.id,
+                friendName: players[socket.id] ? players[socket.id].name : "Treinador"
+            });
         }
     });
 

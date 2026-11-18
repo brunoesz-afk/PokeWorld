@@ -94,11 +94,50 @@ public class MultiplayerManager {
                     }
                 });
 
+                socket.on("towerInvitation", args -> {
+                    if (args.length > 0 && args[0] instanceof JSONObject) {
+                        JSONObject data = (JSONObject) args[0];
+                        String fromName = data.optString("fromName", "Amigo");
+                        Log.d("Multiplayer", "🏰 Convite Co-op para a Torre recebido de " + fromName);
+                    }
+                });
+
+                socket.on("towerAccepted", args -> {
+                    if (args.length > 0 && args[0] instanceof JSONObject) {
+                        JSONObject data = (JSONObject) args[0];
+                        String friendName = data.optString("friendName", "Amigo");
+                        Log.d("Multiplayer", "🏰 " + friendName + " aceitou entrar na Torre com você!");
+                    }
+                });
+
                 socket.connect();
             } catch (Exception e) {
                 Log.e("MultiplayerManager", "Erro ao conectar ao servidor (modo offline): " + e.getMessage());
             }
         }).start();
+    }
+
+    public void inviteToTower(String targetId, int floor) {
+        if (!isConnected || socket == null) return;
+        try {
+            JSONObject data = new JSONObject();
+            data.put("targetId", targetId);
+            data.put("floor", floor);
+            socket.emit("inviteTower", data);
+        } catch (JSONException e) {
+            Log.e("MultiplayerManager", "Erro ao convidar para torre: " + e.getMessage());
+        }
+    }
+
+    public void acceptTowerInvite(String hostId) {
+        if (!isConnected || socket == null) return;
+        try {
+            JSONObject data = new JSONObject();
+            data.put("hostId", hostId);
+            socket.emit("acceptTower", data);
+        } catch (JSONException e) {
+            Log.e("MultiplayerManager", "Erro ao aceitar torre: " + e.getMessage());
+        }
     }
 
     private void handlePlayerUpdate(JSONObject data) {
