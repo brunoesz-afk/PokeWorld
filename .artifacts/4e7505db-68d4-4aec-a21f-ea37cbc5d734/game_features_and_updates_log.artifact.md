@@ -8,6 +8,11 @@ Este documento centraliza todas as configurações, mecânicas implementadas e n
 
 | Versão | Código | Principais Adições e Mudanças |
 | :--- | :--- | :--- |
+| **v1.60** | 60 | Posicionamento do Seletor Rápido de Equipe do Time no lado direito da tela, exatamente à esquerda do Minimapa. |
+| **v1.58 - v1.59** | 58-59 | Sincronização e download automático de save da nuvem Supabase na abertura do app + Escolha clara de modo Online x Offline na tela inicial. |
+| **v1.55 - v1.57** | 55-57 | Redesign do Menu de Criaturas (`🐾`) com animação lenta em movimento, novo mapa `MOLTEN_SANCTUM` (Santuário de Magma) com Arena de Boss Mega Charizard X e portas de lavagem animadas. |
+| **v1.53 - v1.54** | 53-54 | Sistema de 3 Hordas/Rounds por andar na Torre, Portal `aincrad_portal` no chão ao vencer o andar e Seleção de Andares da Torre com Zoom e Paginação (1-10 e 11-20). |
+| **v1.44 - v1.47** | 44-47 | Conexão com Supabase Auth e alinhamento com as tabelas `player_profiles` e `pokemon_party` do site em tempo real + Botão de Login/Vínculo na tela inicial. |
 | **v1.40** | 40 | Correção do tutorial da Enfermeira Joy (ocorre apenas 1x) + Adição do mapa `TOWER` (Torre de Desafios em Ondas) e NPC Mestre da Torre. |
 | **v1.38** | 38 | Colisão física sólida contra inimigos/Pokémons (impedindo o jogador de atravessá-los). |
 | **v1.36** | 36 | Sistema de separação e repulsão física entre criaturas (*Separation Steering* para evitar sobreposição de tiles). |
@@ -21,16 +26,16 @@ Este documento centraliza todas as configurações, mecânicas implementadas e n
 
 ## 🛠️ Detalhamento Completo das Funcionalidades Atuais
 
-### 1. Sistema de Progressão e Enredo
-* **Ato I ao Ato III**: Missões guiadas divididas por níveis cobrindo desde a captura do primeiro Pokémon na floresta, construção da Oficina (5 segundos), até exploração de cavernas, montanhas nevadas e vulcões.
-* **Torre de Desafios (`TOWER`)**: Mapa fechado com ondas contínuas de Pokémons selvagens. A cada onda superada, o jogador sobe de andar e recebe recompensas em Ouro. NPC **Mestre da Torre** localizado na Base Central (`HOME`).
+### 1. Sistema de Progressão, Enredo e Seleção de Time
+* **Atalho Rápido de Equipe no Minimapa**: Os ícones dos até 6 Pokémons do seu time ficam dispostos verticalmente logo à esquerda do Minimapa (no lado direito da tela). Tocar diretamente no ícone de qualquer Pokémon altera instantaneamente seu companheiro ativo de batalha.
+* **Torre de Desafios (`TOWER`)**: Mapa compacto de 20 andares com 3 hordas progressivas por andar. Ao vencer as hordas, o portal `aincrad_portal` aparece no chão para subir ao próximo nível.
+* **Ato I ao Ato III**: Missões guiadas divididas por níveis cobrindo desde a captura do primeiro Pokémon na floresta, construção da Oficina (5 segundos), até exploração de cavernas, montanhas nevadas, vulcões e o Santuário de Magma (`MOLTEN_SANCTUM`).
 
-### 2. Mecânicas de Combate, IA e Colisão
+### 2. Integração Supabase & Site
+* **Sincronização em Tempo Real**: Conexão nativa com `player_profiles` e `pokemon_party` do Supabase do seu site.
+* **Download de Cloud Save**: Ao logar no app, o jogo baixa automaticamente o save mais recente da nuvem antes de carregar o mundo.
+* **Modo Offline x Online**: O jogador pode alternar livremente entre jogar online (sincronizado na nuvem) e jogar offline (save local no celular).
+
+### 3. Mecânicas de Combate, IA e Colisão
 * **Colisão Sólida e Repulsão**: Pokémons selvagens e aliados ocupam espaço físico real no mapa (*tile*), impedindo que o jogador atravesse por dentro deles. Sistema de *Separation Steering* evita que criaturas fiquem sobrepostas.
-* **Guarda da Base**: Pokémons deixados no Depósito ganham o status de `🛡️ Guarda`, patrulhando e defendendo a base automaticamente contra invasores. O limite de guardas escala com o nível do Treinador (Nível 1-10: 6, Nível 11-20: 10, Nível 21-30: 15, Nível 30+: +1/nível).
-* **Tutorial Guiado & Enfermeira Joy**: Batalha inicial facilitada contra o Rattata do tutorial (dano de 2 HP). O evento de resgate da Enfermeira Joy ocorre **apenas uma vez** no primeiro desmaio do Pokémon, restaurando o time em 100% e teleportando para a Cidade.
-
-### 3. Multiplayer e Otimizações Técnicas
-* **Multiplayer Inteligente por Mapa**: Exploração nos mapas de campo e dungeons roda totalmente local e offline para máxima fluidez. A conexão com o Socket.IO (`https://pokeworld-1-nmva.onrender.com`) ativa automaticamente em segundo plano ao entrar na Cidade (`CITY`) ou Base (`HOME`).
-* **Desempenho Extremo (60+ FPS)**: Culling de visão (*Viewport Culling* desenha apenas os ~200 tiles visíveis em vez de 12.800), reutilização de instâncias `Rect`, renderização em `RGB_565` (50% menos consumo de RAM) e carregamento progressivo em lotes para evitar OOM em celulares intermediários.
-* **Atualizações OTA Silenciosas**: Sincronização automática de dados e status na inicialização com indicador visual na tela de carregamento (*Splash Screen*) e botão de reconexão offline.
+* **Guarda da Base**: Pokémons deixados no Depósito ganham o status de `🛡️ Guarda`, patrulhando e defendendo a base automaticamente contra invasores. O limite de guardas escala com o nível do Treinador.
