@@ -54,6 +54,7 @@ public class TeleportUI implements UIHandler {
         points.add(new MapPoint("Costa Azul", "OCEAN", "🌊", 26, Color.rgb(30, 100, 200), 2, 25));
         points.add(new MapPoint("Deserto Árido", "DESERT", "🏜️", 35, Color.rgb(240, 200, 100), 2, 30));
         points.add(new MapPoint("Vulcão Supremo", "VOLCANO", "🌋", 45, Color.rgb(255, 50, 0), 2, 45));
+        points.add(new MapPoint("Santuário de Magma", "MOLTEN_SANCTUM", "🌋", 50, Color.rgb(255, 30, 0), 2, 50));
         points.add(new MapPoint("Montanha Nevada", "SNOW_MOUNTAIN", "❄️", 55, Color.rgb(200, 240, 255), 2, 50));
     }
 

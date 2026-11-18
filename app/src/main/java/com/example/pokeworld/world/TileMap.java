@@ -17,6 +17,7 @@ public class TileMap {
     private Paint paint;
     
     public static final int GRASS = 0, TREE = 1, PORTAL = 2, WATER = 3, FLOOR = 4, ROCK = 5, SAND = 6, SNOW = 7, BRICK = 8, LAVA = 9, DEEP_WATER = 10, CLOUD = 11, OBSIDIAN = 12, BUSH = 13, ROAD = 14, SIGN = 15, SOIL = 16, BERRY_TREE = 17, STONE_PAVEMENT = 18, CARPET = 19, SNOW_CRYSTAL = 20;
+    public static final int BASALT_FLOOR = 21, ASH_GROUND = 22, CRACKED_OBSIDIAN = 23, MAGMA_BRIDGE = 24, SULFUR_CRYSTAL = 25, MAGMA_VENT = 26;
 
     private String mapName;
 
@@ -43,6 +44,7 @@ public class TileMap {
             case "OCEAN": generateOceanMap(); break;
             case "DESERT": generateDesertMap(); break;
             case "VOLCANO": generateVolcanoMap(); break;
+            case "MOLTEN_SANCTUM": generateMoltenSanctumMap(); break;
             case "SNOW_MOUNTAIN": generateSnowMountainMap(); break;
             case "SNOW_PEAK": generateSnowPeakMap(); break;
             case "FEAR_ISLAND": generateFearIslandMap(); break;
@@ -374,6 +376,81 @@ public class TileMap {
         mapData[0][midC] = PORTAL; mapData[rows-1][midC] = PORTAL;
     }
 
+    private void generateMoltenSanctumMap() {
+        Random rand = new Random();
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                mapData[r][c] = (rand.nextDouble() < 0.35) ? ASH_GROUND : BASALT_FLOOR;
+            }
+        }
+
+        for (int r = 0; r < rows; r++) {
+            mapData[r][0] = CRACKED_OBSIDIAN;
+            mapData[r][cols - 1] = CRACKED_OBSIDIAN;
+        }
+        for (int c = 0; c < cols; c++) {
+            mapData[0][c] = CRACKED_OBSIDIAN;
+            mapData[rows - 1][c] = CRACKED_OBSIDIAN;
+        }
+
+        int river1Col = cols / 3;
+        int river2Col = (cols * 2) / 3;
+        for (int r = 1; r < rows - 1; r++) {
+            int offset1 = (int) Math.round(Math.sin(r * 0.35) * 2);
+            int offset2 = (int) Math.round(Math.cos(r * 0.35) * 2);
+
+            for (int w = -1; w <= 1; w++) {
+                int c1 = river1Col + offset1 + w;
+                int c2 = river2Col + offset2 + w;
+                if (c1 > 1 && c1 < cols - 2) mapData[r][c1] = LAVA;
+                if (c2 > 1 && c2 < cols - 2) mapData[r][c2] = LAVA;
+            }
+        }
+
+        int midR = rows / 2;
+        int midC = cols / 2;
+        int arenaRadius = Math.min(rows, cols) / 5;
+        for (int r = midR - arenaRadius; r <= midR + arenaRadius; r++) {
+            for (int c = midC - arenaRadius; c <= midC + arenaRadius; c++) {
+                if (r > 1 && r < rows - 2 && c > 1 && c < cols - 2) {
+                    double dist = Math.hypot(r - midR, c - midC);
+                    if (dist <= arenaRadius - 1) {
+                        mapData[r][c] = BASALT_FLOOR;
+                    } else if (dist <= arenaRadius) {
+                        if (r != midR && c != midC) {
+                            mapData[r][c] = CRACKED_OBSIDIAN;
+                        }
+                    }
+                }
+            }
+        }
+
+        int[] bridgeRows = { rows / 4, midR, (rows * 3) / 4 };
+        for (int br : bridgeRows) {
+            for (int c = 1; c < cols - 1; c++) {
+                if (mapData[br][c] == LAVA || mapData[br][c] == CRACKED_OBSIDIAN) {
+                    mapData[br][c] = MAGMA_BRIDGE;
+                }
+            }
+        }
+
+        for (int i = 0; i < 35; i++) {
+            int rr = 2 + rand.nextInt(rows - 4);
+            int rc = 2 + rand.nextInt(cols - 4);
+            if ((mapData[rr][rc] == BASALT_FLOOR || mapData[rr][rc] == ASH_GROUND)
+                    && Math.hypot(rr - midR, rc - midC) > arenaRadius + 1
+                    && rr != midR) {
+                mapData[rr][rc] = (rand.nextDouble() < 0.65) ? SULFUR_CRYSTAL : MAGMA_VENT;
+            }
+        }
+
+        mapData[midR][0] = PORTAL;
+        mapData[midR][1] = MAGMA_BRIDGE;
+        mapData[midR][cols - 1] = PORTAL;
+        mapData[midR][cols - 2] = MAGMA_BRIDGE;
+    }
+
     private void generateRioMap() {
         Random rand = new Random();
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = SAND;
@@ -483,20 +560,17 @@ public class TileMap {
             Bitmap s = sm.getTileSprite(type);
             if (s != null) canvas.drawBitmap(s, null, cDest, null);
             else drawFallbackColor(canvas, type, x, y);
-        } else if (type == LAVA || type == WATER) {
+        } else if (type == LAVA || type == WATER || type == MAGMA_VENT) {
             Bitmap sheet = sm.getTileSprite(type);
             if (sheet != null && sheet.getWidth() >= TILE_SIZE * 3 && sheet.getHeight() == TILE_SIZE) {
-                // Animação 3x1 para Lava e Água (Estilo vulcan)
                 int frameCount = 3;
                 int frameIndex = (int)((System.currentTimeMillis() / 400) % frameCount);
                 int fw = sheet.getWidth() / frameCount;
                 reusableSrc.set(frameIndex * fw, 0, (frameIndex + 1) * fw, sheet.getHeight());
                 
-                // Overlap para evitar frestas
                 Rect destTile = new Rect(x - 2, y - 2, x + TILE_SIZE + 2, y + TILE_SIZE + 2);
                 canvas.drawBitmap(sheet, reusableSrc, destTile, null);
             } else if (sheet != null && sheet.getWidth() >= TILE_SIZE * 3 && sheet.getHeight() >= TILE_SIZE * 3) {
-                // Fallback para Autotiling 3x3 se a imagem for quadrada
                 int sr = 1, sc = 1; 
                 boolean t = (r > 0 && mapData[r-1][c] == type), b = (r < rows - 1 && mapData[r+1][c] == type);
                 boolean l = (c > 0 && mapData[r][c-1] == type), rr = (c < cols - 1 && mapData[r][c+1] == type);
@@ -541,7 +615,10 @@ public class TileMap {
             case BRICK: return Color.rgb(139, 69, 19); case LAVA: return Color.RED; case DEEP_WATER: return Color.rgb(0, 0, 139); case CLOUD: return Color.rgb(200, 230, 255);
             case OBSIDIAN: return Color.rgb(40, 20, 50); case BUSH: return Color.rgb(34, 139, 34); case ROAD: return Color.rgb(180, 160, 140);
             case SIGN: return Color.rgb(160, 82, 45); case SOIL: return Color.rgb(100, 70, 30); case BERRY_TREE: return Color.rgb(50, 150, 50);
-            case STONE_PAVEMENT: return Color.rgb(120, 120, 130); case CARPET: return Color.rgb(180, 20, 20); case SNOW_CRYSTAL: return Color.rgb(200, 255, 255); default: return Color.MAGENTA;
+            case STONE_PAVEMENT: return Color.rgb(120, 120, 130); case CARPET: return Color.rgb(180, 20, 20); case SNOW_CRYSTAL: return Color.rgb(200, 255, 255);
+            case BASALT_FLOOR: return Color.rgb(30, 30, 35); case ASH_GROUND: return Color.rgb(80, 75, 75); case CRACKED_OBSIDIAN: return Color.rgb(50, 20, 40);
+            case MAGMA_BRIDGE: return Color.rgb(120, 80, 50); case SULFUR_CRYSTAL: return Color.rgb(255, 215, 0); case MAGMA_VENT: return Color.rgb(255, 60, 0);
+            default: return Color.MAGENTA;
         }
     }
 
@@ -551,8 +628,8 @@ public class TileMap {
         int t = mapData[r][c];
         if (fly) return true;
         if (t == WATER || t == DEEP_WATER) return surf || aquatic;
-        if (t == LAVA) return fireRes;
-        return t != TREE && t != ROCK && t != SIGN && t != BERRY_TREE && t != BRICK && t != SNOW_CRYSTAL;
+        if (t == LAVA || t == MAGMA_VENT) return fireRes;
+        return t != TREE && t != ROCK && t != SIGN && t != BERRY_TREE && t != BRICK && t != SNOW_CRYSTAL && t != CRACKED_OBSIDIAN && t != SULFUR_CRYSTAL;
     }
 
     public boolean isPortal(double x, double y) { int r = (int)(y / TILE_SIZE), c = (int)(x / TILE_SIZE); return r >= 0 && r < rows && c >= 0 && c < cols && mapData[r][c] == PORTAL; }

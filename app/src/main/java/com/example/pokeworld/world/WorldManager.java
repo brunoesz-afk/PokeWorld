@@ -70,6 +70,7 @@ public class WorldManager {
             case "OCEAN": return 26;
             case "DESERT": return 35;
             case "VOLCANO": return 45;
+            case "MOLTEN_SANCTUM": return 50;
             case "SNOW_MOUNTAIN": return 55;
             case "SNOW_PEAK": return 65;
             case "FEAR_ISLAND": return 75;
@@ -131,6 +132,7 @@ public class WorldManager {
             case "FIRE_CAVE": spawnBasic(new String[]{"Charmander", "Vulpix", "Ponyta", "Growlithe", "Flareon", "Houndour"}, 6, Color.RED); break;
             case "MAGMA_CAVE": spawnBasic(new String[]{"Charmeleon", "Magmar", "Rapidash", "Arcanine", "Ninetales"}, 18, Color.RED); break;
             case "VOLCANO": spawnVolcano(); break;
+            case "MOLTEN_SANCTUM": spawnMoltenSanctum(); break;
             case "SEWERS": spawnBasic(new String[]{"Rattata", "Raticate", "Ekans", "Arbok", "Grimer", "Muk", "Koffing", "Weezing", "Zubat"}, 2, Color.DKGRAY); break;
             case "SWAMP": spawnBasic(new String[]{"Arbok", "Weezing", "Muk", "Nidoking", "Nidoqueen", "Gloom", "Victreebel"}, 20, Color.MAGENTA); break;
             case "SNOW_MOUNTAIN": spawnSnow(); break;
@@ -391,7 +393,21 @@ public class WorldManager {
         }
     }
 
-    private void handlePortal(Player p, Companion c, GameView gv) { String m = tileMap.getMapName(); if (m.equals("CITY")) loadMap("FOREST", p, c, "BOTTOM"); else loadMap("CITY", p, c, "CENTER"); }
+    private void spawnMoltenSanctum() {
+        int base = getBiomeBaseLevel("MOLTEN_SANCTUM");
+        spawnBasic(new String[]{"Magmar", "Rapidash", "Arcanine", "Flareon", "Houndoom", "Charizard"}, base, Color.RED);
+        double midX = (tileMap.getCols() * TileMap.TILE_SIZE) / 2.0;
+        double midY = (tileMap.getRows() * TileMap.TILE_SIZE) / 2.0;
+        addEnemy("Mega_Charizard_X", midX, midY, 60, Color.RED, true, true, 85, 0);
+    }
+
+    private void handlePortal(Player p, Companion c, GameView gv) {
+        String m = tileMap.getMapName();
+        if (m.equals("CITY")) loadMap("FOREST", p, c, "BOTTOM");
+        else if (m.equals("VOLCANO")) loadMap("MOLTEN_SANCTUM", p, c, "LEFT");
+        else if (m.equals("MOLTEN_SANCTUM")) loadMap("VOLCANO", p, c, "CENTER");
+        else loadMap("CITY", p, c, "CENTER");
+    }
 
     public void addEnemy(String s, double x, double y, double r, int c, boolean b, boolean sh) {
         addEnemy(s, x, y, r, c, b, sh, 1, 0, false);
