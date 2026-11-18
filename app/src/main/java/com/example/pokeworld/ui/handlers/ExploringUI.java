@@ -205,16 +205,19 @@ public class ExploringUI extends BaseUI {
             canvas.drawText("🏰 ANDAR: " + gv.dungeon.getCurrentFloor(), canvas.getWidth()/2f, 50, paint);
         }
 
-        // --- QUICK PARTY SWITCHER (Atalho dos 6 Pokémons do Time - Coluna Esquerda) ---
+        // --- QUICK PARTY SWITCHER (À esquerda do Minimapa, no lado direito da tela) ---
+        float w = canvas.getWidth();
         List<CapturedCreature> party = p.getParty();
-        float slotW = 55, slotH = 55, startX = 40, startY = 130;
+        float slotW = 50, slotH = 50;
+        float startX = w - 305; // Logo à esquerda do minimapa
+        float startY = 70;
         for (int i = 0; i < party.size(); i++) {
             CapturedCreature c = party.get(i);
-            RectF slotRect = new RectF(startX, startY + (i * (slotH + 8)), startX + slotW, startY + (i * (slotH + 8)) + slotH);
+            RectF slotRect = new RectF(startX, startY + (i * (slotH + 6)), startX + slotW, startY + (i * (slotH + 6)) + slotH);
             
             paint.setStyle(Paint.Style.FILL);
             boolean isActive = c.name.equalsIgnoreCase(comp.getSpecies());
-            paint.setColor(isActive ? Color.argb(220, 255, 215, 0) : Color.argb(150, 20, 30, 40));
+            paint.setColor(isActive ? Color.argb(220, 255, 215, 0) : Color.argb(160, 20, 30, 45));
             canvas.drawRoundRect(slotRect, 8, 8, paint);
 
             paint.setStyle(Paint.Style.STROKE);
@@ -224,7 +227,7 @@ public class ExploringUI extends BaseUI {
 
             Bitmap icon = SpriteManager.getInstance().getUnitSprite(c.name, 0, 0, c.isShiny);
             if (icon != null) {
-                canvas.drawBitmap(icon, null, new Rect((int)slotRect.left + 4, (int)slotRect.top + 4, (int)slotRect.right - 4, (int)slotRect.bottom - 4), null);
+                canvas.drawBitmap(icon, null, new Rect((int)slotRect.left + 3, (int)slotRect.top + 3, (int)slotRect.right - 3, (int)slotRect.bottom - 3), null);
             }
         }
 
