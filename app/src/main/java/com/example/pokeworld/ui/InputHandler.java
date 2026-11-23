@@ -58,8 +58,8 @@ public class InputHandler {
                 return true;
             }
         };
-        handlers.put(UIManager.UIState.BESTIARY, exploreFallback);
-        handlers.put(UIManager.UIState.ACHIEVEMENTS, exploreFallback);
+        handlers.put(UIManager.UIState.BESTIARY, new BestiaryInput());
+        handlers.put(UIManager.UIState.ACHIEVEMENTS, new AchievementInput());
         handlers.put(UIManager.UIState.VICTORY, exploreFallback);
     }
 

@@ -211,6 +211,7 @@ public class GameView {
             aincrad.update();
             farming.update();
             tower.update();
+            achievements.check(this);
             
             effects.update();
             particles.update();

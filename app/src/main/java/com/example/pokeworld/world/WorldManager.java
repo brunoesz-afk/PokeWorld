@@ -304,6 +304,7 @@ public class WorldManager {
     public double screenToWorldY(float sy) { return cameraY + sy / currentZoom; }
 
     private long lastDynamicSpawnCheck = 0;
+    private long lastSeenCheck = 0;
 
     public void update(Player p, Companion c, GameView gv) {
         if (tileMap.isPortal(p.getPositionX(), p.getPositionY())) handlePortal(p, c, gv);
@@ -316,6 +317,16 @@ public class WorldManager {
             lastZoneCheck = nowZ;
         }
 
+        // Registra na Pokédex o que está perto do jogador (2x por segundo, junto com os pontos de spawn)
+        if (nowZ - lastSeenCheck > 500) {
+            lastSeenCheck = nowZ;
+            for (Enemy e : enemies) {
+                if (!e.isAlive || e.isRaider) continue;
+                double dx = e.positionX - p.getPositionX(), dy = e.positionY - p.getPositionY();
+                if (dx * dx + dy * dy < 700.0 * 700.0) gv.bestiary.markAsSeen(e.name);
+            }
+        }
+
         updateEnemies(c, gv); updateLoots(p, gv);
         if (tileMap.getMapName().equals("HOME")) for (Building b : buildings) b.update(activity);
         if (base != null) {
@@ -325,7 +336,22 @@ public class WorldManager {
         }
     }
 
-    private String[] getSpeciesForMap(String name) {
+    /** Mapas selvagens (para a Pokédex mostrar onde cada espécie aparece). */
+    public static final String[] WILD_MAPS = {"FOREST", "JUNGLE", "SMALL_LAKE", "RIO", "OCEAN", "ROCKY_PATH", "MINE", "VALE_ROCHOSO", "FIRE_CAVE", "MAGMA_CAVE", "VOLCANO", "SEWERS", "SWAMP", "SNOW_MOUNTAIN", "DESERT", "FEAR_ISLAND", "MOLTEN_SANCTUM_BEGINNER", "MOLTEN_SANCTUM"};
+
+    public static String mapLabel(String map) {
+        switch (map) {
+            case "FOREST": return "Floresta"; case "JUNGLE": return "Selva"; case "SMALL_LAKE": return "Lago";
+            case "RIO": return "Rio"; case "OCEAN": return "Oceano"; case "ROCKY_PATH": return "Trilha Rochosa";
+            case "MINE": return "Mina"; case "VALE_ROCHOSO": return "Vale Rochoso"; case "FIRE_CAVE": return "Caverna de Fogo";
+            case "MAGMA_CAVE": return "Caverna de Magma"; case "VOLCANO": return "Vulcão"; case "SEWERS": return "Esgoto";
+            case "SWAMP": return "Pântano"; case "SNOW_MOUNTAIN": return "Montanha Nevada"; case "DESERT": return "Deserto";
+            case "FEAR_ISLAND": return "Ilha do Medo"; case "MOLTEN_SANCTUM_BEGINNER": return "Santuário (Iniciante)";
+            case "MOLTEN_SANCTUM": return "Santuário de Magma"; default: return map;
+        }
+    }
+
+    public static String[] getSpeciesForMap(String name) {
         switch (name) {
             case "FOREST": return new String[]{"Bulbasaur", "Caterpie", "Metapod", "Butterfree", "Weedle", "Kakuna", "Pidgey", "Pidgeotto", "Oddish", "Bellsprout", "Rattata", "Meowth", "Spearow"};
             case "JUNGLE": return new String[]{"Ivysaur", "Venusaur", "Gloom", "Vileplume", "Weepinbell", "Victreebel", "Pinsir", "Scyther", "Beedril", "Paras", "Parasect", "Tangela", "Venonat", "Venomoth"};

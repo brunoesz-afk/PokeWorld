@@ -55,7 +55,7 @@ public final class PartyManager {
         gv.activity.dbHelper.deletePet(oldSpecies);
         saveActive(gv);
         gv.activity.dbHelper.updateActiveSpecies(newSpecies);
-        gv.activity.dbHelper.addToBestiary(newSpecies);
+        gv.bestiary.markAsCaptured(newSpecies);
         gv.activity.saveCurrentGame();
     }
 
@@ -73,7 +73,7 @@ public final class PartyManager {
         c.name = newSpecies;
         gv.activity.dbHelper.deletePet(old);
         gv.activity.dbHelper.savePet(newSpecies, d.level, d.exp, d.forgeBonus, d.weapon, d.armor, c.isShiny, d.personality, d.rune, d.friendship, d.type2, c.rarity, c.gender);
-        gv.activity.dbHelper.addToBestiary(newSpecies);
+        gv.bestiary.markAsCaptured(newSpecies);
         gv.activity.saveCurrentGame();
     }
 }

@@ -47,8 +47,8 @@ public class DexUI extends BaseUI {
 
         // Contador Discovered/Total
         paint.setColor(Color.WHITE); paint.setTextSize(22); paint.setTextAlign(Paint.Align.RIGHT);
-        int discovered = gv.bestiary.getSeenCreatures().size();
-        canvas.drawText(discovered + " / 151", w * 0.88f, h * 0.09f, paint);
+        int discovered = gv.bestiary.seenCount();
+        canvas.drawText(discovered + " / " + com.example.pokeworld.managers.BestiaryManager.POKEDEX.length, w * 0.88f, h * 0.09f, paint);
         
         // --- PAINEL ESQUERDO (LISTA) ---
         drawDexLeftPanel(canvas, gv.player.getCreatureCollection(), w, h);
