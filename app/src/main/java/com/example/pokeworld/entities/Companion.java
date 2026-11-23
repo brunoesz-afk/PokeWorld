@@ -507,13 +507,13 @@ public class Companion {
         p.setColor(Color.DKGRAY);
         canvas.drawRect(bx, by + 10, bx + bw, by + 14, p);
         p.setColor(Color.CYAN);
-        float xpPerc = (float)exp / (level * 100);
+        float xpPerc = (float)exp / Progression.expToNext(level);
         canvas.drawRect(bx, by + 10, bx + (bw * xpPerc), by + 14, p);
     }
 
     public void gainExp(int amount) {
         this.exp += (int) Math.round(amount * (1.0 + talent("Estudioso")));
-        int nextLevelExp = level * 100;
+        int nextLevelExp = Progression.expToNext(level);
         if (this.exp >= nextLevelExp) {
             this.exp -= nextLevelExp;
             this.level++;

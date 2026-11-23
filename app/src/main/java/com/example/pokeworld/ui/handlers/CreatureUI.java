@@ -12,6 +12,7 @@ import com.example.pokeworld.entities.CapturedCreature;
 import com.example.pokeworld.entities.Companion;
 import com.example.pokeworld.entities.EvolutionTable;
 import com.example.pokeworld.entities.PetData;
+import com.example.pokeworld.entities.Progression;
 import com.example.pokeworld.managers.PartyManager;
 import com.example.pokeworld.managers.SpriteManager;
 
@@ -123,8 +124,8 @@ public class CreatureUI extends BaseUI {
         text(canvas, fit(c.name + (c.gender == 0 ? " ♂" : " ♀") + (c.isShiny ? " ✨" : ""), det.right - tx - 12), tx, det.top + 50, 28, Color.WHITE, Paint.Align.LEFT, true);
         text(canvas, "[" + c.rarity.getLabel() + "]", tx, det.top + 80, 18, c.rarity.getColor() | 0xFF000000, Paint.Align.LEFT, true);
         text(canvas, "Nível " + level, tx, det.top + 112, 22, C_ACCENT, Paint.Align.LEFT, true);
-        bar(canvas, new RectF(tx, det.top + 124, det.right - 24, det.top + 138), exp / (float) Math.max(1, level * 100), Color.rgb(90, 170, 255));
-        text(canvas, "EXP " + exp + " / " + (level * 100), tx, det.top + 160, 14, C_MUTED, Paint.Align.LEFT, false);
+        bar(canvas, new RectF(tx, det.top + 124, det.right - 24, det.top + 138), exp / (float) Progression.expToNext(level), Color.rgb(90, 170, 255));
+        text(canvas, "EXP " + exp + " / " + Progression.expToNext(level), tx, det.top + 160, 14, C_MUTED, Paint.Align.LEFT, false);
 
         float y = det.top + bs + 50;
         if (active) {

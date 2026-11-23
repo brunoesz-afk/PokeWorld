@@ -22,7 +22,10 @@ public class CombatManager {
             return;
         }
 
-        gv.ui.showMessage("Tentando capturar...");
+        int pct = (int) Math.round(100 * com.example.pokeworld.entities.Progression.captureChance(
+                target.getOwnerLevel(), target.isOwnerBoss(), target.isShiny(), gv.companion.getLevel(),
+                com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Domador") * 0.8));
+        gv.ui.showMessage("Tentando capturar... (chance " + pct + "%)");
         
         // Dispara o efeito visual da Pokébola
         gv.effects.addCaptureEffect(gv.player.getPositionX(), gv.player.getPositionY(), target, () -> {
@@ -33,22 +36,20 @@ public class CombatManager {
     private void processCaptureDefeated(com.example.pokeworld.entities.Loot target) {
         if (!gv.world.loots.contains(target)) return;
 
-        // Chance fixa ou baseada em algo (ex: 50% base)
-        double finalChance = 0.5;
-        
-        // Bônus do Talento Domador
-        int domadorLevel = gv.player.getTalents().getOrDefault("Domador", 0);
-        finalChance += domadorLevel * 0.10;
+        // Quanto mais forte o alvo (nível, chefe, shiny), mais difícil; seu nível e o talento Domador ajudam
+        double finalChance = com.example.pokeworld.entities.Progression.captureChance(
+                target.getOwnerLevel(), target.isOwnerBoss(), target.isShiny(), gv.companion.getLevel(),
+                com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Domador") * 0.8);
 
         if (random.nextDouble() < finalChance) {
             if (random.nextDouble() >= com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Coletor")) gv.player.useItem("Pokébola");
             
             Rarity rarity = Rarity.COMMON;
             double r = random.nextDouble();
-            if (r < 0.01) rarity = Rarity.LEGENDARY;
-            else if (r < 0.05) rarity = Rarity.EPIC;
-            else if (r < 0.15) rarity = Rarity.RARE;
-            else if (r < 0.40) rarity = Rarity.UNCOMMON;
+            if (r < 0.005) rarity = Rarity.LEGENDARY;
+            else if (r < 0.03) rarity = Rarity.EPIC;
+            else if (r < 0.10) rarity = Rarity.RARE;
+            else if (r < 0.30) rarity = Rarity.UNCOMMON;
 
             int gender = random.nextDouble() < 0.5 ? 0 : 1;
             // Mantém o estado Shiny do corpo original

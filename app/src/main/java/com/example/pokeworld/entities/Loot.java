@@ -20,6 +20,8 @@ public class Loot {
     private Type type;
     private String ownerSpecies = ""; // Espécie do Pokémon derrotado
     private boolean isShiny = false;
+    private int ownerLevel = 1;
+    private boolean ownerBoss = false;
     private boolean visible = true;
     private long spawnTime;
     private static final long DEFEATED_LIFETIME = 60000; // 60 segundos
@@ -51,6 +53,9 @@ public class Loot {
     public int getAmount() { return amount >= 0 ? amount : (type == Type.GOLD ? 100 : 1); }
 
     public void setShiny(boolean shiny) { this.isShiny = shiny; }
+    public void setOwnerInfo(int level, boolean boss) { this.ownerLevel = level; this.ownerBoss = boss; }
+    public int getOwnerLevel() { return ownerLevel; }
+    public boolean isOwnerBoss() { return ownerBoss; }
     public boolean isShiny() { return isShiny; }
 
     public boolean isExpired() {

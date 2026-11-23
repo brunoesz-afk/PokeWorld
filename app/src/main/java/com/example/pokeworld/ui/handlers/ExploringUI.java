@@ -181,7 +181,7 @@ public class ExploringUI extends BaseUI {
         
         drawStatBar(canvas, 40, 60, 360, 15, (float)p.getHp() / p.getMaxHp(), Color.RED, "HP: " + p.getHp());
         drawStatBar(canvas, 40, 85, 360, 15, p.getStamina() / p.getMaxStamina(), Color.rgb(255, 215, 0), "STAMINA");
-        drawStatBar(canvas, 40, 110, 360, 15, (float)p.getExp() / (p.getLevel() * 100), Color.rgb(100, 255, 100), "XP");
+        drawStatBar(canvas, 40, 110, 360, 15, (float)p.getExp() / com.example.pokeworld.entities.Progression.expToNext(p.getLevel()), Color.rgb(100, 255, 100), "XP");
 
         int nameColor = comp.getGender() == 0 ? Color.rgb(100, 150, 255) : Color.rgb(255, 150, 200);
         paint.setColor(nameColor);
@@ -189,7 +189,7 @@ public class ExploringUI extends BaseUI {
         canvas.drawText("🐾 " + comp.getSpecies().toUpperCase() + " " + genderIcon + " [Nv." + comp.getLevel() + "]", 40, 180, paint);
         
         drawStatBar(canvas, 40, 190, 360, 15, (float)comp.getHp() / comp.getMaxHp(), Color.RED, "HP: " + comp.getHp() + "/" + comp.getMaxHp());
-        drawStatBar(canvas, 40, 215, 360, 15, (float)comp.getExp() / (comp.getLevel() * 100), Color.CYAN, "XP: " + comp.getExp());
+        drawStatBar(canvas, 40, 215, 360, 15, (float)comp.getExp() / com.example.pokeworld.entities.Progression.expToNext(comp.getLevel()), Color.CYAN, "XP: " + comp.getExp());
 
         paint.setTextAlign(Paint.Align.LEFT);
         paint.setColor(Color.YELLOW); paint.setTextSize(20);

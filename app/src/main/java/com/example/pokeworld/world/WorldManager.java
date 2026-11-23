@@ -438,14 +438,14 @@ public class WorldManager {
             if (!e.isAlive() && e.isRaider) {
                 // Invasor derrotado: dá experiência e fica "desmaiado" (dá para capturar); o prêmio vem ao fim da invasão
                 c.gainExp(e.level * 8); gv.player.gainExp(e.level * 4);
-                Loot d = new Loot(e.name, e.positionX, e.positionY, Loot.Type.DEFEATED); d.setOwnerSpecies(e.name); d.setShiny(e.isShiny); d.setRadius(Math.max(65, e.radius * 1.5)); loots.add(d);
+                Loot d = new Loot(e.name, e.positionX, e.positionY, Loot.Type.DEFEATED); d.setOwnerSpecies(e.name); d.setShiny(e.isShiny); d.setOwnerInfo(e.level, e.isBoss); d.setRadius(Math.max(65, e.radius * 1.5)); loots.add(d);
                 it.remove();
                 continue;
             }
             if (!e.isAlive()) {
-                int xp = (e.level * 20) + (e.isBoss ? 200 : 0);
+                int xp = (int) (((e.level * 20) + (e.isBoss ? 200 : 0)) * com.example.pokeworld.entities.Progression.expFactor(c.getLevel(), e.level));
                 c.gainExp(xp); if (gv.player.gainExp(xp/2)) gv.ui.showMessage("🎊 NÍVEL UP!");
-                Loot d = new Loot(e.name, e.positionX, e.positionY, Loot.Type.DEFEATED); d.setOwnerSpecies(e.name); d.setShiny(e.isShiny); d.setRadius(Math.max(65, e.radius * 1.5)); loots.add(d);
+                Loot d = new Loot(e.name, e.positionX, e.positionY, Loot.Type.DEFEATED); d.setOwnerSpecies(e.name); d.setShiny(e.isShiny); d.setOwnerInfo(e.level, e.isBoss); d.setRadius(Math.max(65, e.radius * 1.5)); loots.add(d);
                 dropLoot(e, gv);
                 
                 // Atualiza progresso das missões ao derrotar qualquer Pokémon selvagem

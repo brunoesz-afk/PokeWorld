@@ -63,7 +63,7 @@ public class Enemy {
         calculateScale(name, r, isBoss);
         this.color = color;
         this.isBoss = isBoss; 
-        this.maxHp = (isBoss ? 5000 : 250) + (level * 45); 
+        this.maxHp = (isBoss ? 5000 : 250) + (level * 55); 
         this.hp = maxHp;
         this.gender = Math.random() < 0.5 ? 0 : 1;
         setEnemyType();
@@ -127,6 +127,7 @@ public class Enemy {
         if (now - lastAttackTime > ATTACK_COOLDOWN) {
             int dmg = isBoss ? 150 : 25;
             dmg += (level * 5); // Dano escala com o nível
+            dmg = (int) (dmg * 1.2);   // inimigos batem 20% mais forte
             if (isNight) dmg *= 1.5;
             if (isShiny) dmg *= 1.3;
 

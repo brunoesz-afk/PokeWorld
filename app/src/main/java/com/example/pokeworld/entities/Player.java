@@ -277,7 +277,7 @@ public class Player {
         p.setColor(Color.DKGRAY);
         canvas.drawRect(bx, by + 12, bx + bw, by + 16, p);
         p.setColor(Color.rgb(100, 255, 100));
-        float xpPerc = (float)exp / (level * 100);
+        float xpPerc = (float)exp / Progression.expToNext(level);
         canvas.drawRect(bx, by + 12, bx + (bw * xpPerc), by + 16, p);
     }
 
@@ -383,7 +383,7 @@ public class Player {
     public int getFishingLevel() { return fishingLevel; }
     public int getFishingExp() { return fishingExp; }
     public void setFishingStats(int l, int e) { fishingLevel = l; fishingExp = e; }
-    public boolean gainExp(int a) { exp += (int) Math.round(a * (1.0 + TalentTree.bonus(this, "Mentor"))); if (exp >= 100 * level) { exp -= 100 * level; level++; talentPoints++; hp = maxHp; return true; } return false; }
+    public boolean gainExp(int a) { exp += (int) Math.round(a * (1.0 + TalentTree.bonus(this, "Mentor"))); if (exp >= Progression.expToNext(level)) { exp -= Progression.expToNext(level); level++; talentPoints++; hp = maxHp; return true; } return false; }
     private long dashCooldown() { return (long) (DASH_COOLDOWN * (1.0 - TalentTree.bonus(this, "Dash"))); }
     public void dash() { if (System.currentTimeMillis() - lastDashTime > dashCooldown() && stamina >= 30) { isDashing = true; dashStartTime = System.currentTimeMillis(); lastDashTime = System.currentTimeMillis(); stamina -= 30; } }
     public float getDashCooldownProgress() { return Math.min(1.0f, (float)(System.currentTimeMillis() - lastDashTime) / dashCooldown()); }
