@@ -195,9 +195,14 @@ public class TileMap {
         }
     }
 
+    /** Bloqueio extra sobre o mapa (muralhas e prédios da base). */
+    private MovementBlocker blocker;
+    public void setBlocker(MovementBlocker b) { this.blocker = b; }
+
     public boolean isWalkable(double x, double y, boolean surf, boolean fly, boolean aquatic, boolean fireRes) {
         int r = (int)(y / TILE_SIZE); int c = (int)(x / TILE_SIZE);
         if (r < 0 || r >= rows || c < 0 || c >= cols) return false;
+        if (blocker != null && blocker.blocks(x, y)) return false;
         int t = mapData[r][c];
         if (fly) return true;
         if (t == CLOUD) return false;

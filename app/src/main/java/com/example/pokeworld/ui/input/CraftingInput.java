@@ -14,7 +14,7 @@ public class CraftingInput implements InputExtension {
             return true;
         }
         if (ui.mountFactoryBtn != null && ui.mountFactoryBtn.contains(x, y)) {
-            tryStartBuildingPlacement("Fabrica de Montaria", 50, gv);
+            if (gv.world.base != null) gv.ui.state = UIManager.UIState.BUILD;
             return true;
         }
         if (ui.axeUpgradeBtn.contains(x, y)) {
@@ -37,28 +37,6 @@ public class CraftingInput implements InputExtension {
             tryCraftCape(gv);
             return true;
         }
-        if (ui.shockTowerBtn.contains(x, y)) {
-            boolean hasElectric = false;
-            for (com.example.pokeworld.entities.CapturedCreature c : gv.player.getCreatureCollection()) {
-                if (c.name.equalsIgnoreCase("Pikachu") || c.name.equalsIgnoreCase("Raichu")) {
-                    hasElectric = true; break;
-                }
-            }
-            if (hasElectric) {
-                tryStartBuildingPlacement("Torre Choque", 40, gv);
-            } else {
-                gv.ui.showMessage("❌ Você precisa de um Pokémon Elétrico (Pikachu)!");
-            }
-            return true;
-        }
-        if (ui.torchBtn.contains(x, y)) {
-            tryStartBuildingPlacement("Tocha", 5, gv);
-            return true;
-        }
-        if (ui.chestBtn.contains(x, y)) {
-            tryStartBuildingPlacement("Baú", 10, gv);
-            return true;
-        }
         if (ui.pavementBtn.contains(x, y)) {
             gv.ui.placementBuildingName = "PISO_PEDRA";
             gv.ui.state = UIManager.UIState.PLACEMENT;
@@ -68,22 +46,6 @@ public class CraftingInput implements InputExtension {
 
         gv.ui.state = UIManager.UIState.EXPLORING;
         return true;
-    }
-
-    private void tryStartBuildingPlacement(String name, int woodReq, GameView gv) {
-        Map<String, Integer> inventory = gv.player.getInventory();
-        Integer woodObj = inventory.get("Madeira");
-        int wood = (woodObj != null) ? woodObj : 0;
-        
-        if (wood >= woodReq) {
-            gv.ui.placementBuildingName = name;
-            gv.ui.placementX = gv.player.getPositionX();
-            gv.ui.placementY = gv.player.getPositionY();
-            gv.ui.state = UIManager.UIState.PLACEMENT;
-            gv.ui.showMessage("Escolha o local para a " + name);
-        } else {
-            gv.ui.showMessage("Faltam recursos! (" + woodReq + " Madeira)");
-        }
     }
 
     private void tryCraftPokeballs(GameView gv) {

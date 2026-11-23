@@ -23,6 +23,10 @@ public class Enemy {
     public boolean isBoss = false;
     public boolean isShiny = false;
     public boolean isPet = false;
+    /** Invasor da base (movido pela BaseDefense, não pela IA normal). */
+    public boolean isRaider = false;
+    /** Enquanto true, a IA normal fica parada (a BaseDefense comanda o guardião durante uma invasão). */
+    public boolean controlled = false;
     public int gender = 0; // 0: Macho, 1: Fêmea
     private ElementalType type = ElementalType.NORMAL;
     
@@ -89,12 +93,12 @@ public class Enemy {
 
     public void update(Companion companion, EffectManager effects, ParticleManager particles, TileMap tileMap, boolean isNight) {
         if (!isAlive) return;
+        if (isRaider || controlled) { updateAnimation(); return; } // quem move o invasor é a BaseDefense
         isMoving = false;
 
         // Comportamento Pacífico (Pets na base ou em qualquer lugar)
         if (isPet || (tileMap != null && tileMap.getMapName().equals("HOME"))) {
-            if (isPet) handleWorkAI(tileMap);
-            else handleWandering(tileMap);
+            handleWandering(tileMap); // na base os guardiões ficam dentro das muralhas (sem sair para cortar árvores)
             updateAnimation();
             return;
         }
@@ -357,6 +361,20 @@ public class Enemy {
         hp -= dmg;
         if (hp <= 0) isAlive = false;
     }
+    /** Anda em direção a um ponto (usado pela defesa da base). Retorna a distância restante. */
+    public double stepToward(double tx, double ty, double speed) {
+        double vx = tx - positionX, vy = ty - positionY;
+        double d = Math.sqrt(vx * vx + vy * vy);
+        if (d > 1) {
+            double k = Math.min(speed, d) / d;
+            positionX += vx * k; positionY += vy * k;
+            isMoving = true; updateDirection(vx, vy);
+        }
+        return d;
+    }
+    public void setMoving(boolean m) { isMoving = m; }
+    public void faceTowards(double tx, double ty) { updateDirection(tx - positionX, ty - positionY); }
+
     public boolean isSelected() { return isSelected; }
     public void setSelected(boolean s) { isSelected = s; }
     public boolean isAlive() { return isAlive; }

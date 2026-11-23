@@ -172,7 +172,11 @@ public class ExploringInput implements InputExtension {
             return true;
         }
         if (ui.buildBtn.contains(x, y) && gv.world.tileMap.getMapName().equals("HOME")) {
-            gv.ui.state = UIManager.UIState.CRAFTING;
+            if (gv.world.defense != null && gv.world.defense.isActive()) {
+                gv.ui.showMessage("⚔️ Termine a invasão antes de construir!");
+            } else {
+                gv.ui.state = UIManager.UIState.BUILD;
+            }
             return true;
         }
         if (ui.teleportBtn.contains(x, y)) {

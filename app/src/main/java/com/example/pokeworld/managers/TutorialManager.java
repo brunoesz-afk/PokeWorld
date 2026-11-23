@@ -137,15 +137,13 @@ public class TutorialManager {
                         "Agora segure o botão de Pokébola no menu inferior e arraste até o corpo do Rattata para capturá-lo!";
             }
         } else if (currentState == State.BUILDING_WORKSHOP) {
-            for (Building b : gv.world.buildings) {
-                if (b.getName().equalsIgnoreCase("Oficina") && b.isConstructed()) {
-                    currentState = State.WORKSHOP_BUILT_DIALOGUE;
-                    gv.ui.isDialogueActive = true;
-                    gv.ui.currentSpeaker = "Mestre da Base";
-                    gv.ui.currentDialogue = "Excelente trabalho! A Oficina está pronta!\n" +
-                            "Agora toque na Bússola no menu inferior para se teleportar para a Floresta e explorar!";
-                    break;
-                }
+            com.example.pokeworld.world.BasePiece shop = gv.world.base != null ? gv.world.base.layout.find(com.example.pokeworld.world.BaseKind.OFICINA) : null;
+            if (shop != null && shop.isUsable()) {
+                currentState = State.WORKSHOP_BUILT_DIALOGUE;
+                gv.ui.isDialogueActive = true;
+                gv.ui.currentSpeaker = "Mestre da Base";
+                gv.ui.currentDialogue = "Excelente trabalho! A Oficina está pronta!\n" +
+                        "Agora toque na Bússola no menu inferior para se teleportar para a Floresta e explorar!";
             }
         }
 
@@ -188,7 +186,7 @@ public class TutorialManager {
                 drawArrow(canvas, rx, ry - 30, "ARRASTE A POKÉBOLA AQUI!");
             }
         } else if (currentState == State.BUILDING_WORKSHOP) {
-            drawGuideBanner(canvas, "🏗️ PRIMEIRA CONSTRUÇÃO:", "Aproxime-se e toque para construir a Oficina (Leva apenas 5s)!");
+            drawGuideBanner(canvas, "🏗️ PRIMEIRA CONSTRUÇÃO:", "Toque em 🔨, escolha a Oficina, posicione onde quiser e confirme (5s)!");
             drawArrow(canvas, sw * 0.70f, sh * 0.40f, "CONSTRUA AQUI!");
         } else if (currentState == State.CLICK_COMPASS_TUTORIAL) {
             drawGuideBanner(canvas, "🧭 TELEPORTE PARA A FLORESTA:", "Toque no ícone de Bússola/Teleporte no menu inferior para viajar!");

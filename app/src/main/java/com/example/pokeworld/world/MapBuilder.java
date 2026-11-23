@@ -402,36 +402,23 @@ public final class MapBuilder {
         b.ledge(19, 110, 142, 2);
         b.stairsV(19, 124, 2, 3);
         b.scatter(ROCK, 25, null, 0, GRASS);
-        // Núcleo (mesmas coordenadas de antes)
-        for (int r = 22; r <= 58; r++) for (int c = 60; c <= 100; c++) g(b, r, c, GRASS);
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
-            boolean coreX = c >= 60 && c <= 100, coreY = r >= 22 && r <= 58;
-            boolean wallX = (c == 60 || c == 100) && coreY;
-            boolean wallY = (r == 22 || r == 58) && coreX;
-            if (wallX || wallY) {
-                if (r == 58 && c >= 78 && c <= 82) b.g[r][c] = ROAD;
-                else b.g[r][c] = BRICK;
-            } else if (coreX && coreY) {
-                boolean vert = c >= 78 && c <= 82, hor = r >= 38 && r <= 42;
-                if (vert || hor) b.g[r][c] = ROAD;
-                else {
-                    double v = b.rnd.nextDouble();
-                    if (v < 0.03) b.g[r][c] = TREE;
-                    else if (v < 0.05) b.g[r][c] = ROCK;
-                    else if (v < 0.08) b.g[r][c] = FLOWERS;
-                    else b.g[r][c] = GRASS;
-                }
-            }
+        // Terreno edificável (48x48, igual ao BaseLayout): grama limpa, sem árvores nem pedras.
+        // As muralhas, torres e prédios NÃO fazem parte do mapa: são peças que o jogador coloca.
+        b.rectOn(BaseLayout.PLOT_Y - 3, BaseLayout.PLOT_X - 3, BaseLayout.PLOT_Y + BaseLayout.PLOT_H + 2,
+                BaseLayout.PLOT_X + BaseLayout.PLOT_W + 2, GRASS, TREE, ROCK, FLOWERS, BUSH, WATER, DEEP_WATER);
+        // Faixa de flores e arbustos na borda externa do terreno (dá o "recorte" de base)
+        for (int i = -3; i < BaseLayout.PLOT_W + 3; i++) {
+            if (i % 3 == 0) { b.set(BaseLayout.PLOT_Y - 2, BaseLayout.PLOT_X + i, FLOWERS); b.set(BaseLayout.PLOT_Y + BaseLayout.PLOT_H + 1, BaseLayout.PLOT_X + i, FLOWERS); }
         }
-        // Estrada principal para fora (portão sul até a borda do mapa)
-        for (int r = 59; r < rows; r++) for (int w = -2; w <= 2; w++) b.g[r][80 + w] = ROAD;
-        // Torres de canto e braseiros no portão
-        b.g[21][60] = PILLAR; b.g[21][100] = PILLAR; b.g[59][60] = PILLAR; b.g[59][100] = PILLAR;
-        b.g[59][76] = BRAZIER; b.g[59][84] = BRAZIER;
-        // Limpa a floresta que invadiu a estrada principal
-        b.rectOn(59, 76, rows - 1, 84, ROAD, TREE, FLOWERS, GRASS, ROCK);
-        for (int r = 59; r < rows; r++) for (int w = -2; w <= 2; w++) b.g[r][80 + w] = ROAD;
-        b.g[59][76] = BRAZIER; b.g[59][84] = BRAZIER;
+        for (int i = -3; i < BaseLayout.PLOT_H + 3; i++) {
+            if (i % 3 == 0) { b.set(BaseLayout.PLOT_Y + i, BaseLayout.PLOT_X - 2, FLOWERS); b.set(BaseLayout.PLOT_Y + i, BaseLayout.PLOT_X + BaseLayout.PLOT_W + 1, FLOWERS); }
+        }
+        // Estrada do portão (sul) até a borda do mapa, 4 de largura (alinha com o portão do anel)
+        for (int r = BaseLayout.RING_B + 1; r < rows; r++)
+            for (int c = BaseLayout.GATE_X0 - 1; c <= BaseLayout.GATE_X1 + 1; c++) b.g[r][c] = ROAD;
+        // Beira da estrada limpa
+        b.rectOn(BaseLayout.RING_B + 1, BaseLayout.GATE_X0 - 4, rows - 1, BaseLayout.GATE_X0 - 2, GRASS, TREE, ROCK);
+        b.rectOn(BaseLayout.RING_B + 1, BaseLayout.GATE_X1 + 2, rows - 1, BaseLayout.GATE_X1 + 4, GRASS, TREE, ROCK);
         return b.g;
     }
 

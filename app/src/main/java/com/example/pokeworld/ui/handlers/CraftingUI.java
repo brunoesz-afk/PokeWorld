@@ -81,23 +81,16 @@ public class CraftingUI extends BaseUI {
         thermalCapeBtn.set(mid - 350, 580, mid - 50, 660);
         drawButton(canvas, thermalCapeBtn, "🧣 Capa Térmica\n(10 Pelo)");
 
-        shockTowerBtn.set(mid + 50, 580, mid + 350, 660);
-        drawButton(canvas, shockTowerBtn, "⚡ Torre Choque\n(40 Ferros)");
+        // (Torre Choque, Tocha e Baú agora são construídas pelo menu 🔨 da base)
 
         // Outros itens
-        torchBtn.set(mid - 350, 680, mid - 150, 760);
-        drawButton(canvas, torchBtn, "🔦 Tocha (5 Madeiras)");
-
-        chestBtn.set(mid - 100, 680, mid + 100, 760);
-        drawButton(canvas, chestBtn, "📦 Baú (10 Madeiras)");
-
         pavementBtn.set(mid + 150, 680, mid + 350, 760);
         drawButton(canvas, pavementBtn, "🧱 Piso Pedra (2 Pedras)");
 
         // Construções (Se estiver na HOME)
         if (gv.world.tileMap.getMapName().equals("HOME")) {
             mountFactoryBtn.set(mid + 400, 180, w - 80, 260);
-            drawButton(canvas, mountFactoryBtn, "🏗️ Fábrica Montaria\n(50 Madeiras)");
+            drawButton(canvas, mountFactoryBtn, "🔨 Construir na base");
         }
     }
 }

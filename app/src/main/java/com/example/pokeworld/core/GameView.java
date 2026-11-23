@@ -137,6 +137,13 @@ public class GameView {
         for (Map.Entry<String, BuildingData> e : buildings.entrySet()) {
             levels.put(e.getKey(), e.getValue().level);
         }
+        // Prédios da base (sistema de construção livre): valem os que já estão prontos
+        for (com.example.pokeworld.world.BasePiece bp : activity.dbHelper.getBasePieces()) {
+            if (bp.finishTime == 0 || bp.upgrading) {
+                String key = bp.kind.legacyName();
+                if (bp.level > levels.getOrDefault(key, 0)) levels.put(key, bp.level);
+            }
+        }
         kingdom.applyBonuses(companion, levels);
         companion.applyClanBonus(player.getClan());
     }

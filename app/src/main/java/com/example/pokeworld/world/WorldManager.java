@@ -19,6 +19,7 @@ import com.example.pokeworld.entities.PetData;
 import com.example.pokeworld.entities.RemotePlayer;
 import com.example.pokeworld.managers.MultiplayerManager;
 import com.example.pokeworld.managers.SpriteManager;
+import com.example.pokeworld.ui.UIManager;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -32,6 +33,15 @@ public class WorldManager {
     public List<Loot> loots = new ArrayList<>();
     public List<NPC> npcs = new ArrayList<>();
     public List<Building> buildings = new ArrayList<>();
+
+    // ---- Base do jogador (mapa HOME) ----
+    public BaseManager base;            // null fora da HOME
+    public BaseDefense defense;
+    private final List<NPC> baseNpcs = new ArrayList<>();
+    private BaseDefense.Host defenseHost;
+    private boolean wasBuilding = false;
+    private float savedZoom = 1.3f;
+    private double buildCamX, buildCamY;
     
     private MainActivity activity;
     private Random random = new Random();
@@ -97,7 +107,10 @@ public class WorldManager {
         int r = 50, col = 100;
         if (name.equals("HOME")) { r = 80; col = 160; }
         else if (name.equals("TOWER")) { r = 25; col = 25; }
-        tileMap = new TileMap(name, r, col); 
+        if (defense != null) defense.abort();
+        tileMap = new TileMap(name, r, col);
+        base = null; defense = null; defenseHost = null; baseNpcs.clear(); wasBuilding = false;
+        if (name.equals("HOME")) setupBase(r, col);
         targetZoom = 1.3f; 
         currentZoom = 1.3f;
         setMapDark(name.contains("CAVE") || name.contains("MINE") || name.equals("SEWERS") || name.equals("DUNGEON"));
@@ -182,37 +195,123 @@ public class WorldManager {
     private void spawnSnow() { spawnBasic(new String[]{"Piloswine", "Cloyster", "Lapras", "Jynx"}, getBiomeBaseLevel("SNOW_MOUNTAIN"), Color.CYAN); addEnemy("Articuno", 3200, 1600, 60, Color.WHITE, true, true, 75, 0); }
 
     private void spawnHome(Player p) {
-        int maxGuards = p.getMaxGuardCapacity();
+        int maxGuards = Math.min(p.getMaxGuardCapacity(), base != null ? base.guardCapacity() : 6);
         int spawnedGuards = 0;
         for (CapturedCreature c : p.getStorage()) {
             if (spawnedGuards >= maxGuards) break;
-            double ex = TileMap.TILE_SIZE * (68 + random.nextInt(24)), ey = TileMap.TILE_SIZE * (28 + random.nextInt(22));
             PetData d = activity.dbHelper.getPetData(c.name);
-            addEnemy(c.name, ex, ey, 32, Color.GREEN, false, c.isShiny, d.level, c.gender, true);
-            spawnedGuards++;
-        }
-        for (Map.Entry<String, BuildingData> entry : activity.dbHelper.getBuildings().entrySet()) {
-            String n = entry.getKey(); BuildingData d = entry.getValue();
-            if (n.equals("Oficina") || n.equals("Daycare") || n.equals("Laboratorio") || n.equals("Fabrica de Montaria") || n.equalsIgnoreCase("Torre Choque") || n.equalsIgnoreCase("Tocha") || n.equalsIgnoreCase("Baú") || n.equalsIgnoreCase("Ginásio") || n.equalsIgnoreCase("Mural de Caça") || n.equalsIgnoreCase("Academia")) {
-                Building b = new Building(n, d.posX, d.posY, d.level); b.setConstructed(d.isConstructed); b.setConstructionFinishTime(d.constructionFinishTime);
-                buildings.add(b);
-                if (d.isConstructed) {
-                    double npx = b.getCenterX(), npy = b.getCenterY() + (n.equalsIgnoreCase("Tocha") ? 40 : 120);
-                    if (n.equals("Oficina")) npcs.add(new NPC("Prof. de Engenharia", "Quer fabricar Pokébolas?", npx, npy, NPC.Type.BLACKSMITH));
-                    else if (n.equals("Daycare")) npcs.add(new NPC("Prof. Criador", "Quer cruzar seus Pokémons?", npx, npy, NPC.Type.GUARD));
-                    else if (n.equals("Laboratorio")) npcs.add(new NPC("Prof. Invocador", "Deseja invocar novos poderes?", npx, npy, NPC.Type.GUARD));
-                    else if (n.equals("Fabrica de Montaria")) npcs.add(new NPC("Prof. de Montaria", "Selas e equipamentos de viagem?", npx, npy, NPC.Type.GUARD));
-                    else if (n.equals("Baú")) npcs.add(new NPC("Prof. de Estoque", "Acesse seu baú de itens.", npx, npy, NPC.Type.GUARD));
-                    else if (n.equals("Ginásio")) npcs.add(new NPC("Mestre de Batalha", "Pronto para o desafio?", npx, npy, NPC.Type.GUARD));
-                    else if (n.equals("Mural de Caça")) npcs.add(new NPC("Prof. Caçador", "Veja as recompensas disponíveis.", npx, npy, NPC.Type.GUARD));
-                    else if (n.equals("Academia")) npcs.add(new NPC("Prof. de Treino", "Treine seus Pokémons inativos.", npx, npy, NPC.Type.GUARD));
-                }
+            // Procura um ponto livre dentro das muralhas (o pátio do anel inicial)
+            for (int tries = 0; tries < 12; tries++) {
+                double ex = TileMap.TILE_SIZE * (BaseLayout.RING_L + 3 + random.nextInt(BaseLayout.RING_R - BaseLayout.RING_L - 5));
+                double ey = TileMap.TILE_SIZE * (BaseLayout.RING_T + 3 + random.nextInt(BaseLayout.RING_B - BaseLayout.RING_T - 5));
+                int before = enemies.size();
+                addEnemy(c.name, ex, ey, 32, Color.GREEN, false, c.isShiny, d.level, c.gender, true);
+                if (enemies.size() > before) { spawnedGuards++; break; }
             }
         }
-        npcs.add(new NPC("Prof. de Time", "Gerencie os Pokémons do seu time e da sua base!", TileMap.TILE_SIZE * 80, TileMap.TILE_SIZE * 40, NPC.Type.GUARD));
-        npcs.add(new NPC("Mestre da Base", "Gerencie o estoque!", TileMap.TILE_SIZE * 40, TileMap.TILE_SIZE * 31, NPC.Type.GUARD));
-        npcs.add(new NPC("Mestre da Torre", "Quer desafiar as ondas de Pokémons na Torre?", TileMap.TILE_SIZE * 75, TileMap.TILE_SIZE * 31, NPC.Type.GUARD));
+        refreshBaseNpcs();
     }
+
+    /** Cria a base (grade + peças salvas) e liga a colisão dela ao mapa. */
+    private void setupBase(int rows, int cols) {
+        base = new BaseManager(rows, cols);
+        base.renderer.setSprites(new BaseRenderer.SpriteSource() {
+            @Override public Bitmap get(String key) { return SpriteManager.getInstance().getBuildingSprite(key); }
+        });
+        final com.example.pokeworld.core.DatabaseHelper db = activity.dbHelper;
+        base.load(db.getBasePieces(), new BaseManager.Store() {
+            @Override public void insert(BasePiece p) { db.insertBasePiece(p); }
+            @Override public void update(BasePiece p) { db.updateBasePiece(p); }
+            @Override public void delete(BasePiece p) { db.deleteBasePiece(p); }
+            @Override public void insertAll(List<BasePiece> l) { db.insertBasePieces(l); }
+            @Override public void updateAll(List<BasePiece> l) { db.updateBasePieces(l); }
+        }, System.currentTimeMillis());
+        tileMap.setBlocker(base);
+    }
+
+    /** Recria os NPCs que ficam na porta de cada prédio da base (some o NPC de prédio em obra). */
+    public void refreshBaseNpcs() {
+        npcs.removeAll(baseNpcs);
+        baseNpcs.clear();
+        if (base == null) return;
+        for (BasePiece pc : base.layout.getPieces()) {
+            if (!pc.isUsable()) continue;
+            double fx = pc.centerX(), fy = (pc.gy + pc.kind.h) * (double) TileMap.TILE_SIZE + 40;
+            switch (pc.kind) {
+                case QUARTEL:
+                    baseNpcs.add(new NPC("Prof. de Time", "Gerencie os Pokémons do seu time e da sua base!", fx, fy, NPC.Type.GUARD));
+                    baseNpcs.add(new NPC("Mestre da Base", "Gerencie o estoque!", fx - 100, fy, NPC.Type.GUARD));
+                    baseNpcs.add(new NPC("Mestre da Torre", "Quer desafiar as ondas de Pokémons na Torre?", fx + 100, fy, NPC.Type.GUARD));
+                    break;
+                case OFICINA: baseNpcs.add(new NPC("Prof. de Engenharia", "Quer fabricar Pokébolas?", fx, fy, NPC.Type.BLACKSMITH)); break;
+                case DAYCARE: baseNpcs.add(new NPC("Prof. Criador", "Quer cruzar seus Pokémons?", fx, fy, NPC.Type.GUARD)); break;
+                case LABORATORIO: baseNpcs.add(new NPC("Prof. Invocador", "Deseja invocar novos poderes?", fx, fy, NPC.Type.GUARD)); break;
+                case FABRICA: baseNpcs.add(new NPC("Prof. de Montaria", "Selas e equipamentos de viagem?", fx, fy, NPC.Type.GUARD)); break;
+                case BAU: baseNpcs.add(new NPC("Prof. de Estoque", "Acesse seu baú de itens.", fx, fy, NPC.Type.GUARD)); break;
+                case ACADEMIA: baseNpcs.add(new NPC("Prof. de Treino", "Treine seus Pokémons inativos.", fx, fy, NPC.Type.GUARD)); break;
+                default: break;
+            }
+        }
+        npcs.addAll(baseNpcs);
+    }
+
+    private void ensureDefense(final GameView gv) {
+        if (base == null || defense != null) return;
+        defenseHost = new BaseDefense.Host() {
+            @Override public List<Enemy> enemies() { return enemies; }
+            @Override public Enemy spawnRaider(String species, double x, double y, int level) {
+                for (int i = 0; i < 16; i++) {
+                    double ex = x + (random.nextDouble() - 0.5) * 6 * TileMap.TILE_SIZE, ey = y + (random.nextDouble() - 0.5) * 6 * TileMap.TILE_SIZE;
+                    if (!tileMap.isWalkable(ex, ey, false, false, false, false)) continue;
+                    Enemy e = new Enemy(species, ex, ey, 32, Color.RED, false, level);
+                    e.isRaider = true;
+                    enemies.add(e);
+                    return e;
+                }
+                return null;
+            }
+            @Override public void removeEnemy(Enemy e) { enemies.remove(e); }
+            @Override public boolean hasElectricPokemon() {
+                for (CapturedCreature c : gv.player.getCreatureCollection())
+                    if (c.name.equalsIgnoreCase("Pikachu") || c.name.equalsIgnoreCase("Raichu")) return true;
+                return false;
+            }
+            @Override public void say(String msg) { gv.ui.showMessage(msg); }
+            @Override public void text(String t, double x, double y, int color) { if (gv.effects != null) gv.effects.addText(t, x, y, color); }
+            @Override public void burst(double x, double y, int color, int n) { if (gv.particles != null) gv.particles.addExplosion(x, y, color, n); }
+            @Override public void giveItem(String item, int n) { gv.player.addItem(item, n); }
+            @Override public void addGold(int g) { gv.player.addGold(g); }
+            @Override public int gold() { return gv.player.getGold(); }
+            @Override public int playerLevel() { return gv.player.getLevel(); }
+        };
+        defense = new BaseDefense(base, defenseHost, System.currentTimeMillis());
+    }
+
+    /** Conclui obras e melhorias que terminaram (chamado no jogo e também dentro do menu de construção). */
+    public void tickBase(GameView gv) {
+        if (base == null) return;
+        List<BasePiece> done = base.tick(System.currentTimeMillis());
+        if (done.isEmpty()) return;
+        for (BasePiece pc : done) {
+            gv.ui.showMessage("✅ " + pc.kind.label.toUpperCase() + (pc.level > 1 ? " NÍVEL " + pc.level : "") + " CONCLUÍDO!");
+            gv.particles.addExplosion(pc.centerX(), pc.centerY(), Color.YELLOW, 40);
+        }
+        refreshBaseNpcs();
+        gv.applyKingdomBonuses();
+        gv.activity.saveCurrentGame();
+    }
+
+    // ---- Câmera do modo construção ----
+    public void setBuildCamera(double x, double y) {
+        double minX = (BaseLayout.PLOT_X - 4) * (double) TileMap.TILE_SIZE, maxX = (BaseLayout.PLOT_X + BaseLayout.PLOT_W + 4) * (double) TileMap.TILE_SIZE;
+        double minY = (BaseLayout.PLOT_Y - 4) * (double) TileMap.TILE_SIZE, maxY = (BaseLayout.PLOT_Y + BaseLayout.PLOT_H + 6) * (double) TileMap.TILE_SIZE;
+        buildCamX = Math.max(minX, Math.min(maxX, x));
+        buildCamY = Math.max(minY, Math.min(maxY, y));
+    }
+    public double getBuildCamX() { return buildCamX; }
+    public double getBuildCamY() { return buildCamY; }
+    public double screenToWorldX(float sx) { return cameraX + sx / currentZoom; }
+    public double screenToWorldY(float sy) { return cameraY + sy / currentZoom; }
 
     private long lastDynamicSpawnCheck = 0;
 
@@ -228,6 +327,11 @@ public class WorldManager {
 
         updateEnemies(c, gv); handleRespawns(); updateLoots(p, gv);
         if (tileMap.getMapName().equals("HOME")) for (Building b : buildings) b.update(activity);
+        if (base != null) {
+            ensureDefense(gv);
+            tickBase(gv);
+            defense.update(System.currentTimeMillis());
+        }
     }
 
     private void updateDynamicSpawning(Player p, String mapName, GameView gv) {
@@ -350,6 +454,13 @@ public class WorldManager {
         Iterator<Enemy> it = enemies.iterator();
         while (it.hasNext()) {
             Enemy e = it.next();
+            if (!e.isAlive() && e.isRaider) {
+                // Invasor derrotado: dá experiência e fica "desmaiado" (dá para capturar); o prêmio vem ao fim da invasão
+                c.gainExp(e.level * 8); gv.player.gainExp(e.level * 4);
+                Loot d = new Loot(e.name, e.positionX, e.positionY, Loot.Type.DEFEATED); d.setOwnerSpecies(e.name); d.setShiny(e.isShiny); d.setRadius(Math.max(65, e.radius * 1.5)); loots.add(d);
+                it.remove();
+                continue;
+            }
             if (!e.isAlive()) {
                 int xp = (e.level * 20) + (e.isBoss ? 200 : 0);
                 c.gainExp(xp); if (gv.player.gainExp(xp/2)) gv.ui.showMessage("🎊 NÍVEL UP!");
@@ -439,15 +550,27 @@ public class WorldManager {
         float sw = canvas.getWidth();
         float sh = canvas.getHeight();
 
-        cameraX = (float) p.getPositionX() - (sw / 2f) / currentZoom;
-        cameraY = (float) p.getPositionY() - (sh / 2f) / currentZoom;
+        boolean building = base != null && gv.ui.state == UIManager.UIState.BUILD;
+        if (building != wasBuilding) {
+            wasBuilding = building;
+            if (building) { savedZoom = targetZoom; targetZoom = 0.8f; setBuildCamera(p.getPositionX(), p.getPositionY()); }
+            else { targetZoom = savedZoom; }
+            if (base != null) base.setEditing(building);
+        }
+        double focusX = building ? buildCamX : p.getPositionX(), focusY = building ? buildCamY : p.getPositionY();
+
+        cameraX = (float) focusX - (sw / 2f) / currentZoom;
+        cameraY = (float) focusY - (sh / 2f) / currentZoom;
 
         canvas.save();
         canvas.translate(sw / 2f, sh / 2f);
         canvas.scale(currentZoom, currentZoom);
-        canvas.translate((float) -p.getPositionX(), (float) -p.getPositionY());
+        canvas.translate((float) -focusX, (float) -focusY);
 
+        long nowMs = System.currentTimeMillis();
+        float vl = cameraX, vt = cameraY, vr = cameraX + sw / currentZoom, vb = cameraY + sh / currentZoom;
         if (tileMap != null) tileMap.draw(canvas, p, sw, sh, currentZoom);
+        if (base != null) base.drawWorld(canvas, nowMs, vl, vt, vr, vb);
         for (Building b : buildings) b.draw(canvas, p);
         for (NPC n : npcs) n.draw(canvas);
         for (Loot l : loots) l.draw(canvas);
@@ -462,6 +585,10 @@ public class WorldManager {
         }
 
         p.draw(canvas, c); if (!p.isMounted()) c.draw(canvas);
+        if (base != null) {
+            base.drawOverlay(canvas, nowMs, vl, vt, vr, vb);
+            if (defense != null) defense.draw(canvas, nowMs);
+        }
         if (gv.effects != null) gv.effects.draw(canvas);
         if (gv.particles != null) gv.particles.draw(canvas);
         canvas.restore();
@@ -476,7 +603,7 @@ public class WorldManager {
     public boolean isCollidingWithBuilding(double x, double y) { return false; }
     public boolean isCollidingWithEnemy(double x, double y, double padding) {
         for (Enemy e : enemies) {
-            if (e.isAlive && !e.isPet) {
+            if (e.isAlive && !e.isPet && !e.isRaider) {
                 double dist = Math.sqrt(Math.pow(e.positionX - x, 2) + Math.pow(e.positionY - y, 2));
                 if (dist < e.radius + padding) {
                     return true;

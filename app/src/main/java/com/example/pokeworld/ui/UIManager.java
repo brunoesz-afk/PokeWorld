@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class UIManager {
     private Paint paint = new Paint();
-    public enum UIState { EXPLORING, INVENTORY, CREATURES, SHOP, MISSIONS, FORGE, BESTIARY, TALENTS, ACHIEVEMENTS, CLAN, SUMMON, BREEDING, VICTORY, RUNES, BOUNTIES, TELEPORT, SETTINGS, CRAFTING, POKEMON_DETAILS, STORAGE, EVOLUTION, PLACEMENT, MOUNT_FACTORY, GYM, AINCRAD, ITEM_STORAGE, TRAINER_SKILLS, STARTER_SELECTION, TOWER_SELECT }
+    public enum UIState { EXPLORING, INVENTORY, CREATURES, SHOP, MISSIONS, FORGE, BESTIARY, TALENTS, ACHIEVEMENTS, CLAN, SUMMON, BREEDING, VICTORY, RUNES, BOUNTIES, TELEPORT, SETTINGS, CRAFTING, POKEMON_DETAILS, STORAGE, EVOLUTION, PLACEMENT, MOUNT_FACTORY, GYM, AINCRAD, ITEM_STORAGE, TRAINER_SKILLS, STARTER_SELECTION, TOWER_SELECT, BUILD }
     public UIState state = UIState.EXPLORING;
 
     public String pendingBiomeName = "";
@@ -68,6 +68,7 @@ public class UIManager {
         handlers.put(UIState.TRAINER_SKILLS, new TrainerSkillsUI());
         handlers.put(UIState.STARTER_SELECTION, new com.example.pokeworld.ui.handlers.StarterSelectionUI());
         handlers.put(UIState.TOWER_SELECT, new TowerSelectUI());
+        handlers.put(UIState.BUILD, new BuildUI());
     }
     
     public UIHandler getHandler(UIState state) {

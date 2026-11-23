@@ -24,7 +24,7 @@ import java.util.Set;
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "pokeworld.db";
-    private static final int DATABASE_VERSION = 36; 
+    private static final int DATABASE_VERSION = 37; 
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -44,6 +44,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // Tabelas de Mundo e Conquistas (Adicionado colunas de posição e tempo de construção)
         db.execSQL("CREATE TABLE buildings (id INTEGER PRIMARY KEY AUTOINCREMENT, building_name TEXT, level INTEGER, is_constructed INTEGER DEFAULT 1, pos_x REAL DEFAULT 0, pos_y REAL DEFAULT 0, construction_finish_time INTEGER DEFAULT 0)");
+        createBasePiecesTable(db);
         db.execSQL("CREATE TABLE bestiary (id INTEGER PRIMARY KEY AUTOINCREMENT, species_name TEXT UNIQUE)");
         db.execSQL("CREATE TABLE talents (id INTEGER PRIMARY KEY AUTOINCREMENT, talent_name TEXT UNIQUE, level INTEGER)");
         db.execSQL("CREATE TABLE achievements (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT UNIQUE)");
@@ -96,8 +97,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return v;
     }
 
+    private void createBasePiecesTable(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS base_pieces (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, gx INTEGER, gy INTEGER, level INTEGER DEFAULT 1, finish_time INTEGER DEFAULT 0, upgrading INTEGER DEFAULT 0)");
+    }
+
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        // 36 -> 37: só acrescenta a tabela de peças da base (NÃO apaga o progresso do jogador)
+        if (oldVersion == 36) {
+            createBasePiecesTable(db);
+            migrateLegacyHomeBuildings(db);
+            return;
+        }
+        db.execSQL("DROP TABLE IF EXISTS base_pieces");
         db.execSQL("DROP TABLE IF EXISTS player_stats");
         db.execSQL("DROP TABLE IF EXISTS inventory");
         db.execSQL("DROP TABLE IF EXISTS collection");
@@ -108,6 +120,95 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS achievements");
         db.execSQL("DROP TABLE IF EXISTS capture_counts");
         onCreate(db);
+    }
+
+    /** Prédios da base do sistema antigo viram peças "sem posição" (gx = -1); a base acha um lugar livre. */
+    private void migrateLegacyHomeBuildings(SQLiteDatabase db) {
+        try {
+            Cursor c = db.rawQuery("SELECT building_name, level, is_constructed, construction_finish_time FROM buildings", null);
+            long now = System.currentTimeMillis();
+            while (c.moveToNext()) {
+                com.example.pokeworld.world.BaseKind k = com.example.pokeworld.world.BaseKind.fromLegacyName(c.getString(0));
+                if (k == null) continue;
+                boolean built = c.getInt(2) == 1;
+                long finish = c.getLong(3);
+                if (!built && finish <= 0) continue; // era só um "terreno" reservado, nunca foi construído
+                ContentValues v = new ContentValues();
+                v.put("kind", k.name());
+                v.put("gx", -1);
+                v.put("gy", -1);
+                v.put("level", Math.max(1, c.getInt(1)));
+                v.put("finish_time", built ? 0 : Math.max(finish, now));
+                v.put("upgrading", 0);
+                db.insert("base_pieces", null, v);
+            }
+            c.close();
+        } catch (Exception e) {
+            Log.e("DatabaseHelper", "Migração das construções da base falhou", e);
+        }
+    }
+
+    // --- PEÇAS DA BASE ---
+
+    public List<com.example.pokeworld.world.BasePiece> getBasePieces() {
+        List<com.example.pokeworld.world.BasePiece> out = new ArrayList<>();
+        Cursor c = getReadableDatabase().rawQuery("SELECT id, kind, gx, gy, level, finish_time, upgrading FROM base_pieces ORDER BY id", null);
+        while (c.moveToNext()) {
+            com.example.pokeworld.world.BaseKind k = com.example.pokeworld.world.BaseKind.fromId(c.getString(1));
+            if (k == null) continue;
+            com.example.pokeworld.world.BasePiece p = new com.example.pokeworld.world.BasePiece(k, c.getInt(2), c.getInt(3), c.getInt(4));
+            p.id = c.getInt(0);
+            p.finishTime = c.getLong(5);
+            p.upgrading = c.getInt(6) == 1;
+            out.add(p);
+        }
+        c.close();
+        return out;
+    }
+
+    public void insertBasePiece(com.example.pokeworld.world.BasePiece p) {
+        long id = getWritableDatabase().insert("base_pieces", null, basePieceValues(p));
+        p.id = (int) id;
+    }
+
+    public void updateBasePiece(com.example.pokeworld.world.BasePiece p) {
+        if (p.id < 0) { insertBasePiece(p); return; }
+        getWritableDatabase().update("base_pieces", basePieceValues(p), "id=?", new String[]{String.valueOf(p.id)});
+    }
+
+    public void deleteBasePiece(com.example.pokeworld.world.BasePiece p) {
+        if (p.id >= 0) getWritableDatabase().delete("base_pieces", "id=?", new String[]{String.valueOf(p.id)});
+    }
+
+    /** Insere várias peças de uma vez (base inicial, paredes em lote). */
+    public void insertBasePieces(List<com.example.pokeworld.world.BasePiece> list) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (com.example.pokeworld.world.BasePiece p : list) p.id = (int) db.insert("base_pieces", null, basePieceValues(p));
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
+    public void updateBasePieces(List<com.example.pokeworld.world.BasePiece> list) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (com.example.pokeworld.world.BasePiece p : list)
+                db.update("base_pieces", basePieceValues(p), "id=?", new String[]{String.valueOf(p.id)});
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
+    private ContentValues basePieceValues(com.example.pokeworld.world.BasePiece p) {
+        ContentValues v = new ContentValues();
+        v.put("kind", p.kind.name());
+        v.put("gx", p.gx);
+        v.put("gy", p.gy);
+        v.put("level", p.level);
+        v.put("finish_time", p.finishTime);
+        v.put("upgrading", p.upgrading ? 1 : 0);
+        return v;
     }
 
     // --- MÉTODOS DE SALVAMENTO (WRITE) ---
