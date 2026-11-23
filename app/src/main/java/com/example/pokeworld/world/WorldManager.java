@@ -185,10 +185,21 @@ public class WorldManager {
     }
 
     private void spawnHome(Player p) {
-        int maxGuards = Math.min(p.getMaxGuardCapacity(), base != null ? base.guardCapacity() : 6);
-        int spawnedGuards = 0;
-        for (CapturedCreature c : p.getStorage()) {
-            if (spawnedGuards >= maxGuards) break;
+        spawnGuards(p);
+        refreshBaseNpcs();
+    }
+
+    /** Quantos defensores a base comporta agora: só depende do tamanho da base (Quartel + construções). */
+    public int defenderCapacity(Player p) {
+        return base != null ? base.guardCapacity() : BaseManager.capacityFor(activity.dbHelper.getBasePieces());
+    }
+
+    /** Só os defensores escalados aparecem e andam pela base; o resto fica guardado na caixa (sem custo de tela/RAM). */
+    private void spawnGuards(Player p) {
+        int max = defenderCapacity(p);
+        int spawned = 0;
+        for (CapturedCreature c : p.getDefenders()) {
+            if (spawned >= max) break;
             PetData d = activity.dbHelper.getPetData(c.name);
             // Procura um ponto livre dentro das muralhas (o pátio do anel inicial)
             for (int tries = 0; tries < 12; tries++) {
@@ -196,10 +207,17 @@ public class WorldManager {
                 double ey = TileMap.TILE_SIZE * (BaseLayout.RING_T + 3 + random.nextInt(BaseLayout.RING_B - BaseLayout.RING_T - 5));
                 int before = enemies.size();
                 addEnemy(c.name, ex, ey, 32, Color.GREEN, false, c.isShiny, d.level, c.gender, true);
-                if (enemies.size() > before) { spawnedGuards++; break; }
+                if (enemies.size() > before) { spawned++; break; }
             }
         }
-        refreshBaseNpcs();
+    }
+
+    /** Depois de mudar quem defende: recria os defensores na base (não mexe durante uma invasão). */
+    public void refreshGuards(Player p) {
+        if (base == null || !tileMap.getMapName().equals("HOME")) return;
+        if (defense != null && defense.isActive()) return;
+        for (Iterator<Enemy> it = enemies.iterator(); it.hasNext();) if (it.next().isPet) it.remove();
+        spawnGuards(p);
     }
 
     /** Cria a base (grade + peças salvas) e liga a colisão dela ao mapa. */

@@ -190,6 +190,20 @@ public class Player {
         return party;
     }
 
+    /** Defensores da base: fora do time e escalados para a defesa. */
+    public List<CapturedCreature> getDefenders() {
+        List<CapturedCreature> l = new ArrayList<>();
+        for (CapturedCreature c : creatureCollection) if (!c.isInParty && c.isGuard) l.add(c);
+        return l;
+    }
+
+    /** Caixa: guardados, fora do time e fora da defesa. */
+    public List<CapturedCreature> getBox() {
+        List<CapturedCreature> l = new ArrayList<>();
+        for (CapturedCreature c : creatureCollection) if (!c.isInParty && !c.isGuard) l.add(c);
+        return l;
+    }
+
     public List<CapturedCreature> getStorage() {
         List<CapturedCreature> storage = new ArrayList<>();
         for (CapturedCreature c : creatureCollection) if (!c.isInParty) storage.add(c);

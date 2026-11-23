@@ -113,7 +113,17 @@ public class BaseManager implements MovementBlocker {
     public int hq() { return layout.hqLevel(); }
 
     /** Quantos guardiões a base comporta (o Quartel é quem libera). */
-    public int guardCapacity() { return 4 + 4 * hq(); }
+    public int guardCapacity() { return capacityFor(layout.getPieces()); }
+
+    /** 2 + 2 por nível do Quartel + 1 por construção útil ou Torre Choque (muralha, tocha e torres comuns não contam): a base cresce, a defesa cresce. */
+    public static int capacityFor(java.util.List<BasePiece> pieces) {
+        int hq = 1, extras = 0;
+        for (BasePiece p : pieces) {
+            if (p.kind == BaseKind.QUARTEL) hq = Math.max(hq, p.level);
+            else if (p.isUsable() && (p.kind.cat == BaseKind.Cat.UTIL && p.kind != BaseKind.TOCHA || p.kind == BaseKind.TORRE_CHOQUE)) extras++;
+        }
+        return 2 + 2 * hq + extras;
+    }
 
     @Override
     public boolean blocks(double wx, double wy) { return layout.blocks(wx, wy); }

@@ -2,77 +2,64 @@ package com.example.pokeworld.ui.input;
 
 import com.example.pokeworld.core.GameView;
 import com.example.pokeworld.entities.CapturedCreature;
+import com.example.pokeworld.managers.PartyManager;
 import com.example.pokeworld.ui.UIManager;
 import com.example.pokeworld.ui.handlers.StorageUI;
 
 import java.util.List;
 
-public class StorageInput implements InputExtension {
+public class StorageInput extends TapScrollInput {
     @Override
-    public boolean handle(float x, float y, GameView gv) {
+    protected void onScroll(float x, float y, float dy, GameView gv) {
+        StorageUI ui = (StorageUI) gv.ui.getHandler(UIManager.UIState.STORAGE);
+        if (ui == null) return;
+        for (int i = 0; i < 3; i++) {
+            if (ui.colRects[i].contains(x, y)) ui.scroll[i] = Math.max(0, Math.min(ui.maxScroll[i], ui.scroll[i] - dy));
+        }
+    }
+
+    @Override
+    protected boolean onTap(float x, float y, GameView gv) {
         StorageUI ui = (StorageUI) gv.ui.getHandler(UIManager.UIState.STORAGE);
         if (ui == null) return false;
+        if (ui.exitBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.EXPLORING; return true; }
 
-        if (ui.exitBtn.contains(x, y)) {
-            gv.ui.state = UIManager.UIState.EXPLORING;
-            return true;
+        for (StorageUI.Row r : ui.rows) {
+            if (ui.colRects[r.col].contains(x, y) && r.rect.contains(x, y)) { ui.selected = r.creature; return true; }
         }
+        if (ui.selected == null) return true;
+        if (ui.toBoxBtn.contains(x, y)) move(gv, ui, StorageUI.COL_BOX);
+        else if (ui.toDefBtn.contains(x, y)) move(gv, ui, StorageUI.COL_DEF);
+        else if (ui.toTeamBtn.contains(x, y)) move(gv, ui, StorageUI.COL_TEAM);
+        return true;
+    }
 
-        if (ui.prevPageBtn.contains(x, y)) {
-            if (ui.storagePage > 0) ui.storagePage--;
-            return true;
+    private void move(GameView gv, StorageUI ui, int target) {
+        CapturedCreature c = ui.selected;
+        int from = ui.columnOf(c);
+        if (from == target) return;
+        List<CapturedCreature> party = gv.player.getParty();
+
+        if (target == StorageUI.COL_TEAM && party.size() >= 6) { gv.ui.showMessage("❌ Seu time está cheio (máximo 6)!"); return; }
+        if (target == StorageUI.COL_DEF && gv.player.getDefenders().size() >= ui.capacity) {
+            gv.ui.showMessage("❌ Defesa cheia (" + ui.capacity + ")! Construa mais na base ou suba o Quartel.");
+            return;
         }
-
-        if (ui.nextPageBtn.contains(x, y)) {
-            ui.storagePage++;
-            return true;
-        }
-
-        float mid = gv.getWidth() / 2f;
-        
-        if (y >= 170 && y < gv.getHeight() - 80) {
-            int lineIndex = (int)((y - 170) / 58);
-            
-            if (x < mid) {
-                // Toque na lista da BASE -> Move para o TIME (PARTY)
-                List<CapturedCreature> storage = gv.player.getStorage();
-                int actualIndex = (ui.storagePage * StorageUI.ITEMS_PER_PAGE) + lineIndex;
-
-                if (actualIndex >= 0 && actualIndex < storage.size()) {
-                    if (gv.player.getParty().size() < 6) {
-                        CapturedCreature c = storage.get(actualIndex);
-                        c.isInParty = true;
-                        gv.ui.showMessage("🎒 " + c.name + " adicionado ao seu TIME!");
-                        gv.applyKingdomBonuses();
-                        gv.activity.saveCurrentGame();
-                    } else {
-                        gv.ui.showMessage("❌ Seu time está cheio (Máximo 6)!");
-                    }
-                }
-            } else {
-                // Toque na lista do TIME -> Move para a BASE (GUARDA)
-                List<CapturedCreature> party = gv.player.getParty();
-                if (lineIndex >= 0 && lineIndex < party.size()) {
-                    if (party.size() > 1) {
-                        int currentGuards = gv.player.getStorage().size();
-                        int maxGuards = gv.player.getMaxGuardCapacity();
-                        if (currentGuards >= maxGuards) {
-                            gv.ui.showMessage("❌ Limite de Guardas na Base atingido (Máx: " + maxGuards + " para o Nível " + gv.player.getLevel() + ")!");
-                            return true;
-                        }
-
-                        CapturedCreature c = party.get(lineIndex);
-                        c.isInParty = false;
-                        c.isGuard = true; // Ativa modo de guarda e proteção na base
-                        gv.ui.showMessage("🛡️ " + c.name + " guardado na BASE em modo GUARDA!");
-                        gv.applyKingdomBonuses();
-                        gv.activity.saveCurrentGame();
-                    } else {
-                        gv.ui.showMessage("❌ Mantenha pelo menos 1 Pokémon no time!");
-                    }
-                }
+        if (from == StorageUI.COL_TEAM) {
+            if (party.size() <= 1) { gv.ui.showMessage("❌ Mantenha pelo menos 1 Pokémon no time!"); return; }
+            // Se for o companheiro ativo, passa o posto para outro do time antes de sair
+            if (PartyManager.isActive(gv, c)) {
+                for (CapturedCreature other : party) if (other != c) { PartyManager.switchActive(gv, other); break; }
             }
         }
-        return true;
+
+        c.isInParty = target == StorageUI.COL_TEAM;
+        c.isGuard = target == StorageUI.COL_DEF;
+        String msg = target == StorageUI.COL_TEAM ? "🎒 " + c.name + " vai com você!"
+                : target == StorageUI.COL_DEF ? "🛡️ " + c.name + " agora defende a base!" : "📦 " + c.name + " guardado na caixa.";
+        gv.ui.showMessage(msg);
+        gv.applyKingdomBonuses();
+        gv.world.refreshGuards(gv.player);
+        gv.activity.saveCurrentGame();
     }
 }
