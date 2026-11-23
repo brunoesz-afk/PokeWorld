@@ -8,6 +8,7 @@ public class BasePiece {
     public int gx, gy;          // canto superior esquerdo, em tiles
     public int level = 1;
     public long finishTime = 0; // >0 enquanto está em obra/melhoria
+    public long cropReady = 0;  // Horta: instante em que a plantação amadurece (0 = vazia)
     public boolean upgrading = false; // true = melhoria (a peça já existia); false = obra nova
 
     public BasePiece(BaseKind kind, int gx, int gy, int level) {

@@ -24,7 +24,7 @@ import java.util.Set;
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "pokeworld.db";
-    private static final int DATABASE_VERSION = 37; 
+    private static final int DATABASE_VERSION = 38; 
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -98,7 +98,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void createBasePiecesTable(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS base_pieces (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, gx INTEGER, gy INTEGER, level INTEGER DEFAULT 1, finish_time INTEGER DEFAULT 0, upgrading INTEGER DEFAULT 0)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS base_pieces (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, gx INTEGER, gy INTEGER, level INTEGER DEFAULT 1, finish_time INTEGER DEFAULT 0, upgrading INTEGER DEFAULT 0, crop_ready INTEGER DEFAULT 0)");
     }
 
     @Override
@@ -107,6 +107,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion == 36) {
             createBasePiecesTable(db);
             migrateLegacyHomeBuildings(db);
+            return;
+        }
+        // 37 -> 38: plantação nas hortas da base
+        if (oldVersion == 37) {
+            try { db.execSQL("ALTER TABLE base_pieces ADD COLUMN crop_ready INTEGER DEFAULT 0"); }
+            catch (Exception e) { Log.e("DatabaseHelper", "crop_ready já existe?", e); }
             return;
         }
         db.execSQL("DROP TABLE IF EXISTS base_pieces");
@@ -152,7 +158,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public List<com.example.pokeworld.world.BasePiece> getBasePieces() {
         List<com.example.pokeworld.world.BasePiece> out = new ArrayList<>();
-        Cursor c = getReadableDatabase().rawQuery("SELECT id, kind, gx, gy, level, finish_time, upgrading FROM base_pieces ORDER BY id", null);
+        Cursor c = getReadableDatabase().rawQuery("SELECT id, kind, gx, gy, level, finish_time, upgrading, crop_ready FROM base_pieces ORDER BY id", null);
         while (c.moveToNext()) {
             com.example.pokeworld.world.BaseKind k = com.example.pokeworld.world.BaseKind.fromId(c.getString(1));
             if (k == null) continue;
@@ -160,6 +166,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             p.id = c.getInt(0);
             p.finishTime = c.getLong(5);
             p.upgrading = c.getInt(6) == 1;
+            p.cropReady = c.getLong(7);
             out.add(p);
         }
         c.close();
@@ -208,6 +215,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put("level", p.level);
         v.put("finish_time", p.finishTime);
         v.put("upgrading", p.upgrading ? 1 : 0);
+        v.put("crop_ready", p.cropReady);
         return v;
     }
 

@@ -54,8 +54,41 @@ public class BaseRenderer {
             BasePiece pc = list.get(i);
             float x = pc.px(), y = pc.py();
             if (x + pc.pw() < vl || x > vr || y + pc.ph() < vt || y - 64 > vb) continue;
+            if (pc.kind == BaseKind.HORTA && pc.isUsable()) drawCrop(c, pc, now);
             if (pc.finishTime > now) drawProgress(c, pc, now);
             else if (showLevels && !pc.kind.isWall() && pc.kind != BaseKind.TOCHA) drawLevelBadge(c, pc);
+        }
+    }
+
+    /** Plantação da horta: brotos crescendo e, quando pronta, arbusto com frutas balançando. */
+    private void drawCrop(Canvas c, BasePiece pc, long now) {
+        int stage = BaseManager.cropStage(pc, now);
+        if (stage == 0) return;
+        float total = BaseKind.cropSeconds(pc.level) * 1000f;
+        float grow = stage == 2 ? 1f : Math.max(0f, Math.min(1f, 1f - (pc.cropReady - now) / total));
+        float ox = pc.px(), oy = pc.py();
+        for (int i = 0; i < 6; i++) {
+            float cx = ox + 28 + (i % 3) * 36, cy = oy + 54 + (i / 3) * 40;
+            if (stage == 1) {
+                float h = 4 + grow * 16;
+                line(c, cx, cy, cx, cy - h, 3f, rgb(70, 150, 60));
+                disc(c, cx - 4 - grow * 3, cy - h, 3 + grow * 3, rgb(96, 190, 80));
+                disc(c, cx + 4 + grow * 3, cy - h + 2, 3 + grow * 3, rgb(80, 170, 70));
+            } else {
+                float bob = (float) Math.sin(now / 260.0 + i) * 1.6f;
+                disc(c, cx, cy - 12 + bob, 13, rgb(60, 140, 56));
+                disc(c, cx - 5, cy - 16 + bob, 7, rgb(86, 178, 72));
+                disc(c, cx + 4, cy - 10 + bob, 5.2f, rgb(222, 56, 52));
+                disc(c, cx - 6, cy - 8 + bob, 4.6f, rgb(236, 74, 66));
+                disc(c, cx + 5, cy - 18 + bob, 4.2f, rgb(222, 56, 52));
+                disc(c, cx + 3, cy - 12 + bob, 1.4f, 0xAAFFFFFF);
+            }
+        }
+        if (stage == 2) { // balãozinho "pronta!"
+            float cx = (float) pc.centerX(), cy = oy - 6 + (float) Math.sin(now / 200.0) * 3f;
+            disc(c, cx, cy - 14, 15, 0xE6FFFFFF);
+            p.setColor(0xFFE53935); p.setTextAlign(Paint.Align.CENTER); p.setTextSize(24); p.setFakeBoldText(true);
+            c.drawText("!", cx, cy - 6, p); p.setFakeBoldText(false);
         }
     }
 
@@ -157,6 +190,7 @@ public class BaseRenderer {
                 case TOCHA: b = bakeTorch(frame); break;
                 case BAU: b = bakeChest(level); break;
                 case LABORATORIO: b = bakeLab(level); break;
+                case HORTA: b = bakeGarden(level); break;
                 default: b = Bitmap.createBitmap(T, T, Bitmap.Config.ARGB_8888);
             }
             cache.put(key, b);
@@ -495,6 +529,31 @@ public class BaseRenderer {
         rect(c, 56, 50, 72, 72, shade(band, 0.8f)); rect(c, 58, 52, 70, 70, band);
         disc(c, 64, 60, 3f, rgb(40, 30, 20));
         rect(c, 63, 60, 65, 67, rgb(40, 30, 20));
+        return b;
+    }
+
+    // ---------------------------------------------------------------- horta
+    private Bitmap bakeGarden(int level) {
+        level = Math.max(1, Math.min(5, level));
+        Bitmap b = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        int frame = level == 1 ? rgb(150, 100, 56) : level == 2 ? rgb(138, 142, 150) : level == 3 ? rgb(96, 156, 206) : level == 4 ? rgb(120, 190, 120) : rgb(246, 206, 80);
+        int soil = rgb(88, 58, 36);
+        rect(c, 4, 22, 124, 124, shade(frame, 0.55f));            // sombra da moldura
+        rect(c, 4, 18, 124, 120, frame);
+        rect(c, 4, 18, 124, 24, shade(frame, 1.2f));
+        rect(c, 12, 30, 116, 112, shade(soil, 0.8f));
+        rect(c, 12, 30, 116, 36, shade(soil, 0.6f));
+        for (int row = 0; row < 2; row++) {
+            float y0 = 44 + row * 40;
+            for (int k = 0; k < 3; k++) {
+                float x0 = 18 + k * 34;
+                rect(c, x0, y0 + 14, x0 + 28, y0 + 24, soil);
+                rect(c, x0, y0 + 14, x0 + 28, y0 + 17, shade(soil, 1.3f));
+                rect(c, x0, y0 + 24, x0 + 28, y0 + 27, shade(soil, 0.6f));
+            }
+        }
+        for (int i = 0; i < level; i++) disc(c, 24 + i * 11, 12, 3.2f, rgb(255, 213, 79));
         return b;
     }
 

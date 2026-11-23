@@ -481,9 +481,30 @@ public class WorldManager {
         while (it.hasNext()) { RespawnInfo ri = it.next(); if (now >= ri.t) { addEnemy(ri.s, ri.x, ri.y, ri.r, ri.c, ri.b, ri.sh, 1, 0); it.remove(); } }
     }
 
+    /**
+     * Tabela de drops: ouro cresce com o nível; o material depende do tipo do Pokémon
+     * (planta → Fruta, pedra → Pedra, fogo/elétrico → Ferro...); Pokébola e Poção são raras; chefe solta muito mais.
+     */
     private void dropLoot(Enemy e, GameView gv) {
-        loots.add(new Loot("Gold", e.positionX, e.positionY, Loot.Type.GOLD));
-        if (random.nextDouble() < 0.7) { String item = "Ferro"; if (e.getType() == ElementalType.PLANT) item = "Fruta"; loots.add(new Loot(item, e.positionX + 20, e.positionY, Loot.Type.ITEM)); }
+        int lvl = Math.max(1, e.level);
+        double bossMult = e.isBoss ? 5 : 1;
+        loots.add(new Loot("Gold", e.positionX, e.positionY, Loot.Type.GOLD).withAmount((int) ((6 + lvl * 2 + random.nextInt(lvl + 1)) * bossMult)));
+
+        String mat; double chance; int max = 1;
+        ElementalType t = e.getType();
+        if (t == ElementalType.PLANT) { mat = "Fruta"; chance = 0.65; max = 2; }
+        else if (t == ElementalType.ROCK) { mat = random.nextDouble() < 0.7 ? "Pedra" : "Ferro"; chance = 0.60; }
+        else if (t == ElementalType.FIRE || t == ElementalType.ELECTRIC) { mat = "Ferro"; chance = 0.55; }
+        else if (t == ElementalType.POISON) { mat = random.nextDouble() < 0.5 ? "Fruta" : "Ferro"; chance = 0.45; }
+        else if (t == ElementalType.WATER || t == ElementalType.ICE) { mat = random.nextDouble() < 0.6 ? "Fruta" : "Madeira"; chance = 0.40; }
+        else { String[] pool = {"Madeira", "Fruta", "Ferro"}; mat = pool[random.nextInt(pool.length)]; chance = 0.45; }
+        if (e.isBoss) { chance = 1.0; max = 3; }
+        if (random.nextDouble() < chance) {
+            loots.add(new Loot(mat, e.positionX + 20, e.positionY + 6, Loot.Type.ITEM).withAmount(1 + random.nextInt(max)));
+        }
+        if (random.nextDouble() < (e.isBoss ? 1.0 : 0.07)) loots.add(new Loot("Pokébola", e.positionX - 22, e.positionY + 8, Loot.Type.ITEM).withAmount(e.isBoss ? 3 : 1));
+        if (random.nextDouble() < 0.05) loots.add(new Loot("Poção", e.positionX, e.positionY + 22, Loot.Type.ITEM));
+        if (e.isBoss) gv.player.addGems(1 + random.nextInt(2));
     }
 
     private void updateLoots(Player p, GameView gv) {
@@ -494,12 +515,13 @@ public class WorldManager {
             l.update(p);
             if (l.getType() == Loot.Type.DEFEATED) continue;
             if (l.isCollectedBy(p)) { 
-                if (l.getType() == Loot.Type.GOLD) p.addGold(100); 
+                if (l.getType() == Loot.Type.GOLD) { p.addGold(l.getAmount()); gv.effects.addText("+" + l.getAmount() + "🪙", l.getPositionX(), l.getPositionY() - 20, Color.YELLOW); it.remove(); }
                 else if (l.getName().equalsIgnoreCase("aincrad_portal")) {
                     gv.tower.advanceFloor();
                     it.remove();
                 } else {
-                    p.addItem(l.getName()); 
+                    p.addItem(l.getName(), l.getAmount());
+                    gv.effects.addText("+" + l.getAmount() + " " + l.getName(), l.getPositionX(), l.getPositionY() - 20, Color.CYAN);
                     it.remove(); 
                 }
             }

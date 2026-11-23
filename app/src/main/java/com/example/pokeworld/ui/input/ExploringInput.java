@@ -281,7 +281,26 @@ public class ExploringInput implements InputExtension {
         float worldX = getWorldX(x, gv);
         float worldY = getWorldY(y, gv);
         int tile = gv.world.tileMap.getTileType(worldX, worldY);
-        
+
+        // Hortas da base: toque para plantar / colher
+        if (gv.world.base != null) {
+            com.example.pokeworld.world.BasePiece bp = gv.world.base.pieceAt((int) Math.floor(worldX / TileMap.TILE_SIZE), (int) Math.floor(worldY / TileMap.TILE_SIZE));
+            if (bp != null && bp.kind == com.example.pokeworld.world.BaseKind.HORTA) {
+                double dx = gv.player.getPositionX() - bp.centerX(), dy = gv.player.getPositionY() - bp.centerY();
+                if (Math.sqrt(dx * dx + dy * dy) > 420) { gv.ui.showMessage("🚶 Chegue mais perto da horta"); return true; }
+                com.example.pokeworld.world.BaseManager.CropResult cr = gv.world.base.tendCrop(bp, new com.example.pokeworld.world.PlayerWallet(gv.player), System.currentTimeMillis());
+                if (cr != null) {
+                    gv.ui.showMessage(cr.message);
+                    if (cr.planted) gv.particles.addExplosion(bp.centerX(), bp.centerY(), android.graphics.Color.rgb(139, 69, 19), 14);
+                    if (cr.harvested) {
+                        gv.particles.addExplosion(bp.centerX(), bp.centerY(), android.graphics.Color.RED, 25);
+                        gv.activity.saveCurrentGame();
+                    }
+                    return true;
+                }
+            }
+        }
+
         if (tile == TileMap.SOIL) {
             handleFarmingInteraction(x, y, gv);
             return true;

@@ -15,6 +15,7 @@ public class Loot {
     private double radius = 15;
     private String name;
     private boolean collected = false;
+    private int amount = -1; // -1 = padrão do tipo (ouro 100, item 1)
     private Paint paint = new Paint();
     private Type type;
     private String ownerSpecies = ""; // Espécie do Pokémon derrotado
@@ -45,6 +46,9 @@ public class Loot {
     public void setOwnerSpecies(String species) {
         this.ownerSpecies = species.toLowerCase();
     }
+
+    public Loot withAmount(int n) { this.amount = n; return this; }
+    public int getAmount() { return amount >= 0 ? amount : (type == Type.GOLD ? 100 : 1); }
 
     public void setShiny(boolean shiny) { this.isShiny = shiny; }
     public boolean isShiny() { return isShiny; }

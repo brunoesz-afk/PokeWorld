@@ -11,6 +11,7 @@ public enum BaseKind {
     TORRE_VIGIA("Torre de Vigia",    "🗼",  2, 2, Cat.DEFESA,      5,   20,   15,   10,  150,  null),
     TORRE_CHOQUE("Torre Choque",     "⚡",  3, 3, Cat.DEFESA,      5,   30,   0,    40,  300,  "torre_choque"),
     TOCHA      ("Tocha",             "🔥",  1, 1, Cat.UTIL,        1,   3,    5,    0,   0,    null),
+    HORTA      ("Horta",             "🌱",  2, 2, Cat.UTIL,        5,   5,    5,    0,   0,    null),
     BAU        ("Baú",               "📦",  2, 2, Cat.UTIL,        3,   10,   10,   0,   0,    null),
     OFICINA    ("Oficina",           "🔨",  5, 4, Cat.UTIL,        5,   5,    5,    2,   0,    "oficina_pokebola"),
     DAYCARE    ("Daycare",           "🥚",  6, 3, Cat.UTIL,        5,   30,   15,   5,   0,    "construcao_daycare"),
@@ -67,6 +68,9 @@ public enum BaseKind {
         }
     }
 
+    /** Quanto tempo uma plantação leva para amadurecer (a Horta mais evoluída cresce mais rápido). */
+    public static int cropSeconds(int level) { return Math.max(30, 90 - 12 * (Math.max(1, level) - 1)); }
+
     public boolean isProcedural() { return sprite == null; }
     public boolean isWall() { return this == MURALHA; }
     public boolean isDefense() { return cat == Cat.DEFESA; }
@@ -79,6 +83,7 @@ public enum BaseKind {
             case TORRE_VIGIA: return 4 + 2 * (hq - 1);
             case TORRE_CHOQUE: return 1 + hq / 2;
             case TOCHA: return 4 + 2 * hq;
+            case HORTA: return 2 + 2 * hq;
             case BAU: return 1 + hq;
             default: return 1;
         }
@@ -98,6 +103,7 @@ public enum BaseKind {
             case TORRE_VIGIA: return "Atira em inimigos que chegam perto da base.";
             case TORRE_CHOQUE: return "Dispara raios. Exige um Pikachu/Raichu.";
             case TOCHA: return "Ilumina a base à noite.";
+            case HORTA: return "Plante 1 Fruta e colha várias. Frutas viram Pokébolas, Poções e Doces.";
             case BAU: return "Guarda itens da base.";
             case OFICINA: return "Fabrica Pokébolas e ferramentas.";
             case DAYCARE: return "Cruza seus Pokémons.";

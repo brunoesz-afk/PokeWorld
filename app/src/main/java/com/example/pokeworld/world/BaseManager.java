@@ -235,6 +235,51 @@ public class BaseManager implements MovementBlocker {
         return null;
     }
 
+    // ================================================================= plantação (Horta)
+
+    private final java.util.Random rnd = new java.util.Random();
+
+    /** Resultado de mexer numa horta: mensagem para o jogador e se algo mudou. */
+    public static class CropResult { public String message; public boolean harvested, planted; public int fruit, balls; }
+
+    /**
+     * Toque numa horta: planta (custa 1 Fruta de semente), espera crescer, ou colhe.
+     * A colheita rende várias Frutas e, às vezes, Pokébolas prontas.
+     */
+    public CropResult tendCrop(BasePiece p, Wallet w, long now) {
+        CropResult r = new CropResult();
+        if (p == null || p.kind != BaseKind.HORTA) return null;
+        if (!p.isUsable()) { r.message = "🏗️ A horta ainda está em obra"; return r; }
+        if (p.cropReady == 0) {
+            if (w.count("Fruta") < 1) { r.message = "Precisa de 1 🍎 Fruta como semente"; return r; }
+            w.take("Fruta", 1);
+            p.cropReady = now + BaseKind.cropSeconds(p.level) * 1000L;
+            store.update(p);
+            r.planted = true;
+            r.message = "🌱 Plantado! Pronto em " + BaseKind.cropSeconds(p.level) + "s";
+            return r;
+        }
+        if (now < p.cropReady) {
+            r.message = "⏳ Crescendo... " + ((p.cropReady - now + 999) / 1000) + "s";
+            return r;
+        }
+        r.fruit = 3 + 2 * p.level + rnd.nextInt(p.level + 1);
+        if (rnd.nextDouble() < 0.10 + 0.04 * p.level) r.balls = 1 + rnd.nextInt(2);
+        w.give("Fruta", r.fruit);
+        if (r.balls > 0) w.give("Pokébola", r.balls);
+        p.cropReady = 0;
+        store.update(p);
+        r.harvested = true;
+        r.message = "🍎 Colheu +" + r.fruit + " Frutas" + (r.balls > 0 ? "  +" + r.balls + " 🔴 Pokébola" : "");
+        return r;
+    }
+
+    /** 0 = vazia, 1 = crescendo, 2 = pronta para colher. */
+    public static int cropStage(BasePiece p, long now) {
+        if (p.kind != BaseKind.HORTA || !p.isUsable() || p.cropReady == 0) return 0;
+        return now >= p.cropReady ? 2 : 1;
+    }
+
     // ================================================================= edição (estado da UI)
 
     public void setEditing(boolean e) {
