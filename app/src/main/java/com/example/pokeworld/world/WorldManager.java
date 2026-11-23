@@ -11,6 +11,8 @@ import com.example.pokeworld.entities.CapturedCreature;
 import com.example.pokeworld.entities.Companion;
 import com.example.pokeworld.entities.ElementalType;
 import com.example.pokeworld.entities.Enemy;
+import com.example.pokeworld.entities.EvolutionTable;
+import com.example.pokeworld.entities.Rune;
 import com.example.pokeworld.entities.Loot;
 import com.example.pokeworld.entities.NPC;
 import com.example.pokeworld.entities.Player;
@@ -417,7 +419,7 @@ public class WorldManager {
     private void dropLoot(Enemy e, GameView gv) {
         int lvl = Math.max(1, e.level);
         double bossMult = e.isBoss ? 5 : 1;
-        loots.add(new Loot("Gold", e.positionX, e.positionY, Loot.Type.GOLD).withAmount((int) ((6 + lvl * 2 + random.nextInt(lvl + 1)) * bossMult)));
+        loots.add(new Loot("Gold", e.positionX, e.positionY, Loot.Type.GOLD).withAmount((int) ((6 + lvl * 2 + random.nextInt(lvl + 1)) * bossMult * gv.companion.getLuckMultiplier())));
 
         String mat; double chance; int max = 1;
         ElementalType t = e.getType();
@@ -433,7 +435,23 @@ public class WorldManager {
         }
         if (random.nextDouble() < (e.isBoss ? 1.0 : 0.07)) loots.add(new Loot("Pokébola", e.positionX - 22, e.positionY + 8, Loot.Type.ITEM).withAmount(e.isBoss ? 3 : 1));
         if (random.nextDouble() < 0.05) loots.add(new Loot("Poção", e.positionX, e.positionY + 22, Loot.Type.ITEM));
+        // Pedras de evolução (da mesma "família" do Pokémon; chefes soltam qualquer uma) e runas raras
+        float luck = gv.companion.getLuckMultiplier();
+        String stone = stoneFor(t);
+        if (e.isBoss) stone = EvolutionTable.STONES[random.nextInt(EvolutionTable.STONES.length)];
+        if (stone != null && random.nextDouble() < (e.isBoss ? 0.6 : 0.03) * luck)
+            loots.add(new Loot(stone, e.positionX + 30, e.positionY - 14, Loot.Type.ITEM));
+        if (random.nextDouble() < (e.isBoss ? 0.35 : 0.012) * luck)
+            loots.add(new Loot(Rune.ALL[random.nextInt(Rune.ALL.length)], e.positionX - 30, e.positionY - 14, Loot.Type.ITEM));
         if (e.isBoss) gv.player.addGems(1 + random.nextInt(2));
+    }
+
+    private static String stoneFor(ElementalType t) {
+        if (t == ElementalType.FIRE) return EvolutionTable.FIRE;
+        if (t == ElementalType.WATER || t == ElementalType.ICE) return EvolutionTable.WATER;
+        if (t == ElementalType.ELECTRIC) return EvolutionTable.THUNDER;
+        if (t == ElementalType.PLANT) return EvolutionTable.LEAF;
+        return null;
     }
 
     private void updateLoots(Player p, GameView gv) {

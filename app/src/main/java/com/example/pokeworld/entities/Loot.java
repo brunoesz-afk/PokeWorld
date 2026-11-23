@@ -106,7 +106,7 @@ public class Loot {
         canvas.drawOval((float)positionX - 15, (float)positionY + 10, (float)positionX + 15, (float)positionY + 20, paint);
 
         String icon = "💰";
-        if (type == Type.ITEM) icon = "🎁";
+        if (type == Type.ITEM) icon = name.equalsIgnoreCase("aincrad_portal") ? "🎁" : ItemCatalog.get(name).icon;
         else if (type == Type.CHEST) icon = "📦";
 
         paint.setTextSize(35);

@@ -25,9 +25,8 @@ public class ExploringInput implements InputExtension {
                     android.graphics.RectF slotRect = ExploringUI.partySlot(gv.getWidth(), i, party.size());
                     if (slotRect.contains(x, y)) {
                         com.example.pokeworld.entities.CapturedCreature c = party.get(i);
-                        gv.companion.setSpecies(c.name);
-                        gv.activity.dbHelper.updateActiveSpecies(c.name);
-                        gv.ui.showMessage("🔄 Pokémon ativo alterado para: " + c.name);
+                        if (com.example.pokeworld.managers.PartyManager.switchActive(gv, c))
+                            gv.ui.showMessage("🔄 Pokémon ativo alterado para: " + c.name);
                         return true;
                     }
                 }

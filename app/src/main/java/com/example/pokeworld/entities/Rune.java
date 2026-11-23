@@ -29,6 +29,32 @@ public class Rune {
         }
     }
 
+    public String getDescription() {
+        switch (effect) {
+            case VAMPIRISM: return "Cada golpe do companheiro cura " + Math.round(value * 100) + "% do dano causado.";
+            case RESISTANCE: return "Reduz em " + Math.round(value * 100) + "% o dano recebido pelo companheiro.";
+            case POWER: return "Aumenta o ataque do companheiro em " + Math.round((value - 1f) * 100) + "%.";
+            case SPEED: return "Aumenta a velocidade de movimento em " + Math.round((value - 1f) * 100) + "%.";
+            case LUCK: return "Aumenta em " + Math.round((value - 1f) * 100) + "% as chances de drops raros e a quantidade de ouro.";
+            default: return "";
+        }
+    }
+
+    /** Todas as runas existentes, na ordem de exibição. */
+    public static final String[] ALL = {"Runa de Sangue", "Runa de Ferro", "Runa de Zeus", "Runa de Mercúrio", "Runa da Sorte"};
+
+    public static String icon(String runeName) {
+        Rune r = create(runeName);
+        if (r == null) return "🔷";
+        switch (r.effect) {
+            case VAMPIRISM: return "🩸";
+            case RESISTANCE: return "🛡️";
+            case POWER: return "⚡";
+            case SPEED: return "💨";
+            default: return "🍀";
+        }
+    }
+
     public String getName() { return name; }
     public Effect getEffect() { return effect; }
     public float getValue() { return value; }

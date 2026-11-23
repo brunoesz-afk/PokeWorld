@@ -1,39 +1,38 @@
 package com.example.pokeworld.ui.input;
 
 import com.example.pokeworld.core.GameView;
+import com.example.pokeworld.entities.EvolutionTable;
+import com.example.pokeworld.managers.PartyManager;
 import com.example.pokeworld.ui.UIManager;
 import com.example.pokeworld.ui.handlers.EvolutionItemsUI;
 
-public class EvolutionItemsInput implements InputExtension {
+public class EvolutionItemsInput extends TapScrollInput {
     @Override
-    public boolean handle(float x, float y, GameView gv) {
-        EvolutionItemsUI ui = (EvolutionItemsUI) gv.ui.getHandler(UIManager.UIState.EVOLUTION); // Usando EVOLUTION para simplificar
-        if (ui.selectedCreature == null) {
-            gv.ui.state = UIManager.UIState.EXPLORING;
-            return true;
-        }
-
-        if (ui.fireStoneBtn.contains(x, y)) evolve(gv, ui, "Pedra Fogo", "Flareon", "Arcanine", "Magmar");
-        else if (ui.waterStoneBtn.contains(x, y)) evolve(gv, ui, "Pedra Água", "Vaporeon", "Blastoise", "Poliwrath");
-        else if (ui.thunderStoneBtn.contains(x, y)) evolve(gv, ui, "Pedra Trovão", "Jolteon", "Raichu", "Electabuzz");
-        else gv.ui.state = UIManager.UIState.CREATURES;
-
-        return true;
+    protected void onScroll(float x, float y, float dy, GameView gv) {
+        EvolutionItemsUI ui = (EvolutionItemsUI) gv.ui.getHandler(UIManager.UIState.EVOLUTION);
+        if (ui != null && ui.listArea.contains(x, y)) ui.scroll = Math.max(0, Math.min(ui.maxScroll, ui.scroll - dy));
     }
 
-    private void evolve(GameView gv, EvolutionItemsUI ui, String stone, String targetEevee, String targetOther1, String targetOther2) {
-        if (gv.player.getInventory().getOrDefault(stone, 0) > 0) {
-            gv.player.useItem(stone);
-            String oldName = ui.selectedCreature.name.toUpperCase();
-            String newName = targetOther1;
-            if (oldName.contains("EEVEE")) newName = targetEevee;
-            else if (oldName.contains("PIKACHU")) newName = "RAICHU";
-            else if (oldName.contains("GROWLITHE")) newName = "ARCANINE";
-            
-            ui.selectedCreature.name = newName;
-            gv.ui.showMessage("✨ " + oldName + " EVOLUIU PARA " + newName + "!");
-            gv.ui.state = UIManager.UIState.CREATURES;
-            gv.activity.saveCurrentGame();
-        } else gv.ui.showMessage("Você não tem " + stone + "!");
+    @Override
+    protected boolean onTap(float x, float y, GameView gv) {
+        EvolutionItemsUI ui = (EvolutionItemsUI) gv.ui.getHandler(UIManager.UIState.EVOLUTION);
+        if (ui == null) return false;
+        if (ui.exitBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.INVENTORY; return true; }
+
+        for (EvolutionItemsUI.Row r : ui.rows) {
+            if (ui.listArea.contains(x, y) && r.rect.contains(x, y)) { ui.selected = r.creature; return true; }
+        }
+        if (!ui.evolveBtn.isEmpty() && ui.evolveBtn.contains(x, y) && ui.selected != null) {
+            EvolutionTable.Evo evo = EvolutionTable.byStone(ui.selected.name, ui.stone);
+            if (evo == null) return true;
+            if (gv.player.getInventory().getOrDefault(ui.stone, 0) <= 0) { gv.ui.showMessage("Você não tem " + ui.stone + "!"); return true; }
+            gv.player.useItem(ui.stone);
+            com.example.pokeworld.entities.CapturedCreature c = ui.selected;
+            String old = c.name;
+            ui.selected = null;
+            PartyManager.evolveCreature(gv, c, evo.to);
+            if (gv.ui.state == UIManager.UIState.EVOLUTION) gv.ui.showMessage("✨ " + old + " evoluiu para " + evo.to + "!");
+        }
+        return true;
     }
 }

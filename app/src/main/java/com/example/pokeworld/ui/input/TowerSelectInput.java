@@ -17,13 +17,17 @@ public class TowerSelectInput implements InputExtension {
 
         for (TowerSelectUI.FloorCard card : ui.floorCards) {
             if (card.rect.contains(x, y)) {
-                if (card.unlocked) {
-                    gv.tower.startTowerAtFloor(card.floor);
-                    gv.ui.state = UIManager.UIState.EXPLORING;
-                } else {
-                    gv.ui.showMessage("❌ Andar bloqueado! Complete os andares anteriores.");
-                }
+                ui.selectedFloor = card.floor;
+                if (!card.unlocked) gv.ui.showMessage("🔒 Conclua o andar " + (card.floor - 1) + " para liberar este.");
                 return true;
+            }
+        }
+        if (!ui.enterBtn.isEmpty() && ui.enterBtn.contains(x, y)) {
+            if (ui.selectedFloor <= gv.tower.getMaxUnlockedFloor()) {
+                gv.tower.startTowerAtFloor(ui.selectedFloor);
+                gv.ui.state = UIManager.UIState.EXPLORING;
+            } else {
+                gv.ui.showMessage("🔒 Andar bloqueado! Complete os anteriores.");
             }
         }
         return true;

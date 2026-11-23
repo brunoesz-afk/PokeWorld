@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class UIManager {
     private Paint paint = new Paint();
-    public enum UIState { EXPLORING, INVENTORY, CREATURES, SHOP, MISSIONS, FORGE, BESTIARY, TALENTS, ACHIEVEMENTS, CLAN, SUMMON, BREEDING, VICTORY, RUNES, BOUNTIES, TELEPORT, SETTINGS, CRAFTING, POKEMON_DETAILS, STORAGE, EVOLUTION, PLACEMENT, MOUNT_FACTORY, GYM, AINCRAD, ITEM_STORAGE, TRAINER_SKILLS, STARTER_SELECTION, TOWER_SELECT, BUILD }
+    public enum UIState { EXPLORING, INVENTORY, CREATURES, SHOP, MISSIONS, FORGE, BESTIARY, TALENTS, ACHIEVEMENTS, CLAN, SUMMON, BREEDING, VICTORY, RUNES, BOUNTIES, TELEPORT, SETTINGS, CRAFTING, POKEMON_DETAILS, STORAGE, EVOLUTION, EVOLVING, PLACEMENT, MOUNT_FACTORY, GYM, AINCRAD, ITEM_STORAGE, TRAINER_SKILLS, STARTER_SELECTION, TOWER_SELECT, BUILD }
     public UIState state = UIState.EXPLORING;
 
     public String pendingBiomeName = "";
@@ -60,6 +60,7 @@ public class UIManager {
         handlers.put(UIState.POKEMON_DETAILS, new DexUI());
         handlers.put(UIState.STORAGE, new StorageUI());
         handlers.put(UIState.EVOLUTION, new EvolutionItemsUI());
+        handlers.put(UIState.EVOLVING, new EvolutionUI());
         handlers.put(UIState.PLACEMENT, new PlacementUI());
         handlers.put(UIState.ITEM_STORAGE, new ItemStorageUI());
         handlers.put(UIState.MOUNT_FACTORY, new MountFactoryUI());
@@ -71,6 +72,14 @@ public class UIManager {
         handlers.put(UIState.BUILD, new BuildUI());
     }
     
+    /** Abre a tela de pedras de evolução com a pedra escolhida na mochila. */
+    public void openEvolutionStone(String stone) {
+        EvolutionItemsUI ui = (EvolutionItemsUI) handlers.get(UIState.EVOLUTION);
+        ui.stone = stone;
+        ui.scroll = 0;
+        state = UIState.EVOLUTION;
+    }
+
     public UIHandler getHandler(UIState state) {
         return handlers.get(state);
     }

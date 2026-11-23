@@ -21,6 +21,8 @@ public class EvolutionUI extends BaseUI {
         this.startTime = System.currentTimeMillis();
     }
 
+    public boolean isFinished() { return System.currentTimeMillis() - startTime >= DURATION; }
+
     @Override
     public void draw(Canvas canvas, GameView gv) {
         long elapsed = System.currentTimeMillis() - startTime;

@@ -40,6 +40,7 @@ public class InputHandler {
         handlers.put(UIManager.UIState.STORAGE, new StorageInput());
         handlers.put(UIManager.UIState.CLAN, new ClanInput());
         handlers.put(UIManager.UIState.EVOLUTION, new EvolutionItemsInput());
+        handlers.put(UIManager.UIState.EVOLVING, new EvolutionInput());
         handlers.put(UIManager.UIState.PLACEMENT, new PlacementInput());
         handlers.put(UIManager.UIState.MOUNT_FACTORY, new MountFactoryInput());
         handlers.put(UIManager.UIState.GYM, new GymInput());

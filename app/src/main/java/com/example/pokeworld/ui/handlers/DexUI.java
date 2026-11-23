@@ -178,16 +178,14 @@ public class DexUI extends BaseUI {
     }
 
     private String getEvolutionLevelText(String name) {
-        String n = name.toUpperCase();
-        if (n.contains("CHARMANDER") || n.contains("BULBASAUR") || n.contains("SQUIRTLE") || n.contains("ABRA") || n.contains("MACHOP")) return "Nv. 16";
-        if (n.contains("CHARMELEON") || n.contains("WARTORTLE") || n.contains("PIDGEOTTO") || n.contains("KADABRA")) return "Nv. 36";
-        if (n.contains("IVYSAUR")) return "Nv. 32";
-        if (n.contains("PIKACHU")) return "Nv. 30 (ou Pedra)";
-        if (n.contains("CATERPIE") || n.contains("WEEDLE")) return "Nv. 7";
-        if (n.contains("METAPOD") || n.contains("KAKUNA")) return "Nv. 10";
-        if (n.contains("PIDGEY")) return "Nv. 18";
-        if (n.contains("CHARIZARD") || n.contains("VENUSAUR") || n.contains("BLASTOISE") || n.contains("ALAKAZAM") || n.contains("BUTTERFREE") || n.contains("BEEDRILL") || n.contains("PIDGEOT") || n.contains("RAICHU")) return "Forma Final";
-        return "Nv. 30";
+        java.util.List<com.example.pokeworld.entities.EvolutionTable.Evo> evos = com.example.pokeworld.entities.EvolutionTable.from(name);
+        if (evos.isEmpty()) return com.example.pokeworld.entities.EvolutionTable.preEvolution(name) != null ? "Forma Final" : "Não evolui";
+        StringBuilder sb = new StringBuilder();
+        for (com.example.pokeworld.entities.EvolutionTable.Evo e : evos) {
+            if (sb.length() > 0) sb.append("  |  ");
+            sb.append(e.describe()).append(" → ").append(e.to);
+        }
+        return sb.toString();
     }
 
     private int[] getStatsForSpecies(String name) {

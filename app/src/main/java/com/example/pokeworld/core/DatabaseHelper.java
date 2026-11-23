@@ -289,6 +289,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.insertWithOnConflict("pets", null, v, SQLiteDatabase.CONFLICT_REPLACE);
     }
 
+    public void deletePet(String species) {
+        this.getWritableDatabase().delete("pets", "species=?", new String[]{species});
+    }
+
     public void updateBuilding(String name, int level, int constructed, double x, double y, long finishTime) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues v = new ContentValues();

@@ -48,9 +48,13 @@ public class TowerManager {
                     gv.ui.showMessage("⚡ ONDA " + currentWave + " / " + TOTAL_WAVES + " INICIANDO!");
                     new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::spawnWave, 1500);
                 } else {
-                    int goldReward = towerFloor * 150;
+                    int goldReward = rewardGold(towerFloor);
                     gv.player.addGold(goldReward);
-                    gv.ui.showMessage("🎉 ANDAR " + towerFloor + " CONCLUÍDO! Entre no portal ou fale com o NPC.");
+                    String item = rewardItem(towerFloor);
+                    int amount = rewardItemAmount(towerFloor);
+                    gv.player.addItem(item, amount);
+                    markCleared(towerFloor);
+                    gv.ui.showMessage("🎉 ANDAR " + towerFloor + " CONCLUÍDO! +" + goldReward + "🪙  +" + amount + " " + item);
                     waitingForNpcAdvance = true;
                     
                     double midX = gv.player.getPositionX();
@@ -114,9 +118,37 @@ public class TowerManager {
         return towerFloor;
     }
 
-    public int getMaxUnlockedFloor() {
-        return 20;
+    public static final int MAX_FLOOR = 20;
+    private static final String[] RUNES = {"Runa de Ferro", "Runa de Sangue", "Runa de Mercúrio", "Runa da Sorte", "Runa de Zeus"};
+
+    /** Maior andar já concluído (salvo em preferências). */
+    public int getHighestCleared() {
+        return gv.activity.getSharedPreferences("tower", 0).getInt("cleared", 0);
     }
+
+    public int getMaxUnlockedFloor() {
+        return Math.min(MAX_FLOOR, getHighestCleared() + 1);
+    }
+
+    private void markCleared(int floor) {
+        if (floor > getHighestCleared()) gv.activity.getSharedPreferences("tower", 0).edit().putInt("cleared", floor).apply();
+    }
+
+    /** Item de prêmio do andar: runa a cada 5 andares, pedra nos pares, Pokébolas nos ímpares. */
+    public static String rewardItem(int floor) {
+        if (floor % 5 == 0) return RUNES[(floor / 5 - 1) % RUNES.length];
+        if (floor % 2 == 0) return com.example.pokeworld.entities.EvolutionTable.STONES[(floor / 2 - 1) % com.example.pokeworld.entities.EvolutionTable.STONES.length];
+        return "Pokébola";
+    }
+
+    public static int rewardItemAmount(int floor) {
+        return (floor % 5 != 0 && floor % 2 != 0) ? 2 + floor / 4 : 1;
+    }
+
+    public static int rewardGold(int floor) { return floor * 150; }
+
+    /** Nível médio dos inimigos na última onda do andar. */
+    public static int enemyLevel(int floor) { return floor * 2 + TOTAL_WAVES; }
 
     public boolean isWaitingForNpcAdvance() {
         return waitingForNpcAdvance;

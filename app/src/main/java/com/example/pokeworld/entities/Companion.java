@@ -519,60 +519,24 @@ public class Companion {
     }
 
     private void checkEvolution() {
-        if (isShiny) return; 
-        String s = species.toUpperCase();
-        String next = null;
-        if (s.equals("PIKACHU") && level >= 20) next = "Raichu";
-        else if (s.equals("CHARMANDER") && level >= 16) next = "Charmeleon";
-        else if (s.equals("CHARMELEON") && level >= 36) next = "Charizard";
-        else if (s.equals("SQUIRTLE") && level >= 16) next = "Wartortle";
-        else if (s.equals("WARTORTLE") && level >= 36) next = "Blastoise";
-        else if (s.equals("BULBASAUR") && level >= 16) next = "Ivysaur";
-        else if (s.equals("IVYSAUR") && level >= 32) next = "Venusaur";
-
-        if (next != null) {
-            triggerEvolution(next);
-        }
+        EvolutionTable.Evo evo = EvolutionTable.byLevel(species, level);
+        if (evo != null) evolveInto(evo.to);
     }
 
-    private void triggerEvolution(String nextS) {
+    /** Evolui o companheiro ativo para a nova espécie, toca a cena de evolução e sincroniza Time/banco. */
+    public void evolveInto(String nextS) {
+        String old = this.species;
+        setSpecies(nextS);
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
             if (activity.gameView != null) {
-                com.example.pokeworld.ui.handlers.EvolutionUI evoUI = (com.example.pokeworld.ui.handlers.EvolutionUI) activity.gameView.ui.getHandler(com.example.pokeworld.ui.UIManager.UIState.EVOLUTION);
+                com.example.pokeworld.managers.PartyManager.onActiveEvolved(activity.gameView, old, nextS);
+                com.example.pokeworld.ui.handlers.EvolutionUI evoUI = (com.example.pokeworld.ui.handlers.EvolutionUI) activity.gameView.ui.getHandler(com.example.pokeworld.ui.UIManager.UIState.EVOLVING);
                 if (evoUI != null) {
-                    evoUI.start(this.species, nextS);
-                    activity.gameView.ui.state = com.example.pokeworld.ui.UIManager.UIState.EVOLUTION;
+                    evoUI.start(old, nextS);
+                    activity.gameView.ui.state = com.example.pokeworld.ui.UIManager.UIState.EVOLVING;
                 }
             }
-        }
-        setSpecies(nextS);
-    }
-
-    public void evolve(Player player) {
-        if (isShiny) return; 
-        String s = species.toUpperCase();
-        String next = null;
-        if (s.contains("PIKACHU")) next = "Raichu";
-        else if (s.contains("CHARMANDER")) next = "Charmeleon";
-        else if (s.contains("CHARMELEON")) next = "Charizard";
-        else if (s.contains("SQUIRTLE")) next = "Wartortle";
-        else if (s.contains("WARTORTLE")) next = "Blastoise";
-        else if (s.contains("BULBASAUR")) next = "Ivysaur";
-        else if (s.contains("IVYSAUR")) next = "Venusaur";
-
-        if (next != null) {
-            triggerEvolution(next);
-        } else {
-            // Se já estiver na última forma, ganha um bônus massivo de status
-            this.baseAttackPower += 20;
-            this.baseMaxHp += 50;
-            this.hp = maxHp;
-            resetToBaseStats();
-        }
-        
-        if (context instanceof MainActivity) {
-            ((MainActivity)context).saveCurrentGame();
         }
     }
 
@@ -618,7 +582,7 @@ public class Companion {
                 int damage = attackPower;
                 double multiplier = ElementalType.getMultiplier(type1, targetEnemy.getType(), type2);
                 int finalDamage = (int)(damage * multiplier);
-                targetEnemy.takeDamage(finalDamage); addRage(5);
+                targetEnemy.takeDamage(finalDamage); addRage(5); applyVampirism(finalDamage);
                 lastDamageDealt = finalDamage; lastTargetHit = targetEnemy; lastAttackTime = now;
                 if (effects != null) {
                     effects.addText("-" + finalDamage, targetEnemy.getPositionX(), targetEnemy.getPositionY() - 20, Color.WHITE);
@@ -647,6 +611,7 @@ public class Companion {
         double multiplier = ElementalType.getMultiplier(type1, targetEnemy.getType(), type2);
         int finalDamage = (int)(dmg * multiplier);
         targetEnemy.takeDamage(finalDamage);
+        applyVampirism(finalDamage);
         String msg = "🌟 ULTIMATE: " + finalDamage;
         if (multiplier > 1.0) msg = "🔥 SUPER EFETIVO! " + msg;
         else if (multiplier < 1.0) msg = "💤 Pouco efetivo... " + msg;
@@ -685,6 +650,7 @@ public class Companion {
                 if (isCritical) multiplier *= 2.0;
 
                 int totalDamage = (int)((damage + (attackPower * 0.5f)) * multiplier);
+                applyVampirism(totalDamage);
 
                 // Suporte para Projéteis e Animações de Ataque (Tamanho Fixo Estilo Tibia)
                 float fixedEffectSize = (float)TileMap.TILE_SIZE * 1.5f;
@@ -881,7 +847,20 @@ public class Companion {
 
     public double getPlayerSpeedMultiplier() {
         String s = species.toUpperCase();
-        return (s.contains("PIKACHU") || s.contains("RAICHU")) ? 1.15 : 1.0;
+        double m = (s.contains("PIKACHU") || s.contains("RAICHU")) ? 1.15 : 1.0;
+        if (equippedRune != null && equippedRune.getEffect() == Rune.Effect.SPEED) m *= equippedRune.getValue();
+        return m;
+    }
+
+    /** Runa de Sangue: cura o companheiro com uma parte do dano causado. */
+    private void applyVampirism(int dealt) {
+        if (equippedRune == null || equippedRune.getEffect() != Rune.Effect.VAMPIRISM || dealt <= 0) return;
+        heal(Math.max(1, (int)(dealt * equippedRune.getValue())));
+    }
+
+    /** Runa da Sorte: multiplicador para ouro e chances de drop (1.0 sem a runa). */
+    public float getLuckMultiplier() {
+        return (equippedRune != null && equippedRune.getEffect() == Rune.Effect.LUCK) ? equippedRune.getValue() : 1.0f;
     }
 
     public void setPosition(double x, double y) { this.positionX = x; this.positionY = y; }
