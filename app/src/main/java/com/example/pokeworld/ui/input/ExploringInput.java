@@ -19,13 +19,10 @@ public class ExploringInput implements InputExtension {
 
         switch (action) {
             case android.view.MotionEvent.ACTION_DOWN:
-                // Verifica toque nos atalhos rápidos do Time à esquerda do Minimapa
+                // Verifica toque na linha de troca rápida do Time (topo da tela)
                 java.util.List<com.example.pokeworld.entities.CapturedCreature> party = gv.player.getParty();
-                float slotW = 50, slotH = 50;
-                float startX = gv.getWidth() - 305;
-                float startY = 70;
                 for (int i = 0; i < party.size(); i++) {
-                    android.graphics.RectF slotRect = new android.graphics.RectF(startX, startY + (i * (slotH + 6)), startX + slotW, startY + (i * (slotH + 6)) + slotH);
+                    android.graphics.RectF slotRect = ExploringUI.partySlot(gv.getWidth(), i, party.size());
                     if (slotRect.contains(x, y)) {
                         com.example.pokeworld.entities.CapturedCreature c = party.get(i);
                         gv.companion.setSpecies(c.name);

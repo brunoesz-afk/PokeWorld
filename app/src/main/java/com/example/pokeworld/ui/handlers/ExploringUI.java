@@ -57,6 +57,14 @@ public class ExploringUI extends BaseUI {
     private long lastFishingInteractionTime = 0;
     private boolean isFishingBarVisible = false;
 
+    /** Posição de cada slot da troca rápida (linha horizontal centralizada no topo). Usada também pelo toque. */
+    public static RectF partySlot(float screenW, int index, int count) {
+        float size = 58, gap = 8;
+        float total = count * size + Math.max(0, count - 1) * gap;
+        float x = screenW / 2f - total / 2f + index * (size + gap);
+        return new RectF(x, 10, x + size, 10 + size);
+    }
+
     @Override
     public void draw(Canvas canvas, GameView gv) {
         updateButtonPositions(canvas.getWidth(), canvas.getHeight());
@@ -202,34 +210,39 @@ public class ExploringUI extends BaseUI {
         
         if (gv.dungeon.isInDungeon()) {
             paint.setColor(Color.WHITE); paint.setTextSize(30); paint.setTextAlign(Paint.Align.CENTER);
-            canvas.drawText("🏰 ANDAR: " + gv.dungeon.getCurrentFloor(), canvas.getWidth()/2f, 50, paint);
+            canvas.drawText("🏰 ANDAR: " + gv.dungeon.getCurrentFloor(), canvas.getWidth()/2f, 110, paint);
         }
 
-        // --- QUICK PARTY SWITCHER (À esquerda do Minimapa, no lado direito da tela) ---
+        // --- TROCA RÁPIDA DE POKÉMON: linha horizontal no topo, perto do meio da tela ---
         float w = canvas.getWidth();
         List<CapturedCreature> party = p.getParty();
-        float slotW = 50, slotH = 50;
-        float startX = w - 305; // Logo à esquerda do minimapa
-        float startY = 70;
         for (int i = 0; i < party.size(); i++) {
             CapturedCreature c = party.get(i);
-            RectF slotRect = new RectF(startX, startY + (i * (slotH + 6)), startX + slotW, startY + (i * (slotH + 6)) + slotH);
-            
-            paint.setStyle(Paint.Style.FILL);
+            RectF slotRect = partySlot(w, i, party.size());
             boolean isActive = c.name.equalsIgnoreCase(comp.getSpecies());
-            paint.setColor(isActive ? Color.argb(220, 255, 215, 0) : Color.argb(160, 20, 30, 45));
-            canvas.drawRoundRect(slotRect, 8, 8, paint);
 
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(isActive ? Color.argb(235, 255, 200, 40) : Color.argb(170, 20, 30, 45));
+            canvas.drawRoundRect(slotRect, 12, 12, paint);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(isActive ? 3 : 1);
-            paint.setColor(isActive ? Color.WHITE : Color.DKGRAY);
-            canvas.drawRoundRect(slotRect, 8, 8, paint);
+            paint.setStrokeWidth(isActive ? 3.5f : 1.5f);
+            paint.setColor(isActive ? Color.WHITE : Color.argb(200, 120, 130, 150));
+            canvas.drawRoundRect(slotRect, 12, 12, paint);
 
             Bitmap icon = SpriteManager.getInstance().getUnitSprite(c.name, 0, 0, c.isShiny);
             if (icon != null) {
-                canvas.drawBitmap(icon, null, new Rect((int)slotRect.left + 3, (int)slotRect.top + 3, (int)slotRect.right - 3, (int)slotRect.bottom - 3), null);
+                canvas.drawBitmap(icon, null, new Rect((int) slotRect.left + 4, (int) slotRect.top + 4, (int) slotRect.right - 4, (int) slotRect.bottom - 4), null);
+            }
+            if (isActive) { // barra de vida do Pokémon ativo embaixo do slot
+                float f = Math.max(0f, Math.min(1f, (float) comp.getHp() / Math.max(1, comp.getMaxHp())));
+                paint.setStyle(Paint.Style.FILL);
+                paint.setColor(Color.argb(200, 0, 0, 0));
+                canvas.drawRoundRect(new RectF(slotRect.left, slotRect.bottom + 3, slotRect.right, slotRect.bottom + 9), 3, 3, paint);
+                paint.setColor(f > 0.5f ? Color.rgb(90, 220, 90) : f > 0.25f ? Color.rgb(240, 200, 60) : Color.rgb(230, 70, 60));
+                canvas.drawRoundRect(new RectF(slotRect.left, slotRect.bottom + 3, slotRect.left + slotRect.width() * f, slotRect.bottom + 9), 3, 3, paint);
             }
         }
+        paint.setStyle(Paint.Style.FILL);
 
         drawIcon(canvas, inventoryBtn, "🎒");
         drawIcon(canvas, achBtn, "🏆");
