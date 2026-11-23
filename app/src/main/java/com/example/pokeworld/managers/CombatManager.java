@@ -57,7 +57,7 @@ public class CombatManager {
             gv.bestiary.markAsCaptured(target.getName());
             gv.world.loots.remove(target);
             gv.ui.showMessage("✨ " + target.getName() + " CAPTURADO!");
-            gv.missions.updateProgress(target.getName());
+            gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.CAPTURES);
             if (gv.tutorial != null) gv.tutorial.onTutorialRattataCaptured();
             gv.particles.addExplosion(target.getPositionX(), target.getPositionY(), android.graphics.Color.GREEN, 40);
         } else {
@@ -141,7 +141,7 @@ public class CombatManager {
             
             // ... (resto da lógica de captura)
             gv.ui.showMessage("✨ " + target.name + " CAPTURADO COM " + ballUsed.toUpperCase() + "!");
-            gv.missions.updateProgress(target.name);
+            gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.CAPTURES);
             gv.particles.addExplosion(target.positionX, target.positionY, android.graphics.Color.GREEN, 40);
         } else {
             gv.player.useItem("Pokébola"); // Consome a pokébola na falha também

@@ -27,6 +27,7 @@ public class EvolutionItemsInput extends TapScrollInput {
             if (evo == null) return true;
             if (gv.player.getInventory().getOrDefault(ui.stone, 0) <= 0) { gv.ui.showMessage("Você não tem " + ui.stone + "!"); return true; }
             gv.player.useItem(ui.stone);
+            gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.STONES_USED);
             com.example.pokeworld.entities.CapturedCreature c = ui.selected;
             String old = c.name;
             ui.selected = null;

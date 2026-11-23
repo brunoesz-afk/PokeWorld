@@ -72,6 +72,7 @@ public class GameView {
     public BountyManager bounties;
     public FarmingManager farming;
     public TutorialManager tutorial;
+    public com.example.pokeworld.managers.TipManager tips;
     public TowerManager tower;
     
     public Player player;
@@ -92,6 +93,7 @@ public class GameView {
         this.ui = new UIManager();
         this.world = new WorldManager(activity);
         this.missions = new MissionManager(player, ui);
+        this.missions.bind(activity.dbHelper);
         this.fishing = new FishingManager(this);
         this.combat = new CombatManager(this);
         this.fusion = new FusionManager(player, ui);
@@ -114,6 +116,7 @@ public class GameView {
         this.bounties = new BountyManager(this);
         this.farming = new FarmingManager(this);
         this.tutorial = new TutorialManager(this);
+        this.tips = new com.example.pokeworld.managers.TipManager(this);
         this.tower = new TowerManager(this);
 
         missions.giveInitialMission();
@@ -212,6 +215,8 @@ public class GameView {
             farming.update();
             tower.update();
             achievements.check(this);
+            missions.check(this);
+            tips.update();
             
             effects.update();
             particles.update();

@@ -34,6 +34,7 @@ public class BaseDefense {
         void addGold(int g);
         int gold();
         int playerLevel();
+        void raidWon();
     }
 
     private static final long FIRST_RAID_DELAY = 6 * 60 * 1000L, RAID_INTERVAL = 9 * 60 * 1000L, RAID_MAX = 120 * 1000L;
@@ -316,6 +317,7 @@ public class BaseDefense {
         if (balls > 0) sb.append(" +").append(balls).append("🔴");
         if (fruit > 0) sb.append(" +").append(fruit).append("🍎");
         host.say(sb.toString());
+        host.raidWon();
         finish(now);
     }
 

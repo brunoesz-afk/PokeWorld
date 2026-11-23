@@ -123,7 +123,7 @@ public class TowerManager {
 
     /** Maior andar já concluído (salvo em preferências). */
     public int getHighestCleared() {
-        return gv.activity.getSharedPreferences("tower", 0).getInt("cleared", 0);
+        return Math.max(gv.activity.dbHelper.getKv("tower_cleared", 0), gv.activity.getSharedPreferences("tower", 0).getInt("cleared", 0));
     }
 
     public int getMaxUnlockedFloor() {
@@ -131,7 +131,7 @@ public class TowerManager {
     }
 
     private void markCleared(int floor) {
-        if (floor > getHighestCleared()) gv.activity.getSharedPreferences("tower", 0).edit().putInt("cleared", floor).apply();
+        if (floor > getHighestCleared()) gv.activity.dbHelper.setKv("tower_cleared", floor);
     }
 
     /** Item de prêmio do andar: runa a cada 5 andares, pedra nos pares, Pokébolas nos ímpares. */

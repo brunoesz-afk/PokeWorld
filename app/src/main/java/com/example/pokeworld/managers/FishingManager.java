@@ -87,7 +87,7 @@ public class FishingManager {
         
         gv.player.addItem(item);
         gv.player.addGold(totalGold);
-        missions.updateProgress("Peixe");
+        missions.count(MissionManager.Metric.FISH);
         gv.ui.showMessage("✨ " + item.toUpperCase() + " PESCADO (+" + totalGold + " 🪙)!");
         gv.particles.addExplosion(gv.player.getPositionX(), gv.player.getPositionY(), android.graphics.Color.BLUE, 15);
     }

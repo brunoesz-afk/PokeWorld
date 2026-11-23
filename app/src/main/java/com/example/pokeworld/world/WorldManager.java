@@ -291,6 +291,7 @@ public class WorldManager {
             @Override public void addGold(int g) { gv.player.addGold(g); }
             @Override public int gold() { return gv.player.getGold(); }
             @Override public int playerLevel() { return gv.player.getLevel(); }
+            @Override public void raidWon() { gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.RAIDS_WON); }
         };
         defense = new BaseDefense(base, defenseHost, System.currentTimeMillis());
     }
@@ -449,8 +450,8 @@ public class WorldManager {
                 dropLoot(e, gv);
                 
                 // Atualiza progresso das missões ao derrotar qualquer Pokémon selvagem
-                gv.missions.updateProgress("Pokemon");
-                gv.missions.updateProgress(e.name);
+                gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.KILLS);
+                if (e.isBoss) gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.BOSS_KILLS);
 
                 it.remove();
             } else e.update(c, gv.effects, gv.particles, tileMap, gv.time.isNight());

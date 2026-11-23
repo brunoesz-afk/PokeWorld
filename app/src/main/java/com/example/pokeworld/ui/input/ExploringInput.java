@@ -289,6 +289,7 @@ public class ExploringInput implements InputExtension {
                     gv.ui.showMessage(cr.message);
                     if (cr.planted) gv.particles.addExplosion(bp.centerX(), bp.centerY(), android.graphics.Color.rgb(139, 69, 19), 14);
                     if (cr.harvested) {
+                        gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.HARVESTS);
                         gv.particles.addExplosion(bp.centerX(), bp.centerY(), android.graphics.Color.RED, 25);
                         gv.activity.saveCurrentGame();
                     }

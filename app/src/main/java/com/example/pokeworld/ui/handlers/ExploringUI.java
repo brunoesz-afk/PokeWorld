@@ -202,7 +202,7 @@ public class ExploringUI extends BaseUI {
         paint.setColor(Color.LTGRAY); paint.setTextSize(16);
         canvas.drawText(comp.getPassiveDescription(), 40, 275, paint);
 
-        drawQuestLog(canvas, p);
+        drawQuestLog(canvas, p, gv);
 
         paint.setTextAlign(Paint.Align.RIGHT);
         paint.setColor(Color.argb(150, 0, 0, 0));
@@ -365,19 +365,21 @@ public class ExploringUI extends BaseUI {
         canvas.drawText(label, x + w/2, y + h * 0.85f, paint);
     }
 
-    private void drawQuestLog(Canvas canvas, Player p) {
-        if (p.getActiveMissions().isEmpty()) return;
-        
+    private void drawQuestLog(Canvas canvas, Player p, GameView gv) {
+        java.util.List<com.example.pokeworld.managers.MissionManager.Quest> qs = gv.missions.activeQuests();
+        if (qs.isEmpty()) return;
+        paint.setStyle(Paint.Style.FILL);
         paint.setTextAlign(Paint.Align.LEFT);
         paint.setTextSize(18);
-        int y = 170;
-        for (Mission m : p.getActiveMissions()) {
-            if (!m.isRewarded()) {
-                paint.setColor(m.isCompleted() ? Color.GREEN : Color.LTGRAY);
-                String text = (m.isCompleted() ? "✅ " : "🎯 ") + m.getTitle() + " (" + m.getStatusText() + ")";
-                canvas.drawText(text, 30, y, paint);
-                y += 25;
-            }
+        int y = 170, shown = 0;
+        for (com.example.pokeworld.managers.MissionManager.Quest q : qs) {
+            if (shown++ >= 3) break;
+            int prog = Math.min(q.target, gv.missions.progress(q, gv));
+            paint.setColor(Color.argb(210, 0, 0, 0));
+            canvas.drawText("🎯 " + q.title + " (" + prog + "/" + q.target + ")", 31, y + 1, paint);
+            paint.setColor(Color.rgb(255, 235, 150));
+            canvas.drawText("🎯 " + q.title + " (" + prog + "/" + q.target + ")", 30, y, paint);
+            y += 25;
         }
     }
 

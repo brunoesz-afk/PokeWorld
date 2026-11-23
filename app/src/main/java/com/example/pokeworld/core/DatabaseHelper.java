@@ -24,7 +24,7 @@ import java.util.Set;
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "pokeworld.db";
-    private static final int DATABASE_VERSION = 39; 
+    private static final int DATABASE_VERSION = 40; 
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -45,6 +45,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // Tabelas de Mundo e Conquistas (Adicionado colunas de posição e tempo de construção)
         db.execSQL("CREATE TABLE buildings (id INTEGER PRIMARY KEY AUTOINCREMENT, building_name TEXT, level INTEGER, is_constructed INTEGER DEFAULT 1, pos_x REAL DEFAULT 0, pos_y REAL DEFAULT 0, construction_finish_time INTEGER DEFAULT 0)");
         createBasePiecesTable(db);
+        createKvTable(db);
         db.execSQL("CREATE TABLE bestiary (id INTEGER PRIMARY KEY AUTOINCREMENT, species_name TEXT UNIQUE)");
         db.execSQL("CREATE TABLE talents (id INTEGER PRIMARY KEY AUTOINCREMENT, talent_name TEXT UNIQUE, level INTEGER)");
         db.execSQL("CREATE TABLE achievements (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT UNIQUE)");
@@ -97,6 +98,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return v;
     }
 
+    private void createKvTable(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v INTEGER DEFAULT 0)");
+    }
+
+    /** Contadores e marcas do jogo (missões, dicas, progresso da torre). */
+    public int getKv(String key, int def) {
+        int v = def;
+        try {
+            Cursor c = this.getReadableDatabase().rawQuery("SELECT v FROM kv WHERE k=?", new String[]{key});
+            if (c.moveToFirst()) v = c.getInt(0);
+            c.close();
+        } catch (Exception e) { Log.e("DatabaseHelper", "getKv: " + e.getMessage()); }
+        return v;
+    }
+
+    public void setKv(String key, int value) {
+        ContentValues cv = new ContentValues();
+        cv.put("k", key);
+        cv.put("v", value);
+        this.getWritableDatabase().insertWithOnConflict("kv", null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
     private void createBasePiecesTable(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS base_pieces (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, gx INTEGER, gy INTEGER, level INTEGER DEFAULT 1, finish_time INTEGER DEFAULT 0, upgrading INTEGER DEFAULT 0, crop_ready INTEGER DEFAULT 0)");
     }
@@ -104,7 +127,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // 36 -> 39: migrações em sequência (NÃO apagam o progresso do jogador)
-        if (oldVersion >= 36 && oldVersion < 39) {
+        if (oldVersion >= 36 && oldVersion < 40) {
             if (oldVersion == 36) {
                 createBasePiecesTable(db);
                 migrateLegacyHomeBuildings(db);
@@ -113,6 +136,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 try { db.execSQL("ALTER TABLE base_pieces ADD COLUMN crop_ready INTEGER DEFAULT 0"); }
                 catch (Exception e) { Log.e("DatabaseHelper", "crop_ready já existe?", e); }
             }
+            createKvTable(db);   // 39 -> 40
+            if (oldVersion >= 39) return;
             // 38 -> 39: defensores da base. Quem já estava na base continua defendendo (até 4); o resto vai para a caixa.
             try {
                 db.execSQL("ALTER TABLE collection ADD COLUMN is_guard INTEGER DEFAULT 0");
