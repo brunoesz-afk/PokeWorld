@@ -391,18 +391,14 @@ public final class MapBuilder {
     private static int[][] home(int rows, int cols) {
         MapBuilder b = new MapBuilder(rows, cols, 1002);
         b.fill(GRASS);
-        // Floresta ao redor com clareiras e flores
-        b.scatter(TREE, 900, null, 0, GRASS);
-        b.scatter(FLOWERS, 300, null, 0, GRASS);
-        // Lago e riacho no canto oeste, com ponte
-        b.blob(40, 30, 9, 14, WATER, 0.25, 77, GRASS, TREE, FLOWERS);
-        b.blob(40, 30, 5, 9, DEEP_WATER, 0.2, 78, WATER);
-        // Colina com penhasco ao nordeste e escada
-        b.rect(8, 112, 18, 140, GRASS);
-        b.ledge(19, 110, 142, 2);
-        b.stairsV(19, 124, 2, 3);
-        b.scatter(ROCK, 25, null, 0, GRASS);
-        // Terreno edificável (48x48, igual ao BaseLayout): grama limpa, sem árvores nem pedras.
+        // Floresta ao redor com clareiras e flores (mapa pequeno = leve)
+        b.scatter(TREE, 260, null, 0, GRASS);
+        b.scatter(FLOWERS, 90, null, 0, GRASS);
+        // Pequeno lago no canto noroeste
+        b.blob(9, 6, 5, 5, WATER, 0.25, 77, GRASS, TREE, FLOWERS);
+        b.blob(9, 6, 3, 3, DEEP_WATER, 0.2, 78, WATER);
+        b.scatter(ROCK, 8, null, 0, GRASS);
+        // Terreno edificável (igual ao BaseLayout): grama limpa, sem árvores nem pedras.
         // As muralhas, torres e prédios NÃO fazem parte do mapa: são peças que o jogador coloca.
         b.rectOn(BaseLayout.PLOT_Y - 3, BaseLayout.PLOT_X - 3, BaseLayout.PLOT_Y + BaseLayout.PLOT_H + 2,
                 BaseLayout.PLOT_X + BaseLayout.PLOT_W + 2, GRASS, TREE, ROCK, FLOWERS, BUSH, WATER, DEEP_WATER);

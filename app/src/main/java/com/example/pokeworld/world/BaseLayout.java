@@ -11,10 +11,14 @@ import java.util.List;
  */
 public class BaseLayout implements MovementBlocker {
     private static final int T = 64; // = TileMap.TILE_SIZE
-    /** Terreno edificável (em tiles) no mapa HOME 160x80. */
-    public static final int PLOT_X = 56, PLOT_Y = 16, PLOT_W = 48, PLOT_H = 48;
+    /** Tamanho do mapa HOME (pequeno de propósito: menos tiles desenhados = mais leve). */
+    public static final int MAP_ROWS = 56, MAP_COLS = 64;
+    /** Terreno edificável (em tiles). */
+    public static final int PLOT_X = 14, PLOT_Y = 8, PLOT_W = 36, PLOT_H = 36;
     /** Anel de muralha inicial (células do anel) e portão. */
-    public static final int RING_L = 62, RING_R = 97, RING_T = 22, RING_B = 57, GATE_X0 = 78, GATE_X1 = 81;
+    public static final int RING_L = 19, RING_R = 44, RING_T = 13, RING_B = 38, GATE_X0 = 30, GATE_X1 = 33;
+    /** Onde nasce o Quartel (4x4, no centro do anel). */
+    public static final int QUARTEL_X = 30, QUARTEL_Y = 24;
 
     private final int rows, cols;
     private final BasePiece[][] grid;
@@ -87,7 +91,7 @@ public class BaseLayout implements MovementBlocker {
 
     /** Procura em espiral a célula livre mais próxima para o tipo. null se não houver. */
     public int[] nearestFree(BaseKind k, int gx, int gy) {
-        for (int r = 0; r < 40; r++)
+        for (int r = 0; r < 30; r++)
             for (int dy = -r; dy <= r; dy++)
                 for (int dx = -r; dx <= r; dx++) {
                     if (Math.max(Math.abs(dx), Math.abs(dy)) != r) continue;
@@ -132,7 +136,14 @@ public class BaseLayout implements MovementBlocker {
     /** Quartel + anel de muralha (nível 1) com portão ao sul + 4 torres de vigia nos cantos. */
     public static List<BasePiece> defaultPieces() {
         List<BasePiece> out = new ArrayList<>();
-        out.add(new BasePiece(BaseKind.QUARTEL, 78, 38, 1));
+        out.add(new BasePiece(BaseKind.QUARTEL, QUARTEL_X, QUARTEL_Y, 1));
+        out.addAll(defaultRing());
+        return out;
+    }
+
+    /** Só o anel: 4 torres nos cantos + muralhas com portão ao sul. */
+    public static List<BasePiece> defaultRing() {
+        List<BasePiece> out = new ArrayList<>();
         out.add(new BasePiece(BaseKind.TORRE_VIGIA, RING_L, RING_T, 1));
         out.add(new BasePiece(BaseKind.TORRE_VIGIA, RING_R - 1, RING_T, 1));
         out.add(new BasePiece(BaseKind.TORRE_VIGIA, RING_L, RING_B - 1, 1));

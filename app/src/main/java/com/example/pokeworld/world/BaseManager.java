@@ -63,15 +63,28 @@ public class BaseManager implements MovementBlocker {
             store.insertAll(fresh);
         } else {
             List<BasePiece> homeless = new ArrayList<>();
+            boolean removedRing = false;
             for (BasePiece p : saved) {
-                if (p.gx < 0) homeless.add(p); else layout.add(p);
+                boolean inside = p.gx >= 0 && BaseLayout.inPlot(p.gx, p.gy, p.kind.w, p.kind.h);
+                if (inside) { layout.add(p); continue; }
+                if (p.gx < 0) { homeless.add(p); continue; }
+                // Peça de uma versão antiga do mapa (fora do terreno atual): muralhas/torres somem (o anel é refeito);
+                // o resto ganha um lugar livre
+                if (p.kind.isWall() || p.kind == BaseKind.TORRE_VIGIA) { store.delete(p); removedRing = true; }
+                else if (p.kind == BaseKind.QUARTEL) { p.gx = BaseLayout.QUARTEL_X; p.gy = BaseLayout.QUARTEL_Y; layout.add(p); store.update(p); }
+                else homeless.add(p);
             }
             if (layout.find(BaseKind.QUARTEL) == null) {
-                BasePiece q = new BasePiece(BaseKind.QUARTEL, 78, 38, 1);
+                BasePiece q = new BasePiece(BaseKind.QUARTEL, BaseLayout.QUARTEL_X, BaseLayout.QUARTEL_Y, 1);
                 layout.add(q); store.insert(q);
             }
+            if (removedRing && layout.count(BaseKind.MURALHA) == 0) {
+                for (BasePiece rp : BaseLayout.defaultRing()) {
+                    if (layout.isFree(rp.kind, rp.gx, rp.gy, null)) { layout.add(rp); store.insert(rp); }
+                }
+            }
             for (BasePiece p : homeless) {
-                int[] at = layout.nearestFree(p.kind, 80 - p.kind.w / 2, 46);
+                int[] at = layout.nearestFree(p.kind, BaseLayout.QUARTEL_X + 2 - p.kind.w / 2, BaseLayout.QUARTEL_Y + 8);
                 if (at == null) { store.delete(p); continue; }
                 p.gx = at[0]; p.gy = at[1];
                 layout.add(p); store.update(p);

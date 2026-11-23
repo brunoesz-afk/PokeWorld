@@ -90,22 +90,30 @@ public class WorldManager {
         }
     }
     
-    private static class RespawnInfo {
-        String s; double x, y, r; int c; boolean b, sh; long t;
-        RespawnInfo(String s, double x, double y, double r, int c, boolean b, boolean sh, long t) {
-            this.s = s; this.x = x; this.y = y; this.r = r; this.c = c; this.b = b; this.sh = sh; this.t = t;
+    // ---- Pontos de spawn pré-definidos (só existem Pokémons perto do jogador) ----
+    private SpawnZones zones;
+    private long lastZoneCheck = 0;
+    private final SpawnZones.Sink zoneSink = new SpawnZones.Sink() {
+        @Override public Enemy spawn(SpawnZones.Point pt) {
+            if (!tileMap.isWalkable(pt.x, pt.y, false, false, false, false)) return null;
+            int lv = pt.boss ? pt.level : pt.level + random.nextInt(2);
+            Enemy e = new Enemy(pt.species, pt.x, pt.y, pt.radius, pt.color, pt.boss, lv);
+            e.isShiny = pt.boss ? pt.shinyBoss : random.nextDouble() < 0.05;
+            e.gender = random.nextInt(2);
+            enemies.add(e);
+            return e;
         }
-    }
-    private List<RespawnInfo> respawnQueue = new ArrayList<>();
+        @Override public void despawn(Enemy e) { enemies.remove(e); }
+    };
 
     public WorldManager(MainActivity activity) { this.activity = activity; }
 
     public void loadMap(String name, Player p, Companion c) { loadMap(name, p, c, "CENTER"); }
 
     public void loadMap(String name, Player p, Companion c, String side) {
-        enemies.clear(); npcs.clear(); loots.clear(); buildings.clear();
+        enemies.clear(); npcs.clear(); loots.clear(); buildings.clear(); zones = null;
         int r = 50, col = 100;
-        if (name.equals("HOME")) { r = 80; col = 160; }
+        if (name.equals("HOME")) { r = BaseLayout.MAP_ROWS; col = BaseLayout.MAP_COLS; }
         else if (name.equals("TOWER")) { r = 25; col = 25; }
         if (defense != null) defense.abort();
         tileMap = new TileMap(name, r, col);
@@ -123,7 +131,7 @@ public class WorldManager {
     private void setupPlayerSpawn(Player p, Companion c, String side) {
         int rows = tileMap.getRows(), cols = tileMap.getCols();
         double sx = TileMap.TILE_SIZE * (cols/2.0), sy = TileMap.TILE_SIZE * (rows/2.0);
-        if (tileMap.getMapName().equals("HOME")) { sx = TileMap.TILE_SIZE * 80; sy = TileMap.TILE_SIZE * 57; }
+        if (tileMap.getMapName().equals("HOME")) { sx = TileMap.TILE_SIZE * (BaseLayout.GATE_X0 + BaseLayout.GATE_X1 + 1) / 2.0; sy = TileMap.TILE_SIZE * (BaseLayout.RING_B + 0.5); }
         else if (tileMap.getMapName().equals("TOWER")) { sx = TileMap.TILE_SIZE * (cols / 2.0); sy = TileMap.TILE_SIZE * (rows - 4.0); }
         else if (side.equals("TOP")) sy = TileMap.TILE_SIZE * 1.5;
         else if (side.equals("BOTTOM")) sy = TileMap.TILE_SIZE * (rows - 1.5);
@@ -133,40 +141,28 @@ public class WorldManager {
     }
 
     private void spawnEntitiesForMap(String name, Player p) {
+        zones = null;
         switch (name) {
             case "CITY": spawnCityEntities(); break;
-            case "FOREST": spawnBasic(new String[]{"Bulbasaur", "Caterpie", "Metapod", "Butterfree", "Weedle", "Kakuna", "Pidgey", "Pidgeotto", "Oddish", "Bellsprout", "Rattata", "Meowth", "Spearow"}, 1, Color.GREEN); break;
-            case "JUNGLE": spawnBasic(new String[]{"Ivysaur", "Venusaur", "Gloom", "Vileplume", "Weepinbell", "Victreebel", "Pinsir", "Scyther", "Beedril", "Paras", "Parasect", "Tangela", "Venonat", "Venomoth"}, 11, Color.GREEN); break;
-            case "SMALL_LAKE": spawnBasic(new String[]{"Squirtle", "Poliwag", "Poliwhirl", "Psyduck", "Slowpoke", "Magikarp"}, 4, Color.BLUE); break;
-            case "RIO": spawnBasic(new String[]{"Wartortle", "Golduck", "Slowpoke", "Slowking", "Poliwhirl", "Tentacool", "Magikarp"}, 15, Color.BLUE); break;
-            case "OCEAN": spawnOcean(); break;
-            case "ROCKY_PATH": spawnBasic(new String[]{"Sandshrew", "Sandslash", "Diglett", "Dugtrio", "Mankey", "Primeape", "Nidoranf", "Nidoranm", "Nidorina", "Nidorino"}, 3, Color.GRAY); break;
-            case "MINE": spawnBasic(new String[]{"Onix", "Machop", "Rhydon", "Diglett", "Dugtrio", "Zubat", "Golbat"}, 13, Color.GRAY); break;
-            case "VALE_ROCHOSO": spawnBasic(new String[]{"Abra", "Kadabra", "Alakazam", "Spearow", "Fearow", "Pidgeot", "Clefairy", "Clefable", "Jigglypuff", "Wigglytuff"}, 8, Color.YELLOW); break;
-            case "FIRE_CAVE": spawnBasic(new String[]{"Charmander", "Vulpix", "Ponyta", "Growlithe", "Flareon", "Houndour"}, 6, Color.RED); break;
-            case "MAGMA_CAVE": spawnBasic(new String[]{"Charmeleon", "Magmar", "Rapidash", "Arcanine", "Ninetales"}, 18, Color.RED); break;
-            case "VOLCANO": spawnVolcano(); break;
-            case "MOLTEN_SANCTUM_BEGINNER": spawnMoltenSanctumBeginner(); break;
-            case "MOLTEN_SANCTUM": spawnMoltenSanctum(); break;
-            case "SEWERS": spawnBasic(new String[]{"Rattata", "Raticate", "Ekans", "Arbok", "Grimer", "Muk", "Koffing", "Weezing", "Zubat"}, 2, Color.DKGRAY); break;
-            case "SWAMP": spawnBasic(new String[]{"Arbok", "Weezing", "Muk", "Nidoking", "Nidoqueen", "Gloom", "Victreebel"}, 20, Color.MAGENTA); break;
-            case "SNOW_MOUNTAIN": spawnSnow(); break;
-            case "DESERT": spawnBasic(new String[]{"Sandshrew", "Sandslash", "Vulpix", "Ninetales", "Ponyta"}, 12, Color.YELLOW); break;
-            case "FEAR_ISLAND": spawnBasic(new String[]{"Gastly", "Haunter", "Gengar", "Golbat", "Arbok", "Muk"}, 22, Color.MAGENTA); break;
             case "HOME": spawnHome(p); break;
+            case "FOREST": case "JUNGLE": case "SMALL_LAKE": case "RIO": case "OCEAN": case "ROCKY_PATH": case "MINE":
+            case "VALE_ROCHOSO": case "FIRE_CAVE": case "MAGMA_CAVE": case "VOLCANO": case "MOLTEN_SANCTUM_BEGINNER":
+            case "MOLTEN_SANCTUM": case "SEWERS": case "SWAMP": case "SNOW_MOUNTAIN": case "DESERT": case "FEAR_ISLAND":
+                setupZones(name, p); break;
         }
     }
 
-    private void spawnBasic(String[] s, int base, int color) {
-        // Spawn inicial otimizado (10 pokémons ao redor do jogador em vez de 35)
-        for (int i = 0; i < 10; i++) {
-            double angle = random.nextDouble() * 2 * Math.PI;
-            double distance = 150 + random.nextInt(600);
-            double ex = 3000 + Math.cos(angle) * distance;
-            double ey = 1500 + Math.sin(angle) * distance;
-            double d = Math.sqrt(Math.pow(ex-3000, 2) + Math.pow(ey-1500, 2));
-            int lv = base + (int)(d/400);
-            addEnemy(s[random.nextInt(s.length)], ex, ey, 32, color, false, random.nextDouble()<0.05, Math.max(1, lv), random.nextInt(2));
+    private void setupZones(String name, Player p) {
+        zones = new SpawnZones(name, tileMap.getRows(), tileMap.getCols(), TileMap.TILE_SIZE, getSpeciesForMap(name),
+                getBiomeBaseLevel(name), getBiomeColor(name),
+                new SpawnZones.Ground() { @Override public boolean walkable(double x, double y) { return tileMap.isWalkable(x, y, false, false, false, false); } },
+                p.getPositionX(), p.getPositionY());
+        double midX = tileMap.getCols() * TileMap.TILE_SIZE / 2.0, midY = tileMap.getRows() * TileMap.TILE_SIZE / 2.0;
+        switch (name) {
+            case "VOLCANO": zones.addBoss(3000, 2800, "Charizard_Shiny", getBiomeBaseLevel("VOLCANO") + 15, Color.YELLOW, 60, true); break;
+            case "SNOW_MOUNTAIN": zones.addBoss(3200, 1600, "Articuno", 75, Color.WHITE, 60, true); break;
+            case "MOLTEN_SANCTUM_BEGINNER": zones.addBoss(midX, midY, "Charmeleon", 15, Color.RED, 50, false); break;
+            case "MOLTEN_SANCTUM": zones.addBoss(midX, midY, "Mega_Charizard_X", 85, Color.RED, 60, true); break;
         }
     }
 
@@ -184,15 +180,6 @@ public class WorldManager {
             }
         }
     }
-
-    private void spawnVolcano() {
-        int base = getBiomeBaseLevel("VOLCANO");
-        spawnBasic(new String[]{"Charizard", "Magmar", "Rapidash", "Arcanine", "Flareon", "Aerodactyl"}, base, Color.RED);
-        addEnemy("Charizard_Shiny", 3000, 2800, 60, Color.YELLOW, true, true, base+15, 0);
-    }
-
-    private void spawnOcean() { spawnBasic(new String[]{"Blastoise", "Vaporeon", "Lapras", "Gyarados", "Tentacruel", "Poliwrath"}, getBiomeBaseLevel("OCEAN"), Color.BLUE); }
-    private void spawnSnow() { spawnBasic(new String[]{"Piloswine", "Cloyster", "Lapras", "Jynx"}, getBiomeBaseLevel("SNOW_MOUNTAIN"), Color.CYAN); addEnemy("Articuno", 3200, 1600, 60, Color.WHITE, true, true, 75, 0); }
 
     private void spawnHome(Player p) {
         int maxGuards = Math.min(p.getMaxGuardCapacity(), base != null ? base.guardCapacity() : 6);
@@ -319,74 +306,19 @@ public class WorldManager {
         if (tileMap.isPortal(p.getPositionX(), p.getPositionY())) handlePortal(p, c, gv);
         currentZoom += (targetZoom - currentZoom) * 0.05f;
 
-        // Atualização de spawn dinâmico por proximidade do jogador (a cada 1 segundo)
-        if (System.currentTimeMillis() - lastDynamicSpawnCheck > 1000) {
-            updateDynamicSpawning(p, tileMap.getMapName(), gv);
-            lastDynamicSpawnCheck = System.currentTimeMillis();
+        // Pontos de spawn: nasce/some conforme a distância do jogador (2x por segundo)
+        long nowZ = System.currentTimeMillis();
+        if (zones != null && nowZ - lastZoneCheck > 500) {
+            zones.update(p.getPositionX(), p.getPositionY(), nowZ, zoneSink);
+            lastZoneCheck = nowZ;
         }
 
-        updateEnemies(c, gv); handleRespawns(); updateLoots(p, gv);
+        updateEnemies(c, gv); updateLoots(p, gv);
         if (tileMap.getMapName().equals("HOME")) for (Building b : buildings) b.update(activity);
         if (base != null) {
             ensureDefense(gv);
             tickBase(gv);
             defense.update(System.currentTimeMillis());
-        }
-    }
-
-    private void updateDynamicSpawning(Player p, String mapName, GameView gv) {
-        if (mapName.equals("CITY") || mapName.equals("HOME") || mapName.equals("TOWER")) return;
-
-        double px = p.getPositionX();
-        double py = p.getPositionY();
-
-        // 1. Remove inimigos que saíram da área de visão/proximidade (> 1200 pixels) com efeito de partícula
-        Iterator<Enemy> it = enemies.iterator();
-        while (it.hasNext()) {
-            Enemy e = it.next();
-            double dist = Math.sqrt(Math.pow(e.positionX - px, 2) + Math.pow(e.positionY - py, 2));
-            if (dist > 1200 && !e.isBoss && !e.isPet) {
-                if (gv != null && gv.particles != null) {
-                    gv.particles.addExplosion(e.positionX, e.positionY, Color.WHITE, 10);
-                }
-                it.remove();
-            }
-        }
-
-        // 2. Conta quantos inimigos estão visíveis na tela (num raio de 800 pixels)
-        int nearbyCount = 0;
-        for (Enemy e : enemies) {
-            double dist = Math.sqrt(Math.pow(e.positionX - px, 2) + Math.pow(e.positionY - py, 2));
-            if (dist < 800) {
-                nearbyCount++;
-            }
-        }
-
-        // 3. Se houver menos de 10 inimigos na tela, spawna novos na borda da visão do jogador (limite máximo de 10)
-        if (nearbyCount < 5) {
-            String[] speciesList = getSpeciesForMap(mapName);
-            int baseLevel = getBiomeBaseLevel(mapName);
-            int color = getBiomeColor(mapName);
-
-            for (int i = 0; i < 2; i++) {
-                double angle = random.nextDouble() * 2 * Math.PI;
-                double distance = 400 + random.nextInt(400); // Na borda da tela (entre 400 e 800 pixels)
-                double ex = px + Math.cos(angle) * distance;
-                double ey = py + Math.sin(angle) * distance;
-
-                double mapMaxX = tileMap.getCols() * TileMap.TILE_SIZE;
-                double mapMaxY = tileMap.getRows() * TileMap.TILE_SIZE;
-
-                if (ex > 100 && ex < mapMaxX - 100 && ey > 100 && ey < mapMaxY - 100) {
-                    double dCenter = Math.sqrt(Math.pow(ex - mapMaxX/2, 2) + Math.pow(ey - mapMaxY/2, 2));
-                    int lv = baseLevel + (int)(dCenter / 400);
-                    String sName = speciesList[random.nextInt(speciesList.length)];
-                    addEnemy(sName, ex, ey, 32, color, false, random.nextDouble() < 0.05, Math.max(1, lv), random.nextInt(2));
-                    if (gv != null && gv.particles != null) {
-                        gv.particles.addExplosion(ex, ey, color, 12);
-                    }
-                }
-            }
         }
     }
 
@@ -408,6 +340,8 @@ public class WorldManager {
             case "SNOW_MOUNTAIN": return new String[]{"Piloswine", "Cloyster", "Lapras", "Jynx"};
             case "DESERT": return new String[]{"Sandshrew", "Sandslash", "Vulpix", "Ninetales", "Ponyta"};
             case "FEAR_ISLAND": return new String[]{"Gastly", "Haunter", "Gengar", "Golbat", "Arbok", "Muk"};
+            case "MOLTEN_SANCTUM_BEGINNER": return new String[]{"Charmander", "Vulpix", "Ponyta", "Growlithe", "Houndour"};
+            case "MOLTEN_SANCTUM": return new String[]{"Magmar", "Rapidash", "Arcanine", "Flareon", "Houndoom", "Charizard"};
             default: return new String[]{"Pikachu", "Rattata", "Pidgey"};
         }
     }
@@ -417,7 +351,7 @@ public class WorldManager {
             case "FOREST": case "JUNGLE": return Color.GREEN;
             case "SMALL_LAKE": case "RIO": case "OCEAN": return Color.BLUE;
             case "ROCKY_PATH": case "MINE": return Color.GRAY;
-            case "FIRE_CAVE": case "MAGMA_CAVE": case "VOLCANO": return Color.RED;
+            case "FIRE_CAVE": case "MAGMA_CAVE": case "VOLCANO": case "MOLTEN_SANCTUM": case "MOLTEN_SANCTUM_BEGINNER": return Color.RED;
             case "SNOW_MOUNTAIN": return Color.CYAN;
             case "DESERT": case "VALE_ROCHOSO": return Color.YELLOW;
             default: return Color.GREEN;
@@ -465,7 +399,7 @@ public class WorldManager {
                 int xp = (e.level * 20) + (e.isBoss ? 200 : 0);
                 c.gainExp(xp); if (gv.player.gainExp(xp/2)) gv.ui.showMessage("🎊 NÍVEL UP!");
                 Loot d = new Loot(e.name, e.positionX, e.positionY, Loot.Type.DEFEATED); d.setOwnerSpecies(e.name); d.setShiny(e.isShiny); d.setRadius(Math.max(65, e.radius * 1.5)); loots.add(d);
-                dropLoot(e, gv); respawnQueue.add(new RespawnInfo(e.name, e.startX, e.startY, 32, e.color, e.isBoss, e.isShiny, System.currentTimeMillis() + 30000));
+                dropLoot(e, gv);
                 
                 // Atualiza progresso das missões ao derrotar qualquer Pokémon selvagem
                 gv.missions.updateProgress("Pokemon");
@@ -474,11 +408,6 @@ public class WorldManager {
                 it.remove();
             } else e.update(c, gv.effects, gv.particles, tileMap, gv.time.isNight());
         }
-    }
-
-    private void handleRespawns() {
-        long now = System.currentTimeMillis(); Iterator<RespawnInfo> it = respawnQueue.iterator();
-        while (it.hasNext()) { RespawnInfo ri = it.next(); if (now >= ri.t) { addEnemy(ri.s, ri.x, ri.y, ri.r, ri.c, ri.b, ri.sh, 1, 0); it.remove(); } }
     }
 
     /**
@@ -526,22 +455,6 @@ public class WorldManager {
                 }
             }
         }
-    }
-
-    private void spawnMoltenSanctumBeginner() {
-        int base = getBiomeBaseLevel("MOLTEN_SANCTUM_BEGINNER");
-        spawnBasic(new String[]{"Charmander", "Vulpix", "Ponyta", "Growlithe", "Houndour"}, base, Color.RED);
-        double midX = (tileMap.getCols() * TileMap.TILE_SIZE) / 2.0;
-        double midY = (tileMap.getRows() * TileMap.TILE_SIZE) / 2.0;
-        addEnemy("Charmeleon", midX, midY, 50, Color.RED, true, false, 15, 0);
-    }
-
-    private void spawnMoltenSanctum() {
-        int base = getBiomeBaseLevel("MOLTEN_SANCTUM");
-        spawnBasic(new String[]{"Magmar", "Rapidash", "Arcanine", "Flareon", "Houndoom", "Charizard"}, base, Color.RED);
-        double midX = (tileMap.getCols() * TileMap.TILE_SIZE) / 2.0;
-        double midY = (tileMap.getRows() * TileMap.TILE_SIZE) / 2.0;
-        addEnemy("Mega_Charizard_X", midX, midY, 60, Color.RED, true, true, 85, 0);
     }
 
     private void handlePortal(Player p, Companion c, GameView gv) {
