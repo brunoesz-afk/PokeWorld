@@ -19,7 +19,13 @@ public class TileMap {
     public static final int GRASS = 0, TREE = 1, PORTAL = 2, WATER = 3, FLOOR = 4, ROCK = 5, SAND = 6, SNOW = 7, BRICK = 8, LAVA = 9, DEEP_WATER = 10, CLOUD = 11, OBSIDIAN = 12, BUSH = 13, ROAD = 14, SIGN = 15, SOIL = 16, BERRY_TREE = 17, STONE_PAVEMENT = 18, CARPET = 19, SNOW_CRYSTAL = 20;
     public static final int BASALT_FLOOR = 21, ASH_GROUND = 22, CRACKED_OBSIDIAN = 23, MAGMA_BRIDGE = 24, SULFUR_CRYSTAL = 25, MAGMA_VENT = 26;
 
+    public static final int WALL = Tiles.WALL, CLIFF = Tiles.CLIFF, STAIRS = Tiles.STAIRS, BRIDGE = Tiles.BRIDGE, FLOWERS = Tiles.FLOWERS,
+            ROOF = Tiles.ROOF, HOUSE = Tiles.HOUSE, DOOR = Tiles.DOOR, PILLAR = Tiles.PILLAR, BRAZIER = Tiles.BRAZIER,
+            DEAD_TREE = Tiles.DEAD_TREE, CACTUS = Tiles.CACTUS, FOUNTAIN = Tiles.FOUNTAIN, TOMBSTONE = Tiles.TOMBSTONE;
+
     private String mapName;
+    /** Renderizador com tiles conectáveis; null só na floresta inicial (que usa o desenho antigo). */
+    private TileRenderer renderer;
 
     public TileMap(String type, int rows, int cols) {
         this.mapName = type;
@@ -28,31 +34,16 @@ public class TileMap {
         this.mapData = new int[rows][cols];
         this.paint = new Paint();
         
-        switch (type) {
-            case "CITY": generateCityMap(); break;
-            case "FOREST": generateForestMap(); break;
-            case "SMALL_LAKE": generateSmallLakeMap(); break;
-            case "ROCKY_PATH": generateRockyPathMap(); break;
-            case "JUNGLE": generateJungleMap(); break;
-            case "MAGMA_CAVE": generateMagmaCaveMap(); break;
-            case "SWAMP": generateSwampMap(); break;
-            case "FIRE_CAVE": generateFireCaveMap(); break;
-            case "SEWERS": generateSewersMap(); break;
-            case "VALE_ROCHOSO": generateValeRochosoMap(); break;
-            case "MINE": generateMineMap(); break;
-            case "RIO": generateRioMap(); break;
-            case "OCEAN": generateOceanMap(); break;
-            case "DESERT": generateDesertMap(); break;
-            case "VOLCANO": generateVolcanoMap(); break;
-            case "MOLTEN_SANCTUM_BEGINNER":
-            case "MOLTEN_SANCTUM": generateMoltenSanctumMap(); break;
-            case "SNOW_MOUNTAIN": generateSnowMountainMap(); break;
-            case "SNOW_PEAK": generateSnowPeakMap(); break;
-            case "FEAR_ISLAND": generateFearIslandMap(); break;
-            case "HOME": generateHomeMap(); break;
-            case "STARTER_FOREST": generateStarterForestMap(); break;
-            case "TOWER": generateTowerMap(); break;
-            default: generateForestMap(); break;
+        if ("STARTER_FOREST".equals(type)) {
+            // A floresta inicial continua exatamente como era (grama + árvores).
+            generateStarterForestMap();
+        } else {
+            // Todos os outros mapas são desenhados com composição fixa (MapBuilder)
+            // e renderizados com tiles que se conectam (TileRenderer).
+            this.mapData = MapBuilder.build(type, rows, cols);
+            this.renderer = new TileRenderer(type, mapData, new TileRenderer.Sprites() {
+                @Override public Bitmap get(int key) { return SpriteManager.getInstance().getTileSprite(key); }
+            });
         }
     }
 
@@ -78,438 +69,6 @@ public class TileMap {
         }
     }
 
-    private void generateTowerMap() {
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (r == 0 || r == rows - 1 || c == 0 || c == cols - 1) {
-                    mapData[r][c] = BRICK;
-                } else {
-                    mapData[r][c] = FLOOR;
-                }
-            }
-        }
-        mapData[rows - 1][cols / 2] = PORTAL;
-    }
-
-    private void generateHomeMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                // Core de 40x36 centralizado no mapa de 80x160
-                boolean isCoreX = (c >= 60 && c <= 100);
-                boolean isCoreY = (r >= 22 && r <= 58);
-                
-                boolean isWallX = (c == 60 || c == 100) && isCoreY;
-                boolean isWallY = (r == 22 || r == 58) && isCoreX;
-
-                if (isWallX || isWallY) {
-                    // Portão no centro da parede sul
-                    if (r == 58 && c >= 78 && c <= 82) mapData[r][c] = ROAD;
-                    else mapData[r][c] = BRICK; 
-                } else if (isCoreX && isCoreY) {
-                    boolean isMainVertical = (c >= 78 && c <= 82);
-                    boolean isMainHorizontal = (r >= 38 && r <= 42);
-                    
-                    if (isMainVertical || isMainHorizontal) mapData[r][c] = ROAD;
-                    else {
-                        double rval = rand.nextDouble();
-                        if (rval < 0.03) mapData[r][c] = TREE;
-                        else if (rval < 0.05) mapData[r][c] = ROCK;
-                        else mapData[r][c] = GRASS;
-                    }
-                } else {
-                    mapData[r][c] = rand.nextDouble() < 0.15 ? TREE : GRASS;
-                }
-            }
-        }
-        // Estrada principal atravessando os arredores até o fim do mapa
-        for (int r = 59; r < rows; r++) {
-            for (int w = -2; w <= 2; w++) mapData[r][80 + w] = ROAD;
-        }
-    }
-
-    private void generateCityMap() {
-        Random rand = new Random();
-        // Core da cidade (um quadrado limpo e centralizado no mapa 50x100, estilo Base)
-        int coreTop = 10, coreBottom = 40;
-        int coreLeft = 20, coreRight = 80;
-
-        int midR = rows / 2;
-        int midC = cols / 2;
-
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                boolean isCoreX = (c >= coreLeft && c <= coreRight);
-                boolean isCoreY = (r >= coreTop && r <= coreBottom);
-
-                if (isCoreX && isCoreY) {
-                    // Estradas cruzando o centro do quadrado limpo
-                    boolean isMainVertical = (c >= midC - 2 && c <= midC + 2);
-                    boolean isMainHorizontal = (r >= midR - 2 && r <= midR + 2);
-
-                    if (isMainVertical || isMainHorizontal) {
-                        mapData[r][c] = ROAD;
-                    } else {
-                        // Quadrado limpo com chão de pedra
-                        mapData[r][c] = STONE_PAVEMENT;
-                    }
-                } else {
-                    // Em volta: grama e árvores
-                    mapData[r][c] = GRASS;
-                    if (rand.nextDouble() < 0.20) {
-                        mapData[r][c] = TREE;
-                    }
-                }
-            }
-        }
-
-        // Portais de Saída nas bordas do mapa total
-        for (int c = 0; c < cols; c++) { mapData[0][c] = PORTAL; mapData[rows - 1][c] = PORTAL; }
-        for (int r = 0; r < rows; r++) { mapData[r][0] = PORTAL; mapData[r][cols - 1] = PORTAL; }
-    }
-
-    private void generateForestMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = rand.nextDouble() < 0.3 ? TREE : GRASS;
-        int midC = cols / 2;
-        for (int r = 0; r < rows; r++) mapData[r][midC] = ROAD;
-        mapData[0][midC] = PORTAL; mapData[rows-1][midC] = PORTAL;
-    }
-
-    private void generateSmallLakeMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = SAND;
-        int midR = rows / 2, midC = cols / 2;
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
-            double d = Math.sqrt(Math.pow(r - midR, 2) + Math.pow(c - midC, 2) * 0.5);
-            if (d < 12) mapData[r][c] = WATER;
-            if (d < 8) mapData[r][c] = DEEP_WATER;
-        }
-        for (int i = 0; i < 40; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == SAND) mapData[rr][rc] = rand.nextDouble() < 0.7 ? TREE : ROCK;
-        }
-        mapData[midR][0] = PORTAL; mapData[midR][cols - 1] = PORTAL;
-    }
-
-    private void generateRockyPathMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = FLOOR;
-        for (int i = 0; i < 150; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            mapData[rr][rc] = rand.nextDouble() < 0.8 ? ROCK : BUSH;
-        }
-        mapData[rows / 2][0] = PORTAL; mapData[rows / 2][cols - 1] = PORTAL;
-    }
-
-    private void generateJungleMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = GRASS;
-        for (int i = 0; i < 200; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            mapData[rr][rc] = rand.nextDouble() < 0.9 ? TREE : BERRY_TREE;
-        }
-        mapData[rows / 2][0] = PORTAL; mapData[rows / 2][cols - 1] = PORTAL;
-    }
-
-    private void generateMagmaCaveMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = OBSIDIAN;
-        for (int i = 0; i < 30; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            for (int dr = -3; dr <= 3; dr++) for (int dc = -3; dc <= 3; dc++) {
-                int nr = rr + dr, nc = rc + dc;
-                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && rand.nextDouble() < 0.7) mapData[nr][nc] = LAVA;
-            }
-        }
-        mapData[rows / 2][0] = PORTAL; mapData[rows / 2][cols - 1] = PORTAL;
-    }
-
-    private void generateSwampMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = GRASS;
-        for (int i = 0; i < 40; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            int size = 2 + rand.nextInt(3);
-            for (int dr = -size; dr <= size; dr++) for (int dc = -size; dc <= size; dc++) {
-                int nr = rr + dr, nc = rc + dc;
-                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && Math.sqrt(dr*dr + dc*dc) < size) mapData[nr][nc] = WATER;
-            }
-        }
-        mapData[rows / 2][0] = PORTAL; mapData[rows / 2][cols - 1] = PORTAL;
-    }
-
-    private void generateFireCaveMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = FLOOR;
-        for (int i = 0; i < 20; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            for (int dr = -2; dr <= 2; dr++) for (int dc = -2; dc <= 2; dc++) {
-                int nr = rr + dr, nc = rc + dc;
-                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && rand.nextDouble() < 0.6) mapData[nr][nc] = LAVA;
-            }
-        }
-        mapData[rows / 2][0] = PORTAL; mapData[rows / 2][cols - 1] = PORTAL;
-    }
-
-    private void generateSewersMap() {
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = BRICK;
-        int midR = rows / 2;
-        for (int c = 0; c < cols; c++) {
-            mapData[midR][c] = WATER; // Água de esgoto no meio
-            if (midR > 0) mapData[midR - 1][c] = FLOOR;
-            if (midR < rows - 1) mapData[midR + 1][c] = FLOOR;
-        }
-        mapData[midR][0] = PORTAL; mapData[midR][cols - 1] = PORTAL;
-    }
-
-    private void generateValeRochosoMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = SAND;
-        int midC = cols / 2;
-        for (int r = 0; r < rows; r++) mapData[r][midC] = ROAD;
-        for (int i = 0; i < 150; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == SAND) {
-                double rv = rand.nextDouble();
-                if (rv < 0.7) mapData[rr][rc] = ROCK;
-                else if (rv < 0.9) mapData[rr][rc] = BUSH;
-                else mapData[rr][rc] = BERRY_TREE;
-            }
-        }
-        mapData[0][midC] = PORTAL; mapData[rows-1][midC] = PORTAL;
-    }
-
-    private void generateMineMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = FLOOR;
-        int midC = cols / 2;
-        for (int r = 0; r < rows; r++) mapData[r][midC] = ROAD;
-        for (int i = 0; i < 50; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == FLOOR) mapData[rr][rc] = ROCK;
-        }
-        mapData[0][midC] = PORTAL; mapData[rows-1][midC] = PORTAL;
-    }
-
-    private void generateSnowMountainMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = SNOW;
-        int midC = cols / 2;
-        for (int r = 0; r < rows; r++) for (int w = -1; w <= 1; w++) mapData[r][midC + w] = ROAD;
-        for (int i = 0; i < 30; i++) {
-            int rootR = rand.nextInt(rows), rootC = rand.nextInt(cols);
-            int size = 2 + rand.nextInt(4);
-            for (int dr = -size; dr <= size; dr++) for (int dc = -size; dc <= size; dc++) {
-                int nr = rootR + dr, nc = rootC + dc;
-                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && dr*dr + dc*dc < size*size) mapData[nr][nc] = (rand.nextDouble() < 0.7) ? WATER : ROCK;
-            }
-        }
-        for (int i = 0; i < 60; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == SNOW) mapData[rr][rc] = SNOW_CRYSTAL;
-        }
-        mapData[0][midC] = PORTAL; mapData[rows-1][midC] = PORTAL;
-    }
-
-    private void generateSnowPeakMap() {
-        Random rand = new Random();
-        int midC = cols / 2;
-        for (int r = 0; r < rows; r++) {
-            int peakWidth = (int)(10 + (cols - 20) * (r / (float)rows)); 
-            for (int c = 0; c < cols; c++) {
-                if (c >= midC - peakWidth/2 && c <= midC + peakWidth/2) mapData[r][c] = SNOW;
-                else mapData[r][c] = CLOUD; 
-            }
-        }
-        for (int r = 0; r < rows; r++) if (mapData[r][midC] == SNOW) mapData[r][midC] = ROAD;
-        for (int i = 0; i < 60; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == SNOW) mapData[rr][rc] = rand.nextDouble() < 0.7 ? ROCK : WATER;
-        }
-        for (int i = 0; i < 40; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == SNOW) mapData[rr][rc] = SNOW_CRYSTAL;
-        }
-        mapData[rows-1][midC] = PORTAL; 
-    }
-
-    private void generateDesertMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = SAND;
-        int midC = cols / 2;
-        for (int r = 0; r < rows; r++) mapData[r][midC] = ROAD;
-        for (int i = 0; i < 15; i++) {
-            int rootR = rand.nextInt(rows), rootC = rand.nextInt(cols);
-            int size = 2 + rand.nextInt(3);
-            for (int dr = -size; dr <= size; dr++) for (int dc = -size; dc <= size; dc++) {
-                int nr = rootR + dr, nc = rootC + dc;
-                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-                    double d = Math.sqrt(dr*dr + dc*dc);
-                    if (d < size) mapData[nr][nc] = rand.nextBoolean() ? WATER : ROCK;
-                    if (d < size - 1 && mapData[nr][nc] == WATER) mapData[nr][nc] = DEEP_WATER;
-                }
-            }
-        }
-        for (int i = 0; i < 100; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == SAND && rand.nextDouble() < 0.2) mapData[rr][rc] = ROAD;
-        }
-        mapData[0][midC] = PORTAL; mapData[rows-1][midC] = PORTAL;
-    }
-
-    private void generateVolcanoMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = FLOOR;
-        int midC = cols / 2;
-        for (int r = 0; r < rows; r++) mapData[r][midC] = ROAD;
-        for (int i = 0; i < 40; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            for (int dr = -4; dr <= 4; dr++) for (int dc = -2; dc <= 2; dc++) {
-                int nr = rr+dr, nc = rc+dc;
-                if (nr>=0 && nr<rows && nc>=0 && nc<cols && rand.nextDouble()<0.85) mapData[nr][nc] = LAVA;
-            }
-        }
-        for (int i = 0; i < 100; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == FLOOR) mapData[rr][rc] = OBSIDIAN;
-        }
-        mapData[0][midC] = PORTAL; mapData[rows-1][midC] = PORTAL;
-    }
-
-    private void generateMoltenSanctumMap() {
-        Random rand = new Random();
-
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                mapData[r][c] = (rand.nextDouble() < 0.35) ? ASH_GROUND : BASALT_FLOOR;
-            }
-        }
-
-        for (int r = 0; r < rows; r++) {
-            mapData[r][0] = CRACKED_OBSIDIAN;
-            mapData[r][cols - 1] = CRACKED_OBSIDIAN;
-        }
-        for (int c = 0; c < cols; c++) {
-            mapData[0][c] = CRACKED_OBSIDIAN;
-            mapData[rows - 1][c] = CRACKED_OBSIDIAN;
-        }
-
-        int river1Col = cols / 3;
-        int river2Col = (cols * 2) / 3;
-        for (int r = 1; r < rows - 1; r++) {
-            int offset1 = (int) Math.round(Math.sin(r * 0.35) * 2);
-            int offset2 = (int) Math.round(Math.cos(r * 0.35) * 2);
-
-            for (int w = -1; w <= 1; w++) {
-                int c1 = river1Col + offset1 + w;
-                int c2 = river2Col + offset2 + w;
-                if (c1 > 1 && c1 < cols - 2) mapData[r][c1] = LAVA;
-                if (c2 > 1 && c2 < cols - 2) mapData[r][c2] = LAVA;
-            }
-        }
-
-        int midR = rows / 2;
-        int midC = cols / 2;
-        int arenaRadius = Math.min(rows, cols) / 5;
-        for (int r = midR - arenaRadius; r <= midR + arenaRadius; r++) {
-            for (int c = midC - arenaRadius; c <= midC + arenaRadius; c++) {
-                if (r > 1 && r < rows - 2 && c > 1 && c < cols - 2) {
-                    double dist = Math.hypot(r - midR, c - midC);
-                    if (dist <= arenaRadius - 1) {
-                        mapData[r][c] = BASALT_FLOOR;
-                    } else if (dist <= arenaRadius) {
-                        if (r != midR && c != midC) {
-                            mapData[r][c] = CRACKED_OBSIDIAN;
-                        }
-                    }
-                }
-            }
-        }
-
-        int[] bridgeRows = { rows / 4, midR, (rows * 3) / 4 };
-        for (int br : bridgeRows) {
-            for (int c = 1; c < cols - 1; c++) {
-                if (mapData[br][c] == LAVA || mapData[br][c] == CRACKED_OBSIDIAN) {
-                    mapData[br][c] = MAGMA_BRIDGE;
-                }
-            }
-        }
-
-        for (int i = 0; i < 35; i++) {
-            int rr = 2 + rand.nextInt(rows - 4);
-            int rc = 2 + rand.nextInt(cols - 4);
-            if ((mapData[rr][rc] == BASALT_FLOOR || mapData[rr][rc] == ASH_GROUND)
-                    && Math.hypot(rr - midR, rc - midC) > arenaRadius + 1
-                    && rr != midR) {
-                mapData[rr][rc] = (rand.nextDouble() < 0.65) ? SULFUR_CRYSTAL : MAGMA_VENT;
-            }
-        }
-
-        mapData[midR][0] = PORTAL;
-        mapData[midR][1] = MAGMA_BRIDGE;
-        mapData[midR][cols - 1] = PORTAL;
-        mapData[midR][cols - 2] = MAGMA_BRIDGE;
-    }
-
-    private void generateRioMap() {
-        Random rand = new Random();
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = SAND;
-        int midR = rows / 2;
-        for (int c = 0; c < cols; c++) {
-            int offset = (int)(Math.sin(c * 0.1) * 4);
-            for (int dr = -5; dr <= 5; dr++) {
-                int nr = midR + offset + dr;
-                if (nr >= 0 && nr < rows) {
-                    mapData[nr][c] = WATER;
-                    if (Math.abs(dr) < 3) mapData[nr][c] = DEEP_WATER;
-                }
-            }
-        }
-        for (int i = 0; i < 80; i++) {
-            int rr = rand.nextInt(rows), rc = rand.nextInt(cols);
-            if (mapData[rr][rc] == SAND) {
-                double rv = rand.nextDouble();
-                if (rv < 0.3) mapData[rr][rc] = GRASS;
-                else if (rv < 0.6) mapData[rr][rc] = TREE;
-                else if (rv < 0.8) mapData[rr][rc] = ROCK;
-            }
-        }
-        mapData[midR][0] = PORTAL;
-        mapData[midR][cols-1] = PORTAL;
-    }
-
-    private void generateOceanMap() {
-        Random rand = new Random();
-        // Todo o fundo é água profunda
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = DEEP_WATER;
-        
-        // Grandes Arquipélagos de Areia
-        for (int i = 0; i < 40; i++) {
-            int rootR = rand.nextInt(rows), rootC = rand.nextInt(cols);
-            int size = 5 + rand.nextInt(8);
-            for (int dr = -size; dr <= size; dr++) for (int dc = -size; dc <= size; dc++) {
-                int nr = rootR + dr, nc = rootC + dc;
-                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-                    double d = Math.sqrt(dr*dr + dc*dc);
-                    if (d < size) mapData[nr][nc] = WATER;
-                    if (d < size - 2) mapData[nr][nc] = SAND;
-                    if (d < size - 5) mapData[nr][nc] = GRASS;
-                    if (d < 1 && rand.nextDouble() < 0.5) mapData[nr][nc] = BERRY_TREE;
-                    if (d > size - 1 && d < size && rand.nextDouble() < 0.3) mapData[nr][nc] = ROCK;
-                }
-            }
-        }
-        int midR = rows / 2;
-        mapData[midR][0] = PORTAL;
-        mapData[midR][cols - 1] = PORTAL;
-    }
-
-    private void generateFearIslandMap() {
-        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) mapData[r][c] = GRASS;
-        mapData[0][cols/2] = PORTAL;
-    }
-
     private final Rect reusableDest = new Rect();
     private final Rect reusableSrc = new Rect();
 
@@ -523,6 +82,10 @@ public class TileMap {
         int minRow = Math.max(0, (int) ((p.getPositionY() - visibleH / 2f) / TILE_SIZE) - 2);
         int maxRow = Math.min(rows, (int) ((p.getPositionY() + visibleH / 2f) / TILE_SIZE) + 2);
 
+        if (renderer != null) {
+            drawWithRenderer(canvas, minRow, maxRow, minCol, maxCol);
+            return;
+        }
         for (int r = minRow; r < maxRow; r++) {
             for (int c = minCol; c < maxCol; c++) {
                 drawTileAt(canvas, mapData[r][c], r, c, sm);
@@ -530,8 +93,17 @@ public class TileMap {
         }
     }
 
+    /** Duas passadas: primeiro chão/água/muros, depois objetos altos (árvores, pilares) por cima dos vizinhos. */
+    private void drawWithRenderer(Canvas canvas, int minRow, int maxRow, int minCol, int maxCol) {
+        renderer.beginFrame();
+        for (int r = minRow; r < maxRow; r++) for (int c = minCol; c < maxCol; c++) renderer.drawTile(canvas, r, c);
+        int tallRows = Math.min(rows, maxRow + 2);
+        for (int r = minRow; r < tallRows; r++) for (int c = minCol; c < maxCol; c++) renderer.drawTall(canvas, r, c);
+    }
+
     public void draw(Canvas canvas) {
         SpriteManager sm = SpriteManager.getInstance();
+        if (renderer != null) { drawWithRenderer(canvas, 0, rows, 0, cols); return; }
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) drawTileAt(canvas, mapData[r][c], r, c, sm);
     }
 
@@ -628,9 +200,11 @@ public class TileMap {
         if (r < 0 || r >= rows || c < 0 || c >= cols) return false;
         int t = mapData[r][c];
         if (fly) return true;
+        if (t == CLOUD) return false;
         if (t == WATER || t == DEEP_WATER) return surf || aquatic;
         if (t == LAVA || t == MAGMA_VENT) return fireRes;
-        return t != TREE && t != ROCK && t != SIGN && t != BERRY_TREE && t != BRICK && t != SNOW_CRYSTAL && t != CRACKED_OBSIDIAN && t != SULFUR_CRYSTAL;
+        return t != TREE && t != ROCK && t != SIGN && t != BERRY_TREE && t != BRICK && t != SNOW_CRYSTAL && t != CRACKED_OBSIDIAN && t != SULFUR_CRYSTAL
+                && !Tiles.blocksMovement(t);
     }
 
     public boolean isPortal(double x, double y) { int r = (int)(y / TILE_SIZE), c = (int)(x / TILE_SIZE); return r >= 0 && r < rows && c >= 0 && c < cols && mapData[r][c] == PORTAL; }
