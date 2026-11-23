@@ -58,7 +58,7 @@ public class MissionManager {
         q(1, "oficina", "O Chamado da Base", "Construa a Oficina na sua Base", "Na base, toque em 🔨, escolha a Oficina e posicione.", Metric.BUILT, "OFICINA", 1, 300, 0, "Madeira", 10);
         q(1, "pesca", "Mestre dos Mares", "Pesque 1 peixe", "Vá até um lago (Bússola 🧭) e use a vara de pescar perto da água.", Metric.FISH, null, 1, 120, 0, "Fruta", 3);
         // Ato II
-        q(2, "evolucao", "Primeira Evolução", "Evolua um Pokémon", "Suba de nível (Charmander evolui no 16) ou use uma Pedra de Evolução da mochila.", Metric.EVOLVED, null, 1, 500, 1, "Pedra Água", 1);
+        q(2, "evolucao", "Primeira Evolução", "Evolua um Pokémon", "Suba de nível (Charmander chega ao 16) e toque em EVOLUIR na ficha do Time, ou use uma Pedra de Evolução.", Metric.EVOLVED, null, 1, 500, 1, "Pedra Água", 1);
         q(2, "horta", "Mãos na Terra", "Colha uma Horta da base", "Construa uma Horta 🌱 na base, toque nela para plantar e depois para colher.", Metric.HARVESTS, null, 1, 250, 0, "Pokébola", 5);
         q(2, "defesa", "Guardiões do Reino", "Escale 2 Pokémon na defesa da base", "No Prof. de Time (Quartel), mande Pokémon da Caixa para a Defesa.", Metric.DEFENDERS, null, 2, 400, 0, "Ferro", 5);
         q(2, "colecao", "Colecionador de Espécies", "Capture 8 espécies diferentes", "Explore mapas diferentes: cada mapa tem espécies próprias.", Metric.SPECIES_CAPTURED, null, 8, 600, 0, "Pokébola", 5);

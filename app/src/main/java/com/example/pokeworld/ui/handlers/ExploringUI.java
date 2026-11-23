@@ -494,18 +494,27 @@ public class ExploringUI extends BaseUI {
 
     private void drawSkills(Canvas canvas, Companion comp) {
         skillButtons.clear();
-        int xStart = 440;
-        for (int i = 0; i < comp.getSkills().size(); i++) {
+        int n = comp.getSkills().size();
+        if (n == 0) return;
+        float xStart = 440, gap = 8;
+        // com mais golpes os botões encolhem para caber na tela
+        float bw = Math.min(120f, (canvas.getWidth() - xStart - 20 - gap * (n - 1)) / n);
+        for (int i = 0; i < n; i++) {
             Skill s = comp.getSkills().get(i);
-            RectF btn = new RectF(xStart, 470, xStart + 120, 540);
+            RectF btn = new RectF(xStart, 470, xStart + bw, 540);
             skillButtons.add(btn);
+            paint.setStyle(Paint.Style.FILL);
             paint.setColor(Color.argb(s.isReady() ? 200 : 100, 0, 0, 0));
             canvas.drawRoundRect(btn, 10, 10, paint);
             paint.setColor(s.getColor());
             canvas.drawRect(btn.left, btn.bottom - 5, btn.left + (btn.width() * s.getCooldownProgress()), btn.bottom, paint);
-            paint.setColor(Color.WHITE); paint.setTextSize(20); paint.setTextAlign(Paint.Align.CENTER);
-            canvas.drawText(s.getName(), btn.centerX(), btn.centerY() + 8, paint);
-            xStart += 130;
+            // marca dos golpes em área
+            if (s.isArea()) { paint.setTextSize(14); paint.setTextAlign(Paint.Align.RIGHT); canvas.drawText("◎", btn.right - 6, btn.top + 18, paint); }
+            paint.setColor(Color.WHITE); paint.setTextSize(bw < 100 ? 15 : 18); paint.setTextAlign(Paint.Align.CENTER);
+            String label = s.getName();
+            while (label.length() > 3 && paint.measureText(label) > bw - 8) label = label.substring(0, label.length() - 2) + "…";
+            canvas.drawText(label, btn.centerX(), btn.centerY() + 8, paint);
+            xStart += bw + gap;
         }
     }
 }

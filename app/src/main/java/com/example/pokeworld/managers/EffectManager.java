@@ -124,6 +124,8 @@ public class EffectManager {
         float size;
         long endTime;
         float rotation = 0;
+        boolean playOnce = false;   // true: os quadros passam uma vez só, esticados na duração (explosões)
+        long startTime = System.currentTimeMillis();
 
         StaticAnimation(Bitmap sprite, double x, double y, float size, int durationMs) {
             this.sprite = sprite; this.x = x; this.y = y; this.size = size;
@@ -142,7 +144,10 @@ public class EffectManager {
                 int rows = sheet.length;
                 int cols = sheet[0].length;
                 int total = rows * cols;
-                if (now - lastFrameTime > 80) {
+                if (playOnce) {
+                    float prog = Math.min(0.999f, (now - startTime) / (float) Math.max(1, endTime - startTime));
+                    frameIndex = (int) (prog * total);
+                } else if (now - lastFrameTime > 80) {
                     frameIndex = (frameIndex + 1) % total;
                     lastFrameTime = now;
                 }
@@ -217,6 +222,8 @@ public class EffectManager {
         boolean reached = false;
         int damage;
         Object target;
+        boolean rotateToTarget = false;
+        Runnable onHit;
 
         Projectile(Bitmap sprite, double x, double y, double tx, double ty, float size, int damage, Object target) {
             this.sprite = sprite; this.x = x; this.y = y; this.tx = tx; this.ty = ty; this.size = size;
@@ -234,6 +241,7 @@ public class EffectManager {
             if (dist < speed) {
                 x = tx; y = ty; reached = true;
                 applyDamage();
+                if (onHit != null) onHit.run();
             } else {
                 x += (dx / dist) * speed;
                 y += (dy / dist) * speed;
@@ -266,9 +274,44 @@ public class EffectManager {
             }
             if (toDraw != null) {
                 int r = (int)size;
-                canvas.drawBitmap(toDraw, null, new Rect((int)x - r, (int)y - r, (int)x + r, (int)y + r), null);
+                if (rotateToTarget) {
+                    canvas.save();
+                    canvas.rotate((float) Math.toDegrees(Math.atan2(ty - y, tx - x)), (float) x, (float) y);
+                    canvas.drawBitmap(toDraw, null, new Rect((int)x - r, (int)y - r, (int)x + r, (int)y + r), null);
+                    canvas.restore();
+                } else {
+                    canvas.drawBitmap(toDraw, null, new Rect((int)x - r, (int)y - r, (int)x + r, (int)y + r), null);
+                }
             }
         }
+    }
+
+    // ------------------------------------------------------------------ ataques por elemento (folhas 3x1)
+
+    private static String elem(ElementalType t) { return (t == null ? ElementalType.NORMAL : t).name().toLowerCase(); }
+
+    /**
+     * ATAQUE DIRETO: bola/golpe do elemento voa até o alvo (virado na direção dele), aplica o dano ao chegar
+     * e solta uma pequena explosão no ponto de impacto.
+     */
+    public void addDirectAttack(ElementalType type, double x, double y, double tx, double ty, float size, int damage, Object target) {
+        Bitmap[][] sheet = SpriteManager.getInstance().getFxSheet(elem(type), false);
+        if (sheet == null) { addProjectile("bola_de_fogo", x, y, tx, ty, size, damage, target); return; }
+        Projectile p = new Projectile(sheet, x, y, tx, ty, size, damage, target);
+        p.rotateToTarget = true;
+        p.speed = 18.0;
+        final ElementalType et = type; final double hx = tx, hy = ty; final float hs = size * 1.1f;
+        p.onHit = new Runnable() { @Override public void run() { addAreaAttack(et, hx, hy, hs, 350); } };
+        projectiles.add(p);
+    }
+
+    /** ATAQUE EM ÁREA: explosão do elemento (3 quadros, uma vez só) centrada em (x,y); {@code size} = meio-lado em px. */
+    public void addAreaAttack(ElementalType type, double x, double y, float size, int durationMs) {
+        Bitmap[][] sheet = SpriteManager.getInstance().getFxSheet(elem(type), true);
+        if (sheet == null) return;
+        StaticAnimation a = new StaticAnimation(sheet, x, y, size, durationMs);
+        a.playOnce = true;
+        animations.add(a);
     }
 
     public void addCaptureEffect(double x, double y, Loot target, Runnable onComplete) {

@@ -19,6 +19,8 @@ public class SpriteManager {
     private final Map<Integer, Bitmap> tileSprites = new HashMap<>();
     private final Map<String, Bitmap> spellSprites = new HashMap<>();
 
+    private Context appContext;
+
     private SpriteManager() {}
 
     public static SpriteManager getInstance() {
@@ -27,6 +29,7 @@ public class SpriteManager {
     }
 
     public void loadSprites(Context context) {
+        this.appContext = context.getApplicationContext() != null ? context.getApplicationContext() : context;
         if (isLoaded) return;
         try {
             // Carrega folhas de sprites de Pokémon (Padrão 3x3)
@@ -309,6 +312,21 @@ public class SpriteManager {
         int fw = sheet.getWidth() / cols, fh = sheet.getHeight() / rows;
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) frames[r][c] = Bitmap.createBitmap(sheet, c * fw, r * fh, fw, fh);
         return frames;
+    }
+
+    /**
+     * Animação de ataque 3x1 (3 quadros em 1 linha) do elemento. Carregada só quando o golpe é usado pela
+     * primeira vez (poupa RAM). {@code elem}: fire, water, plant, electric, ice, rock, poison, psychic, dragon, normal.
+     */
+    public Bitmap[][] getFxSheet(String elem, boolean area) {
+        String name = "fx_" + elem.toLowerCase() + (area ? "_area" : "_direct") + "_3x1";
+        String key = normalizeName(name);
+        Bitmap[][] sheet = unitSprites.get(key);
+        if (sheet == null && appContext != null) {
+            loadUnitSheet(appContext, name, 1, 3);
+            sheet = unitSprites.get(key);
+        }
+        return sheet;
     }
 
     public Bitmap[][] getUnitSheet(String species) { 

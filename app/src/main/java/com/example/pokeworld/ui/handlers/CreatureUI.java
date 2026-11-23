@@ -27,6 +27,14 @@ public class CreatureUI extends BaseUI {
     public RectF activateBtn = new RectF();
     public RectF manageBtn = new RectF();
     public List<Slot> slots = new ArrayList<>();
+    public List<EvoBtn> evoButtons = new ArrayList<>();
+
+    /** Botão EVOLUIR de uma linha da ficha (por nível ou por pedra). */
+    public static class EvoBtn {
+        public final RectF rect = new RectF();
+        public final EvolutionTable.Evo evo;
+        EvoBtn(EvolutionTable.Evo e) { evo = e; }
+    }
     public CapturedCreature selected;
 
     private final Map<String, PetData> cache = new HashMap<>();
@@ -37,6 +45,19 @@ public class CreatureUI extends BaseUI {
         public final RectF rect = new RectF();
         Slot(CapturedCreature c) { creature = c; }
     }
+
+    /** Nível atual de um Pokémon do time (o ativo vem do Companion, os outros do banco). */
+    public int levelOf(GameView gv, CapturedCreature c) {
+        return PartyManager.isActive(gv, c) ? gv.companion.getLevel() : data(gv, c.name).level;
+    }
+
+    /** Pode evoluir agora? Por nível (nível atingido) ou por pedra (tem a pedra na mochila). */
+    public boolean canEvolve(GameView gv, CapturedCreature c, EvolutionTable.Evo e) {
+        if (e.stone != null) return gv.player.getInventory().getOrDefault(e.stone, 0) > 0;
+        return levelOf(gv, c) >= e.level;
+    }
+
+    public void refreshCache() { cache.clear(); cacheTime = System.currentTimeMillis(); }
 
     private PetData data(GameView gv, String species) {
         long now = System.currentTimeMillis();
@@ -94,6 +115,9 @@ public class CreatureUI extends BaseUI {
             text(canvas, "Nv. " + lv, tx, r.top + sh * 0.62f, 17, Color.WHITE, Paint.Align.LEFT, false);
             text(canvas, c.rarity.getLabel(), tx, r.top + sh * 0.84f, 14, c.rarity.getColor() | 0xFF000000, Paint.Align.LEFT, false);
             if (active) text(canvas, "⭐", r.right - 12, r.top + 28, 22, Color.WHITE, Paint.Align.RIGHT, false);
+            for (EvolutionTable.Evo e : EvolutionTable.from(c.name)) {
+                if (canEvolve(gv, c, e)) { text(canvas, "⬆ EVOLUI", r.right - 10, r.bottom - 10, 15, C_GOOD, Paint.Align.RIGHT, true); break; }
+            }
         }
 
         // --- Ficha ---
@@ -142,17 +166,38 @@ public class CreatureUI extends BaseUI {
         y += 38;
 
         text(canvas, "EVOLUÇÃO", det.left + 24, y, 16, C_MUTED, Paint.Align.LEFT, true);
-        y += 26;
+        y += 12;
+        evoButtons.clear();
         List<EvolutionTable.Evo> evos = EvolutionTable.from(c.name);
         if (evos.isEmpty()) {
+            y += 18;
             text(canvas, EvolutionTable.preEvolution(c.name) != null ? "Forma final" : "Não evolui", det.left + 24, y, 17, Color.WHITE, Paint.Align.LEFT, false);
         } else {
+            float limit = det.bottom - 144 - 12;                    // acima do botão TORNAR ATIVO
+            float rowH = 44;
             for (EvolutionTable.Evo e : evos) {
-                if (y > manageBtn.top - 90) break;
-                boolean hasStone = e.stone != null && gv.player.getInventory().getOrDefault(e.stone, 0) > 0;
+                if (y + rowH > limit) break;
+                boolean can = canEvolve(gv, c, e);
+                float btnW = 150;
+                RectF row = new RectF(det.left + 24, y, det.right - 24, y + rowH - 6);
+                panel(canvas, row, Color.argb(110, 10, 16, 28), can ? C_GOOD : C_LINE, can ? 2 : 1);
+                String need;
+                if (e.stone != null) need = can ? e.stone + " ✔" : "precisa: " + e.stone;
+                else need = can ? "Nv. " + e.level + " ✔" : "Nv. " + e.level + " (faltam " + (e.level - level) + ")";
                 paint.setTextSize(17);
-                text(canvas, fit(e.describe() + "  ➜  " + e.to + (hasStone ? "   ✔ você tem" : ""), det.width() - 48), det.left + 24, y, 17, hasStone ? C_GOOD : Color.WHITE, Paint.Align.LEFT, false);
-                y += 25;
+                text(canvas, fit(c.name + "  ➜  " + e.to, row.width() - btnW - 24), row.left + 12, row.centerY() - 2, 17, Color.WHITE, Paint.Align.LEFT, true);
+                text(canvas, fit(need, row.width() - btnW - 24), row.left + 12, row.centerY() + 15, 14, can ? C_GOOD : C_MUTED, Paint.Align.LEFT, false);
+                EvoBtn eb = new EvoBtn(e);
+                eb.rect.set(row.right - btnW - 6, row.top + 4, row.right - 6, row.bottom - 4);
+                if (can) {
+                    panel(canvas, eb.rect, C_GOOD, Color.WHITE, 2);
+                    text(canvas, "EVOLUIR", eb.rect.centerX(), eb.rect.centerY() + 7, 19, Color.BLACK, Paint.Align.CENTER, true);
+                    evoButtons.add(eb);
+                } else {
+                    panel(canvas, eb.rect, Color.rgb(40, 46, 58), Color.rgb(70, 78, 94), 1);
+                    text(canvas, "bloqueado", eb.rect.centerX(), eb.rect.centerY() + 6, 15, Color.rgb(110, 118, 134), Paint.Align.CENTER, false);
+                }
+                y += rowH;
             }
         }
 

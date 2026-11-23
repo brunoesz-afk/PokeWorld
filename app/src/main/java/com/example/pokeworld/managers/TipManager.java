@@ -16,7 +16,7 @@ public class TipManager {
     static {
         // telas
         TEXT.put("screen_INVENTORY", "Mochila: toque num item para ver o que ele faz. Pedras de Evolução e Runas têm botões próprios, e itens sem uso direto servem para construir e forjar.");
-        TEXT.put("screen_CREATURES", "Time: veja nível, amizade e evoluções de cada Pokémon. Toque em TORNAR ATIVO para escolher quem luta ao seu lado (também dá para trocar pela barra no topo da tela).");
+        TEXT.put("screen_CREATURES", "Time: veja nível, amizade e evoluções de cada Pokémon. Toque em TORNAR ATIVO para escolher quem luta ao seu lado. Quando um Pokémon atinge o nível de evoluir (ou você tem a pedra certa) aparece o botão EVOLUIR na ficha dele: a evolução nunca é automática, você decide.");
         TEXT.put("screen_TALENTS", "Talentos: ganhe 1 ponto por nível de treinador. Cada nó só libera quando o nó de cima chega ao nível pedido, então planeje o ramo. Dá para resetar por ouro.");
         TEXT.put("screen_RUNES", "Runas: equipe uma por Pokémon ativo. Sangue cura, Mercúrio acelera, Sorte aumenta ouro e drops. Elas caem de chefes e dos andares 5, 10, 15 e 20 da Torre.");
         TEXT.put("screen_BESTIARY", "Pokédex: chegue perto de um Pokémon para registrá-lo. A ficha mostra onde cada espécie aparece e como ela evolui.");

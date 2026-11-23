@@ -150,14 +150,14 @@ public class Companion {
             this.baseMaxHp = (s.contains("RAICHU") ? 600 : 150) + (level * 25); 
             this.baseAttackPower = (s.contains("RAICHU") ? 140 : 40) + (level * 10);
             if (level >= 5) skills.add(new Skill("Choque do Trovão", 40, 4000, Color.YELLOW, ElementalType.ELECTRIC));
-            if (level >= 25) skills.add(new Skill("Trovão", 100, 8000, Color.YELLOW, ElementalType.ELECTRIC));
+            if (level >= 25) skills.add(new Skill("Trovão", 100, 8000, Color.YELLOW, ElementalType.ELECTRIC, 240));
         } else if (s.contains("CHARMANDER") || s.contains("CHARMELEON") || s.contains("CHARIZARD")) {
             this.type1 = ElementalType.FIRE;
             this.fieldAbility = s.contains("CHARIZARD") ? FieldAbility.FLY : FieldAbility.CUT;
             this.baseMaxHp = (s.contains("CHARIZARD") ? 900 : s.contains("CHARMELEON") ? 450 : 180) + (level * 30);
             this.baseAttackPower = (s.contains("CHARIZARD") ? 180 : s.contains("CHARMELEON") ? 100 : 45) + (level * 12);
             if (level >= 5) skills.add(new Skill("Brasa", 45, 3000, Color.RED, ElementalType.FIRE));
-            if (level >= 18) skills.add(new Skill("Fúria do Dragão", 65, 5000, Color.rgb(255, 69, 0), ElementalType.DRAGON));
+            if (level >= 18) skills.add(new Skill("Fúria do Dragão", 65, 5000, Color.rgb(255, 69, 0), ElementalType.DRAGON, 220));
             if (level >= 36) skills.add(new Skill("Lança-Chamas", 90, 7000, Color.rgb(255, 100, 0), ElementalType.FIRE));
         } else if (s.contains("MEGA CHARIZARD X")) {
             this.type1 = ElementalType.FIRE;
@@ -170,7 +170,7 @@ public class Companion {
             this.fieldAbility = FieldAbility.FLY;
             this.baseMaxHp = 1300 + (level * 40);
             this.baseAttackPower = 320 + (level * 25);
-            skills.add(new Skill("Explosão Solar", 130, 4000, Color.YELLOW, ElementalType.FIRE));
+            skills.add(new Skill("Explosão Solar", 130, 4000, Color.YELLOW, ElementalType.FIRE, 280));
         } else if (s.contains("SQUIRTLE") || s.contains("WARTORTLE") || s.contains("BLASTOISE")) {
             this.type1 = ElementalType.WATER;
             this.fieldAbility = FieldAbility.SURF;
@@ -178,7 +178,7 @@ public class Companion {
             this.baseAttackPower = (s.contains("BLASTOISE") ? 150 : s.contains("WARTORTLE") ? 85 : 35) + (level * 10);
             if (level >= 5) skills.add(new Skill("Jato d'Água", 35, 2500, Color.BLUE, ElementalType.WATER));
             if (level >= 20) skills.add(new Skill("Raio de Gelo", 60, 4500, Color.CYAN, ElementalType.ICE));
-            if (level >= 36) skills.add(new Skill("Hidro Canhão", 100, 9000, Color.BLUE, ElementalType.WATER));
+            if (level >= 36) skills.add(new Skill("Hidro Canhão", 100, 9000, Color.BLUE, ElementalType.WATER, 250));
         } else if (s.contains("BULBASAUR") || s.contains("IVYSAUR") || s.contains("VENUSAUR")) {
             this.type1 = ElementalType.PLANT;
             this.fieldAbility = FieldAbility.CUT;
@@ -188,7 +188,7 @@ public class Companion {
             if (level >= 8) skills.add(new Skill("Folha Navalha", 45, 3500, Color.GREEN, ElementalType.PLANT));
             if (level >= 22) skills.add(new Skill("Pó do Sono", 20, 6000, Color.MAGENTA, ElementalType.NORMAL));
             if (level >= 28) skills.add(new Skill("Pétalas Dançantes", 80, 5000, Color.rgb(255, 105, 180), ElementalType.PLANT));
-            if (level >= 32) skills.add(new Skill("Solar Beam", 120, 10000, Color.WHITE, ElementalType.PLANT));
+            if (level >= 32) skills.add(new Skill("Solar Beam", 120, 10000, Color.WHITE, ElementalType.PLANT, 260));
         } else if (s.contains("MEGA VENUSAUR")) {
             this.type1 = ElementalType.PLANT;
             this.type2 = ElementalType.POISON;
@@ -205,7 +205,7 @@ public class Companion {
             this.type1 = ElementalType.DRAGON;
             this.fieldAbility = FieldAbility.FLY;
             this.baseMaxHp = 2500 + (level * 100); this.baseAttackPower = 400 + (level * 40);
-            skills.add(new Skill("Hyper Beam", 120, 10000, Color.WHITE, ElementalType.DRAGON));
+            skills.add(new Skill("Hyper Beam", 120, 10000, Color.WHITE, ElementalType.DRAGON, 300));
         } else if (s.contains("LAPRAS")) {
             this.type1 = ElementalType.WATER;
             this.type2 = ElementalType.ICE;
@@ -257,12 +257,58 @@ public class Companion {
             this.baseMaxHp = 250 + (level * 20); this.baseAttackPower = 50 + (level * 10);
         }
 
+        addTypeMoves();
+
         if (isShiny) { this.baseMaxHp *= 1.2; this.baseAttackPower *= 1.2; }
         if (personality.equals("Brave")) this.baseAttackPower *= 1.1;
         if (personality.equals("Hardy")) this.maxHp *= 1.1;
 
         resetToBaseStats();
         this.hp = maxHp;
+    }
+
+
+    // ---------------------------------------------------------------- golpes por tipo (todo Pokémon aprende conforme sobe de nível)
+    private static final int MAX_SKILLS = 7;
+    /** {nível mínimo, dano, cooldown(ms), raio da área (0 = golpe direto)} — 2 diretos e 2 em área por tipo. */
+    private static final int[][] MOVE_SLOTS = {{4, 28, 2400, 0}, {12, 48, 4500, 190}, {24, 88, 7000, 0}, {36, 120, 9500, 280}};
+    private static final String[][] MOVE_NAMES = {
+            /* NORMAL   */ {"Ataque Rápido", "Corpo a Corpo", "Golpe Brutal", "Explosão Normal"},
+            /* FIRE     */ {"Brasa", "Roda de Fogo", "Lança-Chamas", "Inferno"},
+            /* WATER    */ {"Jato d'Água", "Maré Alta", "Hidro Bomba", "Tsunami"},
+            /* PLANT    */ {"Folha Navalha", "Esporos", "Chicote Solar", "Tempestade de Folhas"},
+            /* ELECTRIC */ {"Choque do Trovão", "Onda de Choque", "Trovão Forte", "Tempestade Elétrica"},
+            /* ICE      */ {"Raio de Gelo", "Nevasca", "Lança de Gelo", "Era Glacial"},
+            /* ROCK     */ {"Pedrada", "Avalanche", "Rocha Afiada", "Terremoto"},
+            /* POISON   */ {"Ferrão Tóxico", "Nuvem Tóxica", "Bomba de Lodo", "Chuva Ácida"},
+            /* PSYCHIC  */ {"Confusão", "Onda Psíquica", "Psicorte", "Mente Esmagadora"},
+            /* DRAGON   */ {"Garra de Dragão", "Sopro Dracônico", "Pulso do Dragão", "Cometa Dracônico"}};
+    private static final int[] MOVE_COLORS = {
+            Color.LTGRAY, Color.rgb(255, 110, 30), Color.rgb(60, 140, 255), Color.rgb(80, 200, 80), Color.YELLOW,
+            Color.CYAN, Color.rgb(170, 140, 100), Color.rgb(170, 70, 210), Color.rgb(255, 100, 180), Color.rgb(100, 90, 240)};
+
+    private boolean hasSkill(String name) {
+        for (Skill k : skills) if (k.getName().equalsIgnoreCase(name)) return true;
+        return false;
+    }
+
+    /** Acrescenta os golpes do(s) tipo(s) do Pokémon que o nível atual já libera (sem repetir os da espécie). */
+    private void addTypeMoves() {
+        addMovesOf(type1, new int[]{0, 1, 2, 3});
+        if (type2 != null && type2 != type1) addMovesOf(type2, new int[]{1, 2});   // tipo secundário: só 1 área e 1 direto
+    }
+
+    private void addMovesOf(ElementalType t, int[] slots) {
+        if (t == null) return;
+        int ti = t.ordinal();
+        if (ti >= MOVE_NAMES.length) return;
+        for (int si : slots) {
+            if (skills.size() >= MAX_SKILLS) return;
+            int[] m = MOVE_SLOTS[si];
+            String name = MOVE_NAMES[ti][si];
+            if (level < m[0] || hasSkill(name)) continue;
+            skills.add(m[3] > 0 ? new Skill(name, m[1], m[2], MOVE_COLORS[ti], t, m[3]) : new Skill(name, m[1], m[2], MOVE_COLORS[ti], t));
+        }
     }
 
     public void resetToBaseStats() {
@@ -528,9 +574,17 @@ public class Companion {
         }
     }
 
+    /**
+     * Evolução por nível NÃO é automática: ao atingir o nível o jogo só avisa. Quem decide é o jogador,
+     * no botão EVOLUIR da ficha do Pokémon (tela do Time) — ou pode seguir com ele na forma atual.
+     */
     private void checkEvolution() {
         EvolutionTable.Evo evo = EvolutionTable.byLevel(species, level);
-        if (evo != null) evolveInto(evo.to);
+        if (evo != null && context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            if (activity.gameView != null && activity.gameView.ui != null)
+                activity.gameView.ui.showMessage("🌟 " + species + " já pode evoluir para " + evo.to + "! Abra o TIME e toque em EVOLUIR (ou siga como está).");
+        }
     }
 
     /** Evolui o companheiro ativo para a nova espécie, toca a cena de evolução e sincroniza Time/banco. */
@@ -690,13 +744,6 @@ public class Companion {
                         }
                         skillCastEndTime = System.currentTimeMillis() + 1000;
                     }
-                } else if (skill.getType() == ElementalType.FIRE) {
-                    if (effects != null) {
-                        effects.addProjectile("bola_de_fogo", positionX, positionY, targetEnemy.getPositionX(), targetEnemy.getPositionY(), fixedEffectSize, totalDamage, targetEnemy);
-                        skillCastEndTime = System.currentTimeMillis() + 600;
-                        currentCastingSpecies = (species.equalsIgnoreCase("Charmander")) ? species : null;
-                        if (Math.random() < 0.2) effects.addText("🔥 QUEIMADURA!", (float)targetEnemy.getPositionX(), (float)targetEnemy.getPositionY(), Color.RED);
-                    }
                 } else if (skill.getName().equalsIgnoreCase("Jato d'Água")) {
                     if (effects != null) {
                         float beamWidth = (float)TileMap.TILE_SIZE * 0.8f;
@@ -706,26 +753,29 @@ public class Companion {
                         skillCastEndTime = System.currentTimeMillis() + 600;
                         currentCastingSpecies = (species.equalsIgnoreCase("Squirtle")) ? (isShiny ? "squirtle_shiny_jatodeagua" : "squirtle_jatodeagua") : null;
                     }
-                } else if (skill.getType() == ElementalType.PLANT) {
-                    if (effects != null) {
-                        float fixedSize = TileMap.TILE_SIZE * 2.5f; 
-                        effects.addAnimation("spells_sementes", positionX, positionY, fixedSize * 0.6f, 800);
-                        effects.addAnimation("spells_sementes2", targetEnemy.getPositionX(), targetEnemy.getPositionY(), fixedSize, 800);
-                        double aoeRadius = 200.0;
+                } else {
+                    // Golpe genérico: animação 3x1 do elemento (direta ou em área)
+                    double tx = targetEnemy.getPositionX(), ty = targetEnemy.getPositionY();
+                    if (skill.isArea() && world != null) {
+                        double r = skill.getRadius();
+                        if (effects != null) effects.addAreaAttack(skill.getType(), tx, ty, (float) (r * 0.9), 900);
                         for (Enemy e : world.enemies) {
-                            if (e.isAlive()) {
-                                double d = Math.sqrt(Math.pow(e.getPositionX() - targetEnemy.getPositionX(), 2) + Math.pow(e.getPositionY() - targetEnemy.getPositionY(), 2));
-                                if (d <= aoeRadius) {
-                                    e.takeDamage(totalDamage);
-                                    effects.addText("-" + totalDamage, e.getPositionX(), e.getPositionY() - 20, Color.WHITE);
-                                }
+                            if (!e.isAlive() || e.isPet) continue;   // não acerta os defensores da base
+                            if (Math.hypot(e.getPositionX() - tx, e.getPositionY() - ty) <= r) {
+                                e.takeDamage(totalDamage);
+                                if (effects != null) effects.addText("-" + totalDamage, e.getPositionX(), e.getPositionY() - 20, Color.WHITE);
                             }
                         }
-                        skillCastEndTime = System.currentTimeMillis() + 800;
+                        skillCastEndTime = System.currentTimeMillis() + 700;
+                    } else if (effects != null) {
+                        effects.addDirectAttack(skill.getType(), positionX, positionY, tx, ty, (float) TileMap.TILE_SIZE * 0.9f, totalDamage, targetEnemy);
+                        effects.addText("-" + totalDamage, tx, ty - 20, Color.WHITE);
+                        skillCastEndTime = System.currentTimeMillis() + 500;
+                        currentCastingSpecies = (skill.getType() == ElementalType.FIRE && species.equalsIgnoreCase("Charmander")) ? species : null;
+                        if (skill.getType() == ElementalType.FIRE && Math.random() < 0.2) effects.addText("🔥 QUEIMADURA!", (float) tx, (float) ty, Color.RED);
+                    } else {
+                        targetEnemy.takeDamage(totalDamage);
                     }
-                } else {
-                    targetEnemy.takeDamage(totalDamage);
-                    if (effects != null) effects.addText("-" + totalDamage, targetEnemy.getPositionX(), targetEnemy.getPositionY() - 20, Color.WHITE);
                 }
 
                 addRage(10);
