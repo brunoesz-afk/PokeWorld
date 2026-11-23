@@ -39,12 +39,14 @@ public class SpawnZones {
         public Enemy getLive() { return live; }
     }
 
-    /** Aparece quando o jogador entra neste raio (px)... */
-    public static final double ACTIVATE = 1000;
-    /** ...mas nunca "do nada" na cara dele: só nasce se estiver fora deste raio (fora da tela). */
-    public static final double NO_POP_INSIDE = 560;
-    /** Some quando o jogador passa deste raio. */
-    public static final double DEACTIVATE = 1500;
+    /**
+     * Raios medidos a partir do "raio de visão" R (metade da diagonal da tela, em px do mundo):
+     * nasce logo depois da borda da tela, nunca dentro dela, e some assim que fica um pouco além da borda.
+     * Assim só existe o que está na tela e ao redor imediato (menos RAM e menos processamento).
+     */
+    public static final double POP_MARGIN = 40, ACTIVATE_MARGIN = 260, DEACTIVATE_MARGIN = 360;
+    /** Raio de visão usado quando o chamador não informa (tela cheia, zoom padrão). */
+    public static final double DEFAULT_VIEW = 800;
     public static final long WILD_COOLDOWN = 60_000L, BOSS_COOLDOWN = 5 * 60_000L;
 
     private final List<Point> points = new ArrayList<>();
@@ -90,11 +92,15 @@ public class SpawnZones {
     }
 
     /** Chamado ~2x por segundo. */
-    public void update(double px, double py, long now, Sink sink) {
+    public void update(double px, double py, long now, Sink sink) { update(px, py, now, sink, DEFAULT_VIEW); }
+
+    /** @param viewR metade da diagonal da área visível (px do mundo) */
+    public void update(double px, double py, long now, Sink sink, double viewR) {
+        final double noPop = viewR + POP_MARGIN, activate = viewR + ACTIVATE_MARGIN, deactivate = viewR + DEACTIVATE_MARGIN;
         for (Point p : points) {
             if (p.live != null) {
                 if (!p.live.isAlive) { p.live = null; p.readyAt = now + p.cooldownMs; continue; } // derrotado
-                if (dist(p.live.positionX, p.live.positionY, px, py) > DEACTIVATE && !p.live.isRaider) {
+                if (dist(p.live.positionX, p.live.positionY, px, py) > deactivate && !p.live.isRaider) {
                     sink.despawn(p.live);   // jogador se afastou: some, sem prêmio nem cooldown
                     p.live = null;
                 }
@@ -102,7 +108,7 @@ public class SpawnZones {
             }
             if (now < p.readyAt) continue;
             double d = dist(p.x, p.y, px, py);
-            if (d <= ACTIVATE && (p.boss || d >= NO_POP_INSIDE)) {
+            if (d <= activate && (p.boss || d >= noPop)) {
                 p.live = sink.spawn(p);
                 if (p.live == null) p.readyAt = now + 5000; // terreno bloqueado: tenta de novo depois
             }

@@ -58,12 +58,13 @@ public class TowerManager {
                     waitingForNpcAdvance = true;
                     
                     double midX = gv.player.getPositionX();
-                    double midY = gv.player.getPositionY() - 100;
+                    double midY = Math.max(160, gv.player.getPositionY() - 260);
                     
-                    gv.world.npcs.add(new NPC("Mestre da Torre", "Parabéns! Entre no portal ou fale comigo para o Andar " + (towerFloor + 1), midX, midY, NPC.Type.GUARD));
+                    // O Mestre fica ao lado e o portal um pouco acima: o jogador precisa andar até ele
+                    // (antes o portal nascia dentro do raio de coleta e era pego na hora).
+                    gv.world.npcs.add(new NPC("Mestre da Torre", "Parabéns! Entre no portal ou fale comigo para o Andar " + (towerFloor + 1), midX + 110, midY + 40, NPC.Type.GUARD));
                     
-                    // Portal aincrad_portal no chão para avançar de fase
-                    Loot portalLoot = new Loot("aincrad_portal", midX, midY + 60, Loot.Type.ITEM);
+                    Loot portalLoot = new Loot("aincrad_portal", midX - 60, midY, Loot.Type.ITEM);
                     portalLoot.setRadius(55);
                     gv.world.loots.add(portalLoot);
                     gv.activity.saveCurrentGame();
@@ -94,6 +95,7 @@ public class TowerManager {
     }
 
     private void spawnWave() {
+        if (!gv.world.tileMap.getMapName().equals("TOWER")) return;   // jogador saiu durante o intervalo entre ondas
         double px = gv.player.getPositionX();
         double py = gv.player.getPositionY() - 250;
 

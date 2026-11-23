@@ -185,8 +185,8 @@ public class WorldManager {
     }
 
     private void spawnHome(Player p) {
+        refreshBaseNpcs();   // primeiro os NPCs: os defensores escolhem pontos longe deles
         spawnGuards(p);
-        refreshBaseNpcs();
     }
 
     /** Quantos defensores a base comporta agora: só depende do tamanho da base (Quartel + construções). */
@@ -198,16 +198,23 @@ public class WorldManager {
     private void spawnGuards(Player p) {
         int max = defenderCapacity(p);
         int spawned = 0;
+        List<double[]> taken = new ArrayList<>();   // NPCs e defensores já colocados: mantém distância entre eles
+        for (NPC n : npcs) taken.add(new double[]{n.getPositionX(), n.getPositionY()});
         for (CapturedCreature c : p.getDefenders()) {
             if (spawned >= max) break;
             PetData d = activity.dbHelper.getPetData(c.name);
             // Procura um ponto livre dentro das muralhas (o pátio do anel inicial)
-            for (int tries = 0; tries < 12; tries++) {
+            for (int tries = 0; tries < 40; tries++) {
                 double ex = TileMap.TILE_SIZE * (BaseLayout.RING_L + 3 + random.nextInt(BaseLayout.RING_R - BaseLayout.RING_L - 5));
                 double ey = TileMap.TILE_SIZE * (BaseLayout.RING_T + 3 + random.nextInt(BaseLayout.RING_B - BaseLayout.RING_T - 5));
+                // nas primeiras tentativas exige folga (NPCs ~170px, outros defensores ~140px); depois relaxa
+                double need = tries < 25 ? 170 : tries < 35 ? 100 : 0;
+                boolean far = true;
+                for (double[] t : taken) if (Math.hypot(ex - t[0], ey - t[1]) < need) { far = false; break; }
+                if (!far) continue;
                 int before = enemies.size();
                 addEnemy(c.name, ex, ey, 32, Color.GREEN, false, c.isShiny, d.level, c.gender, true);
-                if (enemies.size() > before) { spawned++; break; }
+                if (enemies.size() > before) { spawned++; taken.add(new double[]{ex, ey}); break; }
             }
         }
     }
@@ -237,27 +244,55 @@ public class WorldManager {
         tileMap.setBlocker(base);
     }
 
+    private static final double NPC_SPACING = 150;   // > raio de interação (100): um toque nunca pega dois NPCs
+
+    /** Acha um ponto livre perto de (x,y): andável e a pelo menos minDist de tudo em "taken". */
+    private double[] freeSpot(double x, double y, List<double[]> taken, double minDist) {
+        final double T = TileMap.TILE_SIZE;
+        double[] dys = {0, T, 2 * T, 3 * T};
+        double[] dxs = {0, -T * 2.4, T * 2.4, -T * 4.8, T * 4.8, -T * 7.2, T * 7.2};
+        for (double dy : dys) for (double dx : dxs) {
+            double cx = x + dx, cy = y + dy;
+            if (!tileMap.isWalkable(cx, cy, false, false, false, false)
+                    || !tileMap.isWalkable(cx - 28, cy, false, false, false, false)
+                    || !tileMap.isWalkable(cx + 28, cy, false, false, false, false)) continue;
+            boolean ok = true;
+            for (double[] t : taken) { if (Math.hypot(cx - t[0], cy - t[1]) < minDist) { ok = false; break; } }
+            if (ok) return new double[]{cx, cy};
+        }
+        return null;
+    }
+
     /** Recria os NPCs que ficam na porta de cada prédio da base (some o NPC de prédio em obra). */
     public void refreshBaseNpcs() {
         npcs.removeAll(baseNpcs);
         baseNpcs.clear();
         if (base == null) return;
+        List<double[]> taken = new ArrayList<>();
+        for (NPC n : npcs) taken.add(new double[]{n.getPositionX(), n.getPositionY()});
         for (BasePiece pc : base.layout.getPieces()) {
             if (!pc.isUsable()) continue;
             double fx = pc.centerX(), fy = (pc.gy + pc.kind.h) * (double) TileMap.TILE_SIZE + 40;
+            String[][] who;   // {nome, fala}
+            NPC.Type type = NPC.Type.GUARD;
             switch (pc.kind) {
-                case QUARTEL:
-                    baseNpcs.add(new NPC("Prof. de Time", "Gerencie os Pokémons do seu time e da sua base!", fx, fy, NPC.Type.GUARD));
-                    baseNpcs.add(new NPC("Mestre da Base", "Gerencie o estoque!", fx - 100, fy, NPC.Type.GUARD));
-                    baseNpcs.add(new NPC("Mestre da Torre", "Quer desafiar as ondas de Pokémons na Torre?", fx + 100, fy, NPC.Type.GUARD));
-                    break;
-                case OFICINA: baseNpcs.add(new NPC("Prof. de Engenharia", "Quer fabricar Pokébolas?", fx, fy, NPC.Type.BLACKSMITH)); break;
-                case DAYCARE: baseNpcs.add(new NPC("Prof. Criador", "Quer cruzar seus Pokémons?", fx, fy, NPC.Type.GUARD)); break;
-                case LABORATORIO: baseNpcs.add(new NPC("Prof. Invocador", "Deseja invocar novos poderes?", fx, fy, NPC.Type.GUARD)); break;
-                case FABRICA: baseNpcs.add(new NPC("Prof. de Montaria", "Selas e equipamentos de viagem?", fx, fy, NPC.Type.GUARD)); break;
-                case BAU: baseNpcs.add(new NPC("Prof. de Estoque", "Acesse seu baú de itens.", fx, fy, NPC.Type.GUARD)); break;
-                case ACADEMIA: baseNpcs.add(new NPC("Prof. de Treino", "Treine seus Pokémons inativos.", fx, fy, NPC.Type.GUARD)); break;
-                default: break;
+                case QUARTEL: who = new String[][]{
+                        {"Prof. de Time", "Gerencie os Pokémons do seu time e da sua base!"},
+                        {"Mestre da Base", "Gerencie o estoque!"},
+                        {"Mestre da Torre", "Quer desafiar as ondas de Pokémons na Torre?"}}; break;
+                case OFICINA: who = new String[][]{{"Prof. de Engenharia", "Quer fabricar Pokébolas?"}}; type = NPC.Type.BLACKSMITH; break;
+                case DAYCARE: who = new String[][]{{"Prof. Criador", "Quer cruzar seus Pokémons?"}}; break;
+                case LABORATORIO: who = new String[][]{{"Prof. Invocador", "Deseja invocar novos poderes?"}}; break;
+                case FABRICA: who = new String[][]{{"Prof. de Montaria", "Selas e equipamentos de viagem?"}}; break;
+                case BAU: who = new String[][]{{"Prof. de Estoque", "Acesse seu baú de itens."}}; break;
+                case ACADEMIA: who = new String[][]{{"Prof. de Treino", "Treine seus Pokémons inativos."}}; break;
+                default: continue;
+            }
+            for (String[] w : who) {
+                double[] spot = freeSpot(fx, fy, taken, NPC_SPACING);
+                if (spot == null) spot = new double[]{fx, fy};
+                taken.add(spot);
+                baseNpcs.add(new NPC(w[0], w[1], spot[0], spot[1], type));
             }
         }
         npcs.addAll(baseNpcs);
@@ -319,6 +354,13 @@ public class WorldManager {
     }
     public double getBuildCamX() { return buildCamX; }
     public double getBuildCamY() { return buildCamY; }
+    /** Metade da diagonal da área visível, em px do mundo (limitada para não explodir com zoom muito aberto). */
+    private double viewRadius(GameView gv) {
+        double sw = gv.getWidth(), sh = gv.getHeight();
+        double r = 0.5 * Math.sqrt(sw * sw + sh * sh) / Math.max(0.5f, currentZoom);
+        return Math.max(500, Math.min(1300, r));
+    }
+
     public double screenToWorldX(float sx) { return cameraX + sx / currentZoom; }
     public double screenToWorldY(float sy) { return cameraY + sy / currentZoom; }
 
@@ -332,7 +374,7 @@ public class WorldManager {
         // Pontos de spawn: nasce/some conforme a distância do jogador (2x por segundo)
         long nowZ = System.currentTimeMillis();
         if (zones != null && nowZ - lastZoneCheck > 500) {
-            zones.update(p.getPositionX(), p.getPositionY(), nowZ, zoneSink);
+            zones.update(p.getPositionX(), p.getPositionY(), nowZ, zoneSink, viewRadius(gv));
             lastZoneCheck = nowZ;
         }
 
@@ -501,6 +543,7 @@ public class WorldManager {
     }
 
     private void updateLoots(Player p, GameView gv) {
+        boolean advanceTower = false;
         Iterator<Loot> it = loots.iterator();
         while (it.hasNext()) {
             Loot l = it.next(); 
@@ -510,7 +553,7 @@ public class WorldManager {
             if (l.isCollectedBy(p)) { 
                 if (l.getType() == Loot.Type.GOLD) { p.addGold(l.getAmount()); gv.effects.addText("+" + l.getAmount() + "🪙", l.getPositionX(), l.getPositionY() - 20, Color.YELLOW); it.remove(); }
                 else if (l.getName().equalsIgnoreCase("aincrad_portal")) {
-                    gv.tower.advanceFloor();
+                    advanceTower = true;   // adia: advanceFloor() limpa a lista que estamos percorrendo
                     it.remove();
                 } else {
                     p.addItem(l.getName(), l.getAmount());
@@ -519,6 +562,7 @@ public class WorldManager {
                 }
             }
         }
+        if (advanceTower) gv.tower.advanceFloor();
     }
 
     private void handlePortal(Player p, Companion c, GameView gv) {
