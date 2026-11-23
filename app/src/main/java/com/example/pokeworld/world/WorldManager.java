@@ -13,6 +13,7 @@ import com.example.pokeworld.entities.ElementalType;
 import com.example.pokeworld.entities.Enemy;
 import com.example.pokeworld.entities.EvolutionTable;
 import com.example.pokeworld.entities.Rune;
+import com.example.pokeworld.entities.TalentTree;
 import com.example.pokeworld.entities.Loot;
 import com.example.pokeworld.entities.NPC;
 import com.example.pokeworld.entities.Player;
@@ -419,7 +420,7 @@ public class WorldManager {
     private void dropLoot(Enemy e, GameView gv) {
         int lvl = Math.max(1, e.level);
         double bossMult = e.isBoss ? 5 : 1;
-        loots.add(new Loot("Gold", e.positionX, e.positionY, Loot.Type.GOLD).withAmount((int) ((6 + lvl * 2 + random.nextInt(lvl + 1)) * bossMult * gv.companion.getLuckMultiplier())));
+        loots.add(new Loot("Gold", e.positionX, e.positionY, Loot.Type.GOLD).withAmount((int) ((6 + lvl * 2 + random.nextInt(lvl + 1)) * bossMult * gv.companion.getLuckMultiplier() * (1.0 + TalentTree.bonus(gv.player, "Garimpeiro")))));
 
         String mat; double chance; int max = 1;
         ElementalType t = e.getType();
@@ -436,7 +437,7 @@ public class WorldManager {
         if (random.nextDouble() < (e.isBoss ? 1.0 : 0.07)) loots.add(new Loot("Pokébola", e.positionX - 22, e.positionY + 8, Loot.Type.ITEM).withAmount(e.isBoss ? 3 : 1));
         if (random.nextDouble() < 0.05) loots.add(new Loot("Poção", e.positionX, e.positionY + 22, Loot.Type.ITEM));
         // Pedras de evolução (da mesma "família" do Pokémon; chefes soltam qualquer uma) e runas raras
-        float luck = gv.companion.getLuckMultiplier();
+        float luck = gv.companion.getLuckMultiplier() * (1f + (float) TalentTree.bonus(gv.player, "Achado"));
         String stone = stoneFor(t);
         if (e.isBoss) stone = EvolutionTable.STONES[random.nextInt(EvolutionTable.STONES.length)];
         if (stone != null && random.nextDouble() < (e.isBoss ? 0.6 : 0.03) * luck)

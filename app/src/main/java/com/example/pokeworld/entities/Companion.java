@@ -112,11 +112,21 @@ public class Companion {
         setSpeciesStats(this.species);
     }
 
+    /** Bônus de talento do treinador (0 se o jogo ainda não está montado). */
+    private double talent(String key) {
+        if (context instanceof MainActivity) {
+            MainActivity a = (MainActivity) context;
+            if (a.gameView != null && a.gameView.player != null) return TalentTree.bonus(a.gameView.player, key);
+        }
+        return 0;
+    }
+
     public void takeDamage(int amount) {
         if (hasShield && System.currentTimeMillis() < shieldEndTime) return;
         if (friendship >= 50 && Math.random() < 0.1) return;
         float resistance = 0;
         if (equippedRune != null && equippedRune.getEffect() == Rune.Effect.RESISTANCE) resistance = equippedRune.getValue();
+        resistance = (float) Math.min(0.8, resistance + talent("Resistencia"));
         int finalDamage = (int)(amount * (1.0f - resistance));
         if (this.hp - finalDamage <= 0 && friendship >= 100 && this.hp > 1) this.hp = 1;
         else this.hp -= finalDamage;
@@ -125,7 +135,7 @@ public class Companion {
     }
 
     public void addRage(float amount) {
-        rage += amount;
+        rage += amount * (1f + (float) talent("Furia"));
         if (rage > MAX_RAGE) rage = MAX_RAGE;
     }
 
@@ -262,8 +272,8 @@ public class Companion {
         double rarityMult = 1.0 + (rarity.ordinal() * 0.1);
         
         // Bônus de Gênero (Macho: +10% Dano, Fêmea: +10% Vida)
-        double atkMult = gender == 0 ? 1.1 : 1.0;
-        double hpMult = gender == 1 ? 1.1 : 1.0;
+        double atkMult = (gender == 0 ? 1.1 : 1.0) * (1.0 + talent("Guerreiro"));
+        double hpMult = (gender == 1 ? 1.1 : 1.0) * (1.0 + talent("Vitalidade"));
 
         this.attackPower = (int)((baseAttackPower + forgeAttackBonus) * attackBuffMult * rarityMult * atkMult);
         this.maxHp = (int)(this.maxHp * rarityMult * hpMult);
@@ -502,7 +512,7 @@ public class Companion {
     }
 
     public void gainExp(int amount) {
-        this.exp += amount;
+        this.exp += (int) Math.round(amount * (1.0 + talent("Estudioso")));
         int nextLevelExp = level * 100;
         if (this.exp >= nextLevelExp) {
             this.exp -= nextLevelExp;
@@ -646,7 +656,7 @@ public class Companion {
                 }
 
                 // Sistema de Crítico
-                boolean isCritical = Math.random() < 0.15;
+                boolean isCritical = Math.random() < 0.15 + talent("Critico");
                 if (isCritical) multiplier *= 2.0;
 
                 int totalDamage = (int)((damage + (attackPower * 0.5f)) * multiplier);

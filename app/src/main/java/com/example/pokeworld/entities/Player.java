@@ -131,9 +131,10 @@ public class Player {
     }
 
     private void updateStamina() {
-        if (stamina < maxStamina) {
+        float cap = getMaxStamina();
+        if (stamina < cap) {
             stamina += (0.2f + (level * 0.01f));
-            if (stamina > maxStamina) stamina = maxStamina;
+            if (stamina > cap) stamina = cap;
         }
         
         // Fome removida conforme pedido
@@ -352,18 +353,26 @@ public class Player {
         }
     }
     public float getStamina() { return stamina; }
-    public float getMaxStamina() { return maxStamina; }
+    public float getMaxStamina() { return maxStamina * (1f + (float) TalentTree.bonus(this, "Folego")); }
     public int getHp() { return hp; }
     public int getMaxHp() { return maxHp; }
     public int getTalentPoints() { return talentPoints; }
     public Map<String, Integer> getTalents() { return talents; }
     public void useTalentPoint(String t) { if (talentPoints > 0) { talents.put(t, talents.getOrDefault(t, 0) + 1); talentPoints--; } }
+    /** Devolve todos os pontos gastos na árvore. */
+    public int refundTalents() {
+        int total = TalentTree.spentPoints(this);
+        for (TalentTree.Node n : TalentTree.NODES) talents.put(n.key, 0);
+        talentPoints += total;
+        return total;
+    }
     public int getFishingLevel() { return fishingLevel; }
     public int getFishingExp() { return fishingExp; }
     public void setFishingStats(int l, int e) { fishingLevel = l; fishingExp = e; }
-    public boolean gainExp(int a) { exp += a; if (exp >= 100 * level) { exp -= 100 * level; level++; talentPoints++; hp = maxHp; return true; } return false; }
-    public void dash() { if (System.currentTimeMillis() - lastDashTime > DASH_COOLDOWN && stamina >= 30) { isDashing = true; dashStartTime = System.currentTimeMillis(); lastDashTime = System.currentTimeMillis(); stamina -= 30; } }
-    public float getDashCooldownProgress() { return Math.min(1.0f, (float)(System.currentTimeMillis() - lastDashTime) / DASH_COOLDOWN); }
+    public boolean gainExp(int a) { exp += (int) Math.round(a * (1.0 + TalentTree.bonus(this, "Mentor"))); if (exp >= 100 * level) { exp -= 100 * level; level++; talentPoints++; hp = maxHp; return true; } return false; }
+    private long dashCooldown() { return (long) (DASH_COOLDOWN * (1.0 - TalentTree.bonus(this, "Dash"))); }
+    public void dash() { if (System.currentTimeMillis() - lastDashTime > dashCooldown() && stamina >= 30) { isDashing = true; dashStartTime = System.currentTimeMillis(); lastDashTime = System.currentTimeMillis(); stamina -= 30; } }
+    public float getDashCooldownProgress() { return Math.min(1.0f, (float)(System.currentTimeMillis() - lastDashTime) / dashCooldown()); }
     public List<Mission> getActiveMissions() { return activeMissions; }
     public boolean isMovingState() { return isMoving; }
     private void updateDirection(double vx, double vy) { if (Math.abs(vx) > Math.abs(vy)) direction = (vx > 0) ? 3 : 1; else direction = (vy > 0) ? 0 : 2; }

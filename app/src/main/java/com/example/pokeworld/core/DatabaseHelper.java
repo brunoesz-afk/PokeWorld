@@ -241,8 +241,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (talents != null) {
             for (Map.Entry<String, Integer> entry : talents.entrySet()) {
                 ContentValues tv = new ContentValues();
+                tv.put("talent_name", entry.getKey());
                 tv.put("level", entry.getValue());
-                db.update("talents", tv, "talent_name=?", new String[]{entry.getKey()});
+                // A tabela começa vazia: insere/atualiza (antes só atualizava e nada era gravado)
+                db.insertWithOnConflict("talents", null, tv, SQLiteDatabase.CONFLICT_REPLACE);
             }
         }
 

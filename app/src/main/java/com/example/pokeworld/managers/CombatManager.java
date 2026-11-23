@@ -41,7 +41,7 @@ public class CombatManager {
         finalChance += domadorLevel * 0.10;
 
         if (random.nextDouble() < finalChance) {
-            gv.player.useItem("Pokébola");
+            if (random.nextDouble() >= com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Coletor")) gv.player.useItem("Pokébola");
             
             Rarity rarity = Rarity.COMMON;
             double r = random.nextDouble();
@@ -135,7 +135,7 @@ public class CombatManager {
         double finalChance = baseChance + talentBonus + chainBonus;
 
         if (random.nextDouble() < finalChance) {
-            gv.player.useItem(ballUsed); // Consome a bola usada
+            if (random.nextDouble() >= com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Coletor")) gv.player.useItem(ballUsed); // Consome a bola usada (Coletor pode poupar)
             gv.world.onCapture(target.name); 
             
             // ... (resto da lógica de captura)

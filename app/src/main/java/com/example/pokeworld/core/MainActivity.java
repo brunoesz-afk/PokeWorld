@@ -335,6 +335,7 @@ public class MainActivity extends AppCompatActivity {
 
             gameView = new GameView(this, pStats[0], collection, inventory, species, petData);
             gameView.player.loadProgress(pStats[1], pStats[2], pStats[3], pStats[4], clan, pStats[10]);
+            gameView.player.getTalents().putAll(dbHelper.getTalents());
             gameView.player.setFishingStats(pStats[7], pStats[8]);
             gameView.aincrad.setMaxFloorReached(pStats[9]);
 
