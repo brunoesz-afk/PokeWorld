@@ -61,7 +61,7 @@ public class TowerManager {
                     gv.ui.showMessage("⚡ ONDA " + currentWave + " / " + TOTAL_WAVES + " INICIANDO!");
                     new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::spawnWave, 1500);
                 } else {
-                    int goldReward = (int) Math.round(rewardGold(towerFloor) * (1.0 + EventCalendar.towerGoldBonus()));
+                    int goldReward = (int) Math.round(rewardGold(towerFloor) * Economy.REWARD * (1.0 + EventCalendar.towerGoldBonus()));
                     gv.player.addGold(goldReward);
                     String item = rewardItem(towerFloor);
                     int amount = rewardItemAmount(towerFloor);

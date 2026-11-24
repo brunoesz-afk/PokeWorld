@@ -83,7 +83,7 @@ public class FishingManager {
             baseGold = 100;
         }
 
-        int totalGold = gv.kingdom.calculateGoldWithBonus(baseGold, castleLv);
+        int totalGold = com.example.pokeworld.managers.Economy.scale(gv.kingdom.calculateGoldWithBonus(baseGold, castleLv), com.example.pokeworld.managers.Economy.FISH);
         
         gv.player.addItem(item);
         gv.player.addGold(totalGold);

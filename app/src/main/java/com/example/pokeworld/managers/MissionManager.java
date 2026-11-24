@@ -34,7 +34,7 @@ public class MissionManager {
         public final String arg;
         Quest(int act, String id, String title, String desc, String hint, Metric m, String arg, int target, int gold, int gems, String item, int qty) {
             this.act = act; this.id = id; this.title = title; this.desc = desc; this.hint = hint; this.metric = m; this.arg = arg;
-            this.target = target; this.gold = gold; this.gems = gems; this.rewardItem = item; this.itemQty = qty;
+            this.target = target; this.gold = Economy.scale(gold, Economy.REWARD); this.gems = gems; this.rewardItem = item; this.itemQty = qty;
         }
         public String rewardText() {
             StringBuilder sb = new StringBuilder();
@@ -233,7 +233,7 @@ public class MissionManager {
 
     public static final class Daily {
         public final String title; public final Metric metric; public final int target, gold; public final String item; public final int qty;
-        Daily(String t, Metric m, int target, int gold, String item, int qty) { title = t; metric = m; this.target = target; this.gold = gold; this.item = item; this.qty = qty; }
+        Daily(String t, Metric m, int target, int gold, String item, int qty) { title = t; metric = m; this.target = target; this.gold = Economy.scale(gold, Economy.REWARD); this.item = item; this.qty = qty; }
         public String rewardText() { return "🪙 " + gold + (item != null ? "  " + qty + "x " + item : ""); }
     }
 

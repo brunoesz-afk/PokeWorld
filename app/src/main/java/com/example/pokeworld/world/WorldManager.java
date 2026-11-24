@@ -512,7 +512,7 @@ public class WorldManager {
     private void dropLoot(Enemy e, GameView gv) {
         int lvl = Math.max(1, e.level);
         double bossMult = e.isBoss ? 5 : 1;
-        loots.add(new Loot("Gold", e.positionX, e.positionY, Loot.Type.GOLD).withAmount((int) ((6 + lvl * 2 + random.nextInt(lvl + 1)) * bossMult * (1.0 + com.example.pokeworld.managers.EventCalendar.goldBonus()) * gv.companion.getLuckMultiplier() * (1.0 + TalentTree.bonus(gv.player, "Garimpeiro")))));
+        loots.add(new Loot("Gold", e.positionX, e.positionY, Loot.Type.GOLD).withAmount((int) ((6 + lvl * 2 + random.nextInt(lvl + 1)) * bossMult * com.example.pokeworld.managers.Economy.ENEMY_DROP * (1.0 + com.example.pokeworld.managers.EventCalendar.goldBonus()) * gv.companion.getLuckMultiplier() * (1.0 + TalentTree.bonus(gv.player, "Garimpeiro")))));
 
         String mat; double chance; int max = 1;
         ElementalType t = e.getType();

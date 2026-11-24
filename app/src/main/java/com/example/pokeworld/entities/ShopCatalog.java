@@ -48,7 +48,7 @@ public final class ShopCatalog {
     }
 
     /** Quanto o Mercador paga por unidade, ou 0 se não compra esse item. */
-    public static int sellPrice(String item) { Integer p = SELL.get(item); return p == null ? 0 : p; }
+    public static int sellPrice(String item) { Integer p = SELL.get(item); return p == null ? 0 : com.example.pokeworld.managers.Economy.scale(p, com.example.pokeworld.managers.Economy.SELL); }
 
     public static boolean isKept(String item) {
         for (String k : KEEP) if (k.equals(item)) return true;

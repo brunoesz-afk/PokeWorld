@@ -19,6 +19,7 @@ public class TipManager {
         TEXT.put("screen_CREATURES", "Time: veja nível, amizade e evoluções de cada Pokémon. Toque em TORNAR ATIVO para escolher quem luta ao seu lado. Quando um Pokémon atinge o nível de evoluir (ou você tem a pedra certa) aparece o botão EVOLUIR na ficha dele: a evolução nunca é automática, você decide.");
         TEXT.put("screen_EXPEDITION", "Expedições: seus Pokémon da Caixa/Defesa viajam e voltam com recursos (mesmo com o jogo fechado). Bases rivais: 3 novas por dia, a chance depende do poder do time.");
         TEXT.put("screen_TRAINING", "Academia: Pokémon da Caixa e da Defesa treinam por 5 min e voltam com XP, mesmo com o jogo fechado. Quanto maior o nível da Academia, mais vagas e mais XP.");
+        TEXT.put("screen_SHOP", "Mercado: compre Poções e bolas; venda sucata (drops de inimigos). Materiais da base ficam guardados. O ouro é raro, então compre só o que precisa.");
         TEXT.put("screen_TALENTS", "Talentos: ganhe 1 ponto por nível de treinador. Cada nó só libera quando o nó de cima chega ao nível pedido, então planeje o ramo. Dá para resetar por ouro.");
         TEXT.put("screen_RUNES", "Runas: equipe uma por Pokémon ativo. Sangue cura, Mercúrio acelera, Sorte aumenta ouro e drops. Elas caem de chefes e dos andares 5, 10, 15 e 20 da Torre.");
         TEXT.put("screen_BESTIARY", "Pokédex: chegue perto de um Pokémon para registrá-lo. A ficha mostra onde cada espécie aparece e como ela evolui.");
@@ -43,6 +44,12 @@ public class TipManager {
         TEXT.put("intro_potion", "🧪 CURA RÁPIDA: o botão da poção (canto inferior esquerdo) cura o seu Pokémon ativo na hora e gasta 1 Poção. Ele pisca quando a vida está baixa. Compre Poções no Mercado da cidade.");
         TEXT.put("intro_swap", "🔴 TROCA: os ícones do seu time ficam no topo da tela. Toque em um deles para trocar de Pokémon na hora. Se um desmaiar, o próximo do time entra sozinho. Todos regeneram vida devagar com o tempo.");
         TEXT.put("intro_skills", "⚔ GOLPES: os botões de golpes ficam na lateral. Alguns atingem uma área (marcados com ◎) e podem causar estados: queimadura, veneno, sono, paralisia e gelo. Pokémon reserva dão bônus ao ativo!");
+        // dicas de dinheiro (cada uma aparece uma vez)
+        TEXT.put("money_intro", "💰 OURO É RARO! Inimigos soltam pouco. As melhores fontes: Missões diárias 📅, Expedições 🎒 (rendem mesmo com o jogo fechado), Torre 🗼, bases rivais 🏴 e vender sucata no Mercador. Gaste com cuidado!");
+        TEXT.put("money_low", "🪙 Ouro baixo! Ideias: faça as missões diárias, mande Pokémon da Caixa em expedição, pesque, colha a Horta/Estufa e venda sucata no Mercador (Madeira, Ferro, Pedra, Fruta e Pelo ficam guardados para a base).");
+        TEXT.put("money_potion", "🧪 Poção custa 50 🪙. Para economizar: deixe o regen lento curar fora de combate, troque de Pokémon pela barra do topo e use Frutas/Peixes (que também curam) em vez de comprar.");
+        TEXT.put("money_rich", "💎 Muito ouro guardado! Bons investimentos: Gema de Boost (1500 🪙), melhorar o Quartel e a Academia, resetar talentos ou comprar Ultra Balls para capturar chefes.");
+        TEXT.put("money_saturday", "🏰 Hoje o evento paga mais pela defesa da base e as expedições levam metade do tempo: ótimo dia para juntar ouro!");
         TEXT.put("lowhp", "Vida baixa! Use uma Poção na Mochila ou volte à cidade para a Enfermeira.");
     }
 
@@ -79,6 +86,14 @@ public class TipManager {
         }
         boolean wild = !map.equals("HOME") && !map.equals("CITY");
         if (gv.player.getTalentPoints() > 0 && gv.player.getLevel() >= 2) enqueue("talentpoints");
+        if (!gv.tutorial.isTutorialActive()) {
+            int gold = gv.player.getGold();
+            if (gv.player.getLevel() >= 2) enqueue("money_intro");
+            if (gold < 120 && gv.player.getLevel() >= 3) enqueue("money_low");
+            if (gv.player.getInventory().getOrDefault("Poção", 0) <= 0 && gv.player.getLevel() >= 3) enqueue("money_potion");
+            if (gold >= 5000) enqueue("money_rich");
+            if (com.example.pokeworld.managers.EventCalendar.dayIndex() == 6) enqueue("money_saturday");
+        }
         if (!gv.tutorial.isTutorialActive() && !map.equals("TOWER")) { enqueue("intro_potion"); enqueue("intro_swap"); enqueue("intro_skills"); }
         if (wild && gv.player.getInventory().getOrDefault("Pokébola", 0) <= 0 && !gv.tutorial.isTutorialActive()) enqueue("noballs");
         if (gv.companion.getHp() > 0 && gv.companion.getHp() < gv.companion.getMaxHp() * 0.25f) enqueue("lowhp");

@@ -21,7 +21,7 @@ public class AchievementManager {
         public final Metric metric;
         public final int target, rewardGold, rewardGems;
         Def(String group, String title, String desc, String icon, Metric m, int target, int gold, int gems) {
-            this.group = group; this.title = title; this.desc = desc; this.icon = icon; this.metric = m; this.target = target; this.rewardGold = gold; this.rewardGems = gems;
+            this.group = group; this.title = title; this.desc = desc; this.icon = icon; this.metric = m; this.target = target; this.rewardGold = Economy.scale(gold, Economy.REWARD); this.rewardGems = gems;
         }
         public String rewardText() {
             return (rewardGold > 0 ? "🪙 " + rewardGold : "") + (rewardGems > 0 ? (rewardGold > 0 ? "  " : "") + "💎 " + rewardGems : "");

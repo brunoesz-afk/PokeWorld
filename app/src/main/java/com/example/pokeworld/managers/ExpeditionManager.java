@@ -93,7 +93,7 @@ public final class ExpeditionManager {
         int power = gv.activity.dbHelper.getKv("exp_power", 10);
         Random r = new Random();
         double mult = 0.6 + Math.min(2.4, power / 60.0);          // equipe forte traz mais
-        int gold = (int) Math.round(dest.gold * mult * (0.9 + r.nextDouble() * 0.2));
+        int gold = Economy.scale((int) Math.round(dest.gold * mult * (0.9 + r.nextDouble() * 0.2)), Economy.REWARD);
         gv.player.addGold(gold);
         StringBuilder sb = new StringBuilder("🎒 EXPEDIÇÃO CONCLUÍDA! +" + gold + "🪙");
         int rolls = 2 + (int) Math.round(mult);
@@ -160,7 +160,7 @@ public final class ExpeditionManager {
             return "💥 Seu time foi derrotado na base de " + rivalName(i) + "! Fortaleça o time (boost, fusão, evolução) e tente amanhã.";
         }
         int power = rivalPower(gv, i);
-        int gold = power * (8 + 4 * i);
+        int gold = Economy.scale(power * (8 + 4 * i), Economy.REWARD);
         gv.player.addGold(gold);
         StringBuilder sb = new StringBuilder("🏴 BASE DE " + rivalName(i).toUpperCase() + " SAQUEADA! +" + gold + "🪙");
         Random r = new Random();

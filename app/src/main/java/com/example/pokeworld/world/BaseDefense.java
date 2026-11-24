@@ -317,7 +317,7 @@ public class BaseDefense {
         int hq = base.hq();
         int gold = 0, wood = 0, iron = 0, balls = 0, fruit = 0;
         for (int i = 0; i < spawned; i++) {
-            gold += (int) ((30 + 15 * hq + rnd.nextInt(20)) * kind.reward * (1.0 + com.example.pokeworld.managers.EventCalendar.baseRewardBonus()));
+            gold += (int) ((30 + 15 * hq + rnd.nextInt(20)) * kind.reward * com.example.pokeworld.managers.Economy.REWARD * (1.0 + com.example.pokeworld.managers.EventCalendar.baseRewardBonus()));
             wood += 1 + rnd.nextInt(3);
             if (rnd.nextDouble() < 0.7) iron += 1 + rnd.nextInt(2);
             if (rnd.nextDouble() < 0.40) balls += 1;

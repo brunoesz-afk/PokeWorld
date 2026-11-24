@@ -49,6 +49,18 @@ public class ShopUI extends BaseUI {
         int disc = gv.kingdom.getShopDiscount(shopLv);
         drawHeader(canvas, "🛒 MERCADO", "Seu ouro: " + gv.player.getGold() + " 🪙   •   Loja nível " + shopLv + (disc > 0 ? "  (desconto de " + disc + " 🪙 nas poções)" : ""), exitBtn);
 
+        // dica de dinheiro que muda a cada 7s, no rodapé
+        final String[] tips = {
+            "💡 Ouro é raro: faça as missões diárias 📅 e as expedições 🎒 todo dia.",
+            "💡 Madeira, Ferro, Pedra, Fruta e Pelo não são vendidos de propósito: a base precisa deles.",
+            "💡 Prefira Frutas e Peixes para curar quando puder: Poções custam 50 🪙.",
+            "💡 A Loja do reino (nível maior) dá desconto nas Poções.",
+            "💡 Great/Ultra Ball valem a pena só para chefes e Pokémon raros.",
+            "💡 Sábado: invasões pagam mais e expedições levam metade do tempo.",
+            "💡 A Gema de Boost (1500 🪙) rende mais que várias Poções: use em quem você mais usa."};
+        paint.setStyle(Paint.Style.FILL);
+        text(canvas, tips[(int) ((System.currentTimeMillis() / 7000) % tips.length)], w / 2f, h - 6, 15, C_MUTED, Paint.Align.CENTER, false);
+
         // abas
         tabRects.clear();
         String[] tabs = {"COMPRAR", "VENDER"};
