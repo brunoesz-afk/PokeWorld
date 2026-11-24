@@ -17,7 +17,8 @@ public enum BaseKind {
     DAYCARE    ("Daycare",           "🥚",  6, 3, Cat.UTIL,        5,   30,   15,   5,   0,    "construcao_daycare"),
     LABORATORIO("Laboratório",       "🧪",  4, 4, Cat.UTIL,        5,   60,   30,   15,  0,    null),
     FABRICA    ("Fábrica de Montaria","🐎", 6, 4, Cat.UTIL,        5,   60,   50,   0,   0,    "fabrica_montaria"),
-    ACADEMIA   ("Academia",          "🏋️", 5, 4, Cat.UTIL,        5,   30,   20,   10,  0,    "ginasio_building");
+    ACADEMIA   ("Academia",          "🏋️", 5, 4, Cat.UTIL,        5,   30,   20,   10,  0,    "ginasio_building"),
+    ESTUFA     ("Estufa",            "🌿", 3, 3, Cat.UTIL,        5,   40,   25,   10,  200,  null);
 
     public enum Cat { NUCLEO, DEFESA, UTIL }
 
@@ -85,6 +86,7 @@ public enum BaseKind {
             case TOCHA: return 4 + 2 * hq;
             case HORTA: return 2 + 2 * hq;
             case BAU: return 1 + hq;
+            case ESTUFA: return 1 + hq / 3;
             default: return 1;
         }
     }
@@ -109,7 +111,8 @@ public enum BaseKind {
             case DAYCARE: return "Cruza seus Pokémons.";
             case LABORATORIO: return "Invoca novos Pokémons.";
             case FABRICA: return "Sela e equipamentos de montaria.";
-            case ACADEMIA: return "Treina os Pokémons guardados na base.";
+            case ACADEMIA: return "Treina Pokémon da Caixa e da Defesa (fale com o Prof. de Treino). Cada nível libera mais vagas de treino.";
+            case ESTUFA: return "Produz Frutas, Poções e Poeira Mística sozinha, mesmo com o jogo fechado. Toque nela para coletar o estoque.";
         }
         return "";
     }

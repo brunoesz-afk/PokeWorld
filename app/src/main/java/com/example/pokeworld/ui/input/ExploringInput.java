@@ -250,6 +250,7 @@ public class ExploringInput implements InputExtension {
 
             for (NPC n : gv.world.npcs) {
                 if (n.isNearby(gv.player)) {
+                    if (n.getName().contains("Treino")) { gv.ui.state = UIManager.UIState.TRAINING; return true; }
                     if (n.getName().contains("Expedi")) { gv.ui.state = UIManager.UIState.EXPEDITION; return true; }
                     if (n.getName().contains("Time") || n.getName().contains("Base") || n.getName().contains("Estoque")) {
                         gv.ui.state = UIManager.UIState.STORAGE;
@@ -287,6 +288,16 @@ public class ExploringInput implements InputExtension {
         // Hortas da base: toque para plantar / colher
         if (gv.world.base != null) {
             com.example.pokeworld.world.BasePiece bp = gv.world.base.pieceAt((int) Math.floor(worldX / TileMap.TILE_SIZE), (int) Math.floor(worldY / TileMap.TILE_SIZE));
+            if (bp != null && bp.kind == com.example.pokeworld.world.BaseKind.ESTUFA) {
+                double gdx = gv.player.getPositionX() - bp.centerX(), gdy = gv.player.getPositionY() - bp.centerY();
+                if (Math.sqrt(gdx * gdx + gdy * gdy) > 460) { gv.ui.showMessage("🚶 Chegue mais perto da estufa"); return true; }
+                com.example.pokeworld.world.BaseManager.CropResult gr = gv.world.base.collectGreenhouse(bp, new com.example.pokeworld.world.PlayerWallet(gv.player), System.currentTimeMillis());
+                if (gr != null) {
+                    gv.ui.showMessage(gr.message);
+                    if (gr.harvested) { gv.particles.addExplosion(bp.centerX(), bp.centerY(), android.graphics.Color.rgb(90, 200, 100), 25); com.example.pokeworld.managers.SoundManager.play("capture"); gv.activity.saveCurrentGame(); }
+                    return true;
+                }
+            }
             if (bp != null && bp.kind == com.example.pokeworld.world.BaseKind.HORTA) {
                 double dx = gv.player.getPositionX() - bp.centerX(), dy = gv.player.getPositionY() - bp.centerY();
                 if (Math.sqrt(dx * dx + dy * dy) > 420) { gv.ui.showMessage("🚶 Chegue mais perto da horta"); return true; }

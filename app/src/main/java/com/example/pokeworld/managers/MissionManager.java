@@ -24,7 +24,7 @@ public class MissionManager {
         KILLS, BOSS_KILLS, CAPTURES, FISH, HARVESTS, RAIDS_WON, STONES_USED,                 // contadores salvos
         SPECIES_CAPTURED, SPECIES_SEEN, COMPANION_LEVEL, PLAYER_LEVEL, TOWER, TALENTS, RUNE, // estado do jogo
         EVOLVED, SHINY, DEFENDERS, HQ_LEVEL, BUILT, BASE_PIECES,
-        BOOSTS, FUSIONS, TOWER_RUNS, EXPEDITIONS, RIVAL_WINS, ENDLESS_BEST                                                           // contadores novos
+        BOOSTS, FUSIONS, TOWER_RUNS, EXPEDITIONS, RIVAL_WINS, ENDLESS_BEST, TRAININGS                                                           // contadores novos
     }
 
     public static final class Quest {
@@ -85,6 +85,7 @@ public class MissionManager {
         q(5, "boost1", "Gema Brilhante", "Suba o boost de um Pokémon (Gema de Boost)", "Ganhe gemas nos andares 5/10/15/20 da Torre e em chefes. Use na ficha do Pokémon.", Metric.BOOSTS, null, 1, 3000, 2, "Gema de Boost", 1);
         q(5, "fusao", "4 em 1", "Funda 4 Pokémon iguais em uma raridade maior", "Time ➜ ficha do Pokémon ➜ FUNDIR. Precisa de 4 da mesma espécie e raridade (sem boost).", Metric.FUSIONS, null, 1, 3500, 2, "Pokébola", 10);
         q(5, "exped", "Aventureiros", "Complete 1 expedição", "Fale com o Capitão de Expedição no Quartel. Pokémon da Caixa/Defesa viajam e voltam com recursos.", Metric.EXPEDITIONS, null, 1, 3500, 2, "Pedra Folha", 1);
+        q(5, "treino", "Rotina de Treino", "Complete 3 treinos na Academia", "Construa a Academia 🏋️ e fale com o Prof. de Treino. Pokémon da Caixa/Defesa ganham XP.", Metric.TRAININGS, null, 3, 3500, 2, "Fruta", 10);
         q(5, "evo5", "Linhagem Forte", "Tenha 5 Pokémon evoluídos", "Evolua por nível ou pedra pela ficha do Pokémon.", Metric.EVOLVED, null, 5, 4000, 2, "Pedra Trovão", 1);
         q(5, "defensores4", "Muralha Viva", "Escale 4 defensores na base", "Quanto maior o Quartel, mais defensores você pode escalar.", Metric.DEFENDERS, null, 4, 4500, 2, "Runa de Ferro", 1);
         q(5, "invasao3", "Rei da Defesa", "Repele 3 invasões na base", "Deixe bons defensores na base e esteja lá quando o alarme tocar.", Metric.RAIDS_WON, null, 3, 5000, 3, "Gema de Boost", 1);
@@ -131,7 +132,7 @@ public class MissionManager {
 
     public int progress(Quest q, GameView gv) {
         switch (q.metric) {
-            case KILLS: case BOSS_KILLS: case CAPTURES: case FISH: case HARVESTS: case RAIDS_WON: case STONES_USED: case BOOSTS: case FUSIONS: case TOWER_RUNS: case EXPEDITIONS: case RIVAL_WINS:
+            case KILLS: case BOSS_KILLS: case CAPTURES: case FISH: case HARVESTS: case RAIDS_WON: case STONES_USED: case BOOSTS: case FUSIONS: case TOWER_RUNS: case EXPEDITIONS: case RIVAL_WINS: case TRAININGS:
                 return db.getKv("stat_" + q.metric.name(), 0);
             case SPECIES_CAPTURED: return gv.bestiary.capturedCount();
             case SPECIES_SEEN: return gv.bestiary.seenCount();

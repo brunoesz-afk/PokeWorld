@@ -297,6 +297,46 @@ public class BaseManager implements MovementBlocker {
         return r;
     }
 
+    // ---------------------------------------------------------------- Estufa (produção passiva)
+
+    public static int greenhouseInterval(int level) { return Math.max(60, 300 - 45 * (Math.max(1, level) - 1)); }   // segundos por unidade
+    public static int greenhouseCap(int level) { return 6 + 4 * Math.max(1, level); }
+
+    /** Unidades prontas no estoque da Estufa (cropReady guarda o instante da última coleta). */
+    public static int greenhouseStock(BasePiece p, long now) {
+        if (p.kind != BaseKind.ESTUFA || !p.isUsable() || p.cropReady == 0) return 0;
+        long n = (now - p.cropReady) / (greenhouseInterval(p.level) * 1000L);
+        return (int) Math.max(0, Math.min(greenhouseCap(p.level), n));
+    }
+
+    public CropResult collectGreenhouse(BasePiece p, Wallet w, long now) {
+        CropResult r = new CropResult();
+        if (p == null || p.kind != BaseKind.ESTUFA) return null;
+        if (!p.isUsable()) { r.message = "🏗️ A estufa ainda está em obra"; return r; }
+        long step = greenhouseInterval(p.level) * 1000L;
+        if (p.cropReady == 0) {
+            p.cropReady = now; store.update(p);
+            r.message = "🌿 Estufa ligada! Volte daqui a " + (greenhouseInterval(p.level) / 60) + " min para a primeira colheita.";
+            return r;
+        }
+        int n = greenhouseStock(p, now);
+        if (n <= 0) { r.message = "🌱 Ainda crescendo... próxima unidade em " + Math.max(1, (step - (now - p.cropReady) % step) / 1000) + "s"; return r; }
+        int fruit = 0, potions = 0, dust = 0;
+        for (int i = 0; i < n; i++) {
+            fruit += 2;
+            if (i % 4 == 3) potions++;
+            if (p.level >= 3 && rnd.nextDouble() < 0.25) dust++;
+        }
+        w.give("Fruta", fruit);
+        if (potions > 0) w.give("Poção", potions);
+        if (dust > 0) w.give("Poeira Mística", dust);
+        p.cropReady = Math.min(now, p.cropReady + n * step);   // o tempo que ainda não virou unidade continua contando
+        store.update(p);
+        r.harvested = true; r.fruit = fruit;
+        r.message = "🌿 Estufa: +" + fruit + " 🍎" + (potions > 0 ? "  +" + potions + " 🧪" : "") + (dust > 0 ? "  +" + dust + " ✨ Poeira Mística" : "");
+        return r;
+    }
+
     /** 0 = vazia, 1 = crescendo, 2 = pronta para colher. */
     public static int cropStage(BasePiece p, long now) {
         if (p.kind != BaseKind.HORTA || !p.isUsable() || p.cropReady == 0) return 0;

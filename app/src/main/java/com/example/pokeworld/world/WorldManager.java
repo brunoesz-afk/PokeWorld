@@ -290,7 +290,7 @@ public class WorldManager {
                 case LABORATORIO: who = new String[][]{{"Prof. Invocador", "Deseja invocar novos poderes?"}}; break;
                 case FABRICA: who = new String[][]{{"Prof. de Montaria", "Selas e equipamentos de viagem?"}}; break;
                 case BAU: who = new String[][]{{"Prof. de Estoque", "Acesse seu baú de itens."}}; break;
-                case ACADEMIA: who = new String[][]{{"Prof. de Treino", "Treine seus Pokémons inativos."}}; break;
+                case ACADEMIA: who = new String[][]{{"Prof. de Treino", "Treine seus Pokémons da Caixa e da Defesa!"}}; break;
                 default: continue;
             }
             for (String[] w : who) {

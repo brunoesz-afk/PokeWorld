@@ -55,6 +55,7 @@ public class BaseRenderer {
             float x = pc.px(), y = pc.py();
             if (x + pc.pw() < vl || x > vr || y + pc.ph() < vt || y - 64 > vb) continue;
             if (pc.kind == BaseKind.HORTA && pc.isUsable()) drawCrop(c, pc, now);
+            if (pc.kind == BaseKind.ESTUFA && pc.isUsable()) drawGreenhouseBadge(c, pc, now);
             if (pc.finishTime > now) drawProgress(c, pc, now);
             else if (showLevels && !pc.kind.isWall() && pc.kind != BaseKind.TOCHA) drawLevelBadge(c, pc);
         }
@@ -90,6 +91,16 @@ public class BaseRenderer {
             p.setColor(0xFFE53935); p.setTextAlign(Paint.Align.CENTER); p.setTextSize(24); p.setFakeBoldText(true);
             c.drawText("!", cx, cy - 6, p); p.setFakeBoldText(false);
         }
+    }
+
+    /** Estufa: balão com a quantidade de unidades prontas (some quando vazia). */
+    private void drawGreenhouseBadge(Canvas c, BasePiece pc, long now) {
+        int n = BaseManager.greenhouseStock(pc, now);
+        if (n <= 0) return;
+        float cx = (float) pc.centerX(), cy = pc.py() - 6 + (float) Math.sin(now / 220.0) * 3f;
+        disc(c, cx, cy - 14, 17, 0xE6FFFFFF);
+        p.setColor(0xFF2E7D32); p.setTextAlign(Paint.Align.CENTER); p.setTextSize(22); p.setFakeBoldText(true);
+        c.drawText(String.valueOf(n), cx, cy - 6, p); p.setFakeBoldText(false);
     }
 
     private void drawProgress(Canvas c, BasePiece pc, long now) {
@@ -191,6 +202,7 @@ public class BaseRenderer {
                 case BAU: b = bakeChest(level); break;
                 case LABORATORIO: b = bakeLab(level); break;
                 case HORTA: b = bakeGarden(level); break;
+                case ESTUFA: b = bakeGreenhouse(level); break;
                 default: b = Bitmap.createBitmap(T, T, Bitmap.Config.ARGB_8888);
             }
             cache.put(key, b);
@@ -533,6 +545,35 @@ public class BaseRenderer {
     }
 
     // ---------------------------------------------------------------- horta
+    /** Estufa 3x3: base, paredes de vidro, telhado em degraus e plantas dentro. */
+    private Bitmap bakeGreenhouse(int level) {
+        level = Math.max(1, Math.min(5, level));
+        Bitmap b = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        int frame = level <= 2 ? rgb(236, 236, 230) : level == 3 ? rgb(120, 190, 120) : level == 4 ? rgb(96, 156, 206) : rgb(246, 206, 80);
+        rect(c, 8, 180, 184, 190, 0x55000000);
+        rect(c, 10, 70, 182, 178, shade(frame, 0.6f));
+        rect(c, 14, 74, 178, 170, alpha(rgb(170, 225, 235), 235));
+        rect(c, 14, 74, 178, 84, alpha(rgb(220, 245, 250), 235));
+        for (int i = 1; i < 4; i++) rect(c, 14 + i * 41, 74, 16 + i * 41, 170, frame);
+        rect(c, 14, 120, 178, 122, frame);
+        rect(c, 4, 56, 188, 74, frame);
+        rect(c, 24, 38, 168, 58, shade(frame, 1.08f));
+        rect(c, 56, 22, 136, 40, shade(frame, 1.15f));
+        rect(c, 56, 22, 136, 26, shade(frame, 1.3f));
+        for (int i = 0; i < 4; i++) {
+            float cx = 32 + i * 42;
+            rect(c, cx - 11, 148, cx + 11, 166, rgb(150, 92, 54));
+            disc(c, cx, 140, 13, rgb(62, 150, 62));
+            disc(c, cx - 5, 136, 7, rgb(96, 190, 86));
+            disc(c, cx + 5, 142, 4.5f, i % 2 == 0 ? rgb(226, 60, 56) : rgb(250, 200, 60));
+        }
+        rect(c, 82, 128, 110, 178, rgb(120, 80, 48));
+        rect(c, 84, 130, 108, 176, rgb(150, 104, 66));
+        disc(c, 102, 154, 2.4f, rgb(246, 206, 80));
+        return b;
+    }
+
     private Bitmap bakeGarden(int level) {
         level = Math.max(1, Math.min(5, level));
         Bitmap b = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888);
