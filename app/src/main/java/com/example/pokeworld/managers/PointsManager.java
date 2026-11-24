@@ -4,14 +4,14 @@ import com.example.pokeworld.core.DatabaseHelper;
 
 /**
  * Carteira de Pontos (1 real = 1 ponto) e assinatura VIP.
- * ATENÇÃO: por enquanto o saldo fica no aparelho (tabela kv). Quando o depósito real existir, o saldo
- * e as compras precisam passar a morar no servidor, validadas pelo webhook do provedor de pagamento.
+ * O saldo verdadeiro mora no SERVIDOR (ver {@link WalletManager}): o valor em kv "points" é só uma cópia para
+ * mostrar na tela. Toda compra debita no servidor antes de entregar o item.
  */
 public final class PointsManager {
     private PointsManager() {}
 
     /** true = mostra o botão "+50 pontos (TESTE)" na loja. Desligue antes de publicar o jogo com cobrança real. */
-    public static final boolean TEST_MODE = true;
+    public static final boolean TEST_MODE = false;
     public static final int TEST_GRANT = 50;
 
     public static final int PRICE_VIP = 10, PRICE_PASS = 35, VIP_DAYS = 30;
@@ -28,8 +28,15 @@ public final class PointsManager {
 
     public static void add(RewardManager.Store s, int n) { if (n > 0) s.set("points", balance(s) + n); }
 
+    /** true = o servidor já debitou esta compra; spend() só libera a entrega, sem mexer no saldo local. */
+    public static volatile boolean prepaid = false;
+    /** true = o saldo é do servidor: ninguém gasta pontos só no aparelho. */
+    public static final boolean SERVER_WALLET = true;
+
     /** Gasta pontos. Retorna false (sem mexer em nada) se o saldo não bastar. */
     public static boolean spend(RewardManager.Store s, int n) {
+        if (prepaid) return n > 0;
+        if (SERVER_WALLET) return false;
         if (n <= 0 || balance(s) < n) return false;
         s.set("points", balance(s) - n);
         return true;

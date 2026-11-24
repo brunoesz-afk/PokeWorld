@@ -4,6 +4,7 @@ import com.example.pokeworld.core.GameView;
 import com.example.pokeworld.managers.PassManager;
 import com.example.pokeworld.managers.PointsManager;
 import com.example.pokeworld.managers.RewardManager;
+import com.example.pokeworld.managers.WalletManager;
 import com.example.pokeworld.ui.UIManager;
 import com.example.pokeworld.ui.handlers.PassUI;
 
@@ -20,9 +21,9 @@ public class PassInput implements InputExtension {
         if (ui.buyBtn.contains(x, y)) {
             if (PassManager.premium(s)) { gv.ui.showMessage("⭐ Você já tem o Passe Premium desta temporada."); return true; }
             int missing = PointsManager.PRICE_PASS - PointsManager.balance(s);
-            if (missing > 0) { gv.ui.showMessage("💠 Faltam " + missing + " pontos para o Passe. Abra a LOJA para depositar."); return true; }
+            if (missing > 0) { gv.ui.showMessage("💠 Faltam " + missing + " pontos para o Passe. Abra a LOJA e toque em DEPOSITAR."); return true; }
             if (BuyConfirm.confirm(gv, "pass", "Passe Premium", PointsManager.PRICE_PASS)) {
-                if (PassManager.buyPass(s)) { gv.ui.showMessage("⭐ PASSE PREMIUM ATIVO! Reivindique as recompensas dos níveis."); gv.activity.saveCurrentGame(); }
+                WalletManager.purchase(gv, "pass:" + PassManager.season(), PointsManager.PRICE_PASS, () -> PassManager.buyPass(s), "⭐ PASSE PREMIUM ATIVO! Reivindique as recompensas dos níveis.");
             }
             return true;
         }

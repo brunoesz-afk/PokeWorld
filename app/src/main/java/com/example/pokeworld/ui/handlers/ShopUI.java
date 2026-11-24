@@ -36,8 +36,9 @@ public class ShopUI extends BaseUI {
         float y = 116, gap = 10;
         depositBtn.set(w - 30 - 330, y, w - 30, y + 56);
         text(canvas, "💠 " + PointsManager.balance(s) + " pontos", 30, y + 40, 34, BLUE, Paint.Align.LEFT, true);
+        com.example.pokeworld.managers.WalletManager.refresh(false);
         if (PointsManager.TEST_MODE) actionButton(canvas, depositBtn, "+" + PointsManager.TEST_GRANT + " pts (TESTE)", true, Color.rgb(255, 150, 90));
-        else actionButton(canvas, depositBtn, "DEPOSITAR (em breve)", false, C_ACCENT);
+        else actionButton(canvas, depositBtn, "💠 DEPOSITAR (Pix)", true, C_ACCENT);
 
         float ty = 186, tw = Math.min(280, (w - 60 - 2 * gap) / 3f);
         String[] names = {"⭐ VIP e Passe", "🐾 Skins de Pokémon", "🧑 Skins do Personagem"};

@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { Server } = require("socket.io");
+const { createWallet, FileStore, PgStore, makeMp } = require("./wallet");
 
 const app = express();
 const server = http.createServer(app);
@@ -91,6 +92,43 @@ app.get("/", (req, res) => {
     res.send("Servidor Multiplayer do PokeWorld está rodando online com Co-op na Torre e Amigos!");
 });
 
+// ---------------------------------------------------------------------------
+// CARTEIRA / PIX (ver wallet.js). Variáveis de ambiente:
+//   DATABASE_URL     Postgres (obrigatório para cobrar de verdade; o disco do Render grátis é apagado)
+//   MP_ACCESS_TOKEN  access token do Mercado Pago (teste: TEST-..., produção: APP_USR-...)
+//   PUBLIC_URL       endereço público do servidor (no Render usa RENDER_EXTERNAL_URL sozinho)
+//   MP_WEBHOOK_SECRET (opcional) chave secreta do webhook para conferir a assinatura
+//   WALLET_FILE_OK=1 só para testes locais: guarda a carteira em arquivo
+// ---------------------------------------------------------------------------
+let wallet = null;
+(async () => {
+    try {
+        let store = null;
+        if (process.env.DATABASE_URL) {
+            const { Pool } = require("pg");
+            const local = /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL);
+            const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: local || process.env.PGSSLMODE === "disable" ? false : { rejectUnauthorized: false }, max: 5 });
+            store = new PgStore(pool);
+        } else if (process.env.WALLET_FILE_OK === "1") {
+            store = new FileStore(process.env.WALLET_FILE || path.join(__dirname, "wallet.json"));
+        }
+        if (!store) { console.log("[carteira] desligada: defina DATABASE_URL (Postgres)."); return; }
+        await store.init();
+        const mp = process.env.MP_ACCESS_TOKEN ? makeMp(process.env.MP_ACCESS_TOKEN, process.env.MP_BASE_URL) : null;
+        if (!mp) console.log("[carteira] sem MP_ACCESS_TOKEN: saldo e compras funcionam, depósito não.");
+        wallet = createWallet({ store, mp, publicUrl: process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || "", webhookSecret: process.env.MP_WEBHOOK_SECRET || "" });
+        setInterval(() => wallet.sweep().catch((e) => console.error("[pix] sweep", e.message)), 120000);
+        console.log("[carteira] ligada (" + (process.env.DATABASE_URL ? "Postgres" : "arquivo") + ")");
+    } catch (e) { console.error("[carteira] falha ao iniciar:", e.message); wallet = null; }
+})();
+
+app.post("/mp/webhook", express.json({ limit: "100kb" }), (req, res) => {
+    res.sendStatus(200);                       // responde logo (o Mercado Pago espera até 22 s)
+    if (!wallet) return;
+    wallet.onWebhook({ query: req.query, body: req.body, headers: req.headers })
+        .catch((e) => console.error("[pix] webhook:", e.message));
+});
+
 io.on("connection", (socket) => {
     console.log(`[+] Jogador conectado: ${socket.id}`);
 
@@ -115,6 +153,7 @@ io.on("connection", (socket) => {
             }
         }
         socket.data.code = identified ? code : null;
+        socket.data.walletAuth = identified ? { code, hash: hash(secret) } : null;
         if (identified) { online[code] = socket.id; save(); }
 
         players[socket.id] = {
@@ -215,6 +254,25 @@ io.on("connection", (socket) => {
         });
         cb({ ok: true, friends });
     });
+
+    // --- CARTEIRA / PIX ---
+    const walletEvent = (name, fn) => socket.on(name, async (data, cb) => {
+        cb = asFn(cb);
+        try {
+            if (!wallet) return cb({ ok: false, error: "Depósitos ainda não estão ativos neste servidor." });
+            const au = socket.data.walletAuth;
+            if (!au) return cb({ ok: false, error: "Sem identidade online. Reabra o jogo conectado." });
+            const t = Date.now(), recent = (socket.data.wTimes || []).filter((x) => t - x < 60000);
+            if (recent.length >= 40) return cb({ ok: false, error: "Muitas requisições. Aguarde um instante." });
+            recent.push(t); socket.data.wTimes = recent;
+            if (!(await wallet.store.auth(au.code, au.hash))) return cb({ ok: false, error: "A carteira desta conta pertence a outro aparelho." });
+            cb(await fn(au.code, data || {}));
+        } catch (e) { console.error("[carteira]", name, e.message); cb({ ok: false, error: "Erro no servidor." }); }
+    });
+    walletEvent("walletGet", (code) => wallet.summary(code));
+    walletEvent("pixCreate", (code, d) => wallet.createPix(code, d.points));
+    walletEvent("pixCheck", (code, d) => wallet.checkPix(code, d.id));
+    walletEvent("walletSpend", (code, d) => wallet.spend(code, d.points, d.item));
 
     // --- ARENA: ranking global (pontos reportados pelo aparelho; o servidor só limita e ordena) ---
     socket.on("arenaScore", (data, cb) => {

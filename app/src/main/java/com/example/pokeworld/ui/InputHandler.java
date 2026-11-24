@@ -39,6 +39,7 @@ public class InputHandler {
         handlers.put(UIManager.UIState.PASS, new PassInput());
         handlers.put(UIManager.UIState.POINTS_SHOP, new ShopInput());
         handlers.put(UIManager.UIState.COLISEUM, new ColiseumInput());
+        handlers.put(UIManager.UIState.DEPOSIT, new com.example.pokeworld.ui.input.DepositInput());
         handlers.put(UIManager.UIState.ARENA, new com.example.pokeworld.ui.input.ArenaInput());
         handlers.put(UIManager.UIState.ARENA_BATTLE, new com.example.pokeworld.ui.input.ArenaBattleInput());
         handlers.put(UIManager.UIState.ARENA_RANK, new com.example.pokeworld.ui.input.ArenaRankInput());
@@ -103,7 +104,8 @@ public class InputHandler {
                         if (gv.ui.state == UIManager.UIState.ARENA_BATTLE) {          // desistir na luta conta como derrota
                             com.example.pokeworld.ui.handlers.ArenaBattleUI ab = (com.example.pokeworld.ui.handlers.ArenaBattleUI) gv.ui.getHandler(UIManager.UIState.ARENA_BATTLE);
                             if (ab != null) { ab.leave(gv); return true; }
-                        } else if (gv.ui.state == UIManager.UIState.ARENA_RANK) { gv.ui.state = UIManager.UIState.ARENA; return true; }
+                        } else if (gv.ui.state == UIManager.UIState.DEPOSIT) { gv.ui.state = UIManager.UIState.POINTS_SHOP; return true; }
+                        else if (gv.ui.state == UIManager.UIState.ARENA_RANK) { gv.ui.state = UIManager.UIState.ARENA; return true; }
                         else if (gv.ui.state == UIManager.UIState.ARENA) { gv.ui.state = UIManager.UIState.COLISEUM; return true; }
                         gv.ui.state = UIManager.UIState.EXPLORING;
                         return true;

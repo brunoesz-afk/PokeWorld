@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class UIManager {
     private Paint paint = new Paint();
-    public enum UIState { EXPLORING, INVENTORY, CREATURES, SHOP, MISSIONS, FORGE, BESTIARY, TALENTS, ACHIEVEMENTS, CLAN, SUMMON, BREEDING, VICTORY, RUNES, BOUNTIES, TELEPORT, SETTINGS, CRAFTING, POKEMON_DETAILS, STORAGE, EVOLUTION, EVOLVING, PLACEMENT, MOUNT_FACTORY, GYM, AINCRAD, ITEM_STORAGE, TRAINER_SKILLS, STARTER_SELECTION, TOWER_SELECT, BUILD, EXPEDITION, TRAINING, TRADE, BOOSTLAB, FRIENDS, COLISEUM, REWARDS, PASS, POINTS_SHOP, ARENA, ARENA_BATTLE, ARENA_RANK }
+    public enum UIState { EXPLORING, INVENTORY, CREATURES, SHOP, MISSIONS, FORGE, BESTIARY, TALENTS, ACHIEVEMENTS, CLAN, SUMMON, BREEDING, VICTORY, RUNES, BOUNTIES, TELEPORT, SETTINGS, CRAFTING, POKEMON_DETAILS, STORAGE, EVOLUTION, EVOLVING, PLACEMENT, MOUNT_FACTORY, GYM, AINCRAD, ITEM_STORAGE, TRAINER_SKILLS, STARTER_SELECTION, TOWER_SELECT, BUILD, EXPEDITION, TRAINING, TRADE, BOOSTLAB, FRIENDS, COLISEUM, REWARDS, PASS, POINTS_SHOP, ARENA, ARENA_BATTLE, ARENA_RANK, DEPOSIT }
     public UIState state = UIState.EXPLORING;
 
     public String pendingBiomeName = "";
@@ -78,6 +78,7 @@ public class UIManager {
         handlers.put(UIState.PASS, new PassUI());
         handlers.put(UIState.POINTS_SHOP, new ShopUI());
         handlers.put(UIState.COLISEUM, new ColiseumUI());
+        handlers.put(UIState.DEPOSIT, new com.example.pokeworld.ui.handlers.DepositUI());
         handlers.put(UIState.ARENA, new com.example.pokeworld.ui.handlers.ArenaUI());
         handlers.put(UIState.ARENA_BATTLE, new com.example.pokeworld.ui.handlers.ArenaBattleUI());
         handlers.put(UIState.ARENA_RANK, new com.example.pokeworld.ui.handlers.ArenaRankUI());

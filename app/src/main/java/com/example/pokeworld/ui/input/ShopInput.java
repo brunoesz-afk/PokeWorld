@@ -5,6 +5,7 @@ import com.example.pokeworld.managers.PassManager;
 import com.example.pokeworld.managers.PointsManager;
 import com.example.pokeworld.managers.RewardManager;
 import com.example.pokeworld.managers.SkinManager;
+import com.example.pokeworld.managers.WalletManager;
 import com.example.pokeworld.ui.UIManager;
 import com.example.pokeworld.ui.handlers.ShopUI;
 
@@ -19,7 +20,7 @@ public class ShopInput implements InputExtension {
 
         if (ui.depositBtn.contains(x, y)) {
             if (PointsManager.TEST_MODE) { PointsManager.add(s, PointsManager.TEST_GRANT); gv.ui.showMessage("💠 +" + PointsManager.TEST_GRANT + " pontos (modo de teste)"); gv.activity.saveCurrentGame(); }
-            else gv.ui.showMessage("💠 Depósito por Pix/cartão em breve.");
+            else { com.example.pokeworld.managers.WalletManager.refresh(true); gv.ui.state = UIManager.UIState.DEPOSIT; }
             return true;
         }
         if (ui.tab == 0) {
@@ -43,7 +44,8 @@ public class ShopInput implements InputExtension {
             } else if (PointsManager.balance(s) < k.price) {
                 gv.ui.showMessage("💠 Faltam " + (k.price - PointsManager.balance(s)) + " pontos para a skin " + k.name + ".");
             } else if (BuyConfirm.confirm(gv, "skin_" + k.id, "Skin " + k.name, k.price)) {
-                if (SkinManager.buy(s, k) == 0) { SkinManager.toggle(s, k); gv.ui.showMessage("✨ Skin " + k.name + " comprada e equipada!"); gv.activity.saveCurrentGame(); }
+                final SkinManager.Skin sk = k;
+                WalletManager.purchase(gv, "skin:" + k.id, k.price, () -> { if (SkinManager.buy(s, sk) == 0) SkinManager.toggle(s, sk); }, "✨ Skin " + k.name + " comprada e equipada!");
             }
             return true;
         }
@@ -54,7 +56,9 @@ public class ShopInput implements InputExtension {
         int missing = price - PointsManager.balance(s);
         if (missing > 0) { gv.ui.showMessage("💠 Faltam " + missing + " pontos para " + label + "."); return; }
         if (!BuyConfirm.confirm(gv, what, label, price)) return;
-        boolean ok = what.equals("vip") ? PointsManager.buyVip(s) : PassManager.buyPass(s);
-        if (ok) { gv.ui.showMessage(what.equals("vip") ? "👑 VIP ativo por 30 dias!" : "⭐ PASSE PREMIUM ATIVO!"); gv.activity.saveCurrentGame(); }
+        boolean vip = what.equals("vip");
+        WalletManager.purchase(gv, vip ? "vip" : "pass:" + PassManager.season(), price,
+                () -> { if (vip) PointsManager.buyVip(s); else PassManager.buyPass(s); },
+                vip ? "👑 VIP ativo por 30 dias!" : "⭐ PASSE PREMIUM ATIVO!");
     }
 }
