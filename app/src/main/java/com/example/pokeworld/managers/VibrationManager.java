@@ -12,9 +12,16 @@ public class VibrationManager {
     private Vibrator vibrator;
     private boolean enabled = true;
 
+    /** Instância do jogo em andamento (para quem não tem o GameView à mão). */
+    public static VibrationManager shared;
+
     public VibrationManager(Context context) {
         vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        shared = this;
     }
+
+    /** Toque curto seguro de chamar de qualquer lugar. */
+    public static void tap(long ms) { if (shared != null) shared.vibrate(ms); }
 
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public boolean isEnabled() { return enabled; }

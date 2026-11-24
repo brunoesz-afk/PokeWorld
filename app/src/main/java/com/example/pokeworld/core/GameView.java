@@ -112,6 +112,7 @@ public class GameView {
         this.bossRush = new BossRushManager(this);
         this.aincrad = new AincradManager(this);
         this.vibration = new VibrationManager(context);
+        SoundManager.getInstance(context);
         this.breeding = new BreedingManager(this);
         this.bounties = new BountyManager(this);
         this.farming = new FarmingManager(this);

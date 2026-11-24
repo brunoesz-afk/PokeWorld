@@ -33,6 +33,9 @@ public class Companion {
     private int hp, maxHp, level = 1, attackPower = 25, exp = 0;
     private int baseMaxHp, baseAttackPower; 
     private int forgeAttackBonus = 0; 
+    /** Queimadura, veneno, sono, paralisia e gelo (inimigos de fogo, veneno, etc. também causam). */
+    public final StatusSet status = new StatusSet();
+    private int paraTick = 0;
     private long lastAttackTime = 0;
     private static final long ATTACK_COOLDOWN = 1000;
     private List<Skill> skills = new ArrayList<>();
@@ -122,6 +125,7 @@ public class Companion {
     }
 
     public void takeDamage(int amount) {
+        status.wake();
         if (hasShield && System.currentTimeMillis() < shieldEndTime) return;
         if (friendship >= 50 && Math.random() < 0.1) return;
         float resistance = 0;
@@ -269,23 +273,45 @@ public class Companion {
 
 
     // ---------------------------------------------------------------- golpes por tipo (todo Pokémon aprende conforme sobe de nível)
-    private static final int MAX_SKILLS = 7;
-    /** {nível mínimo, dano, cooldown(ms), raio da área (0 = golpe direto)} — 2 diretos e 2 em área por tipo. */
-    private static final int[][] MOVE_SLOTS = {{4, 28, 2400, 0}, {12, 48, 4500, 190}, {24, 88, 7000, 0}, {36, 120, 9500, 280}};
+    private static final int MAX_SKILLS = 9;
+    /** Por tipo, 8 golpes: {nível, dano, recarga(ms), forma, parâmetro}. Forma: 0 direto, 1 área circular (raio), 2 grade de quadrados (SkillPattern). */
+    private static final int[][] MOVE_SLOTS = {
+            {4, 28, 2400, 0, 0},
+            {8, 38, 4200, 2, 1},      // SQUARE3
+            {12, 48, 4500, 1, 190},
+            {18, 62, 5600, 2, 3},     // CROSS
+            {24, 88, 7000, 0, 0},
+            {30, 92, 7500, 2, 6},     // CONE (ou LINE nos tipos de feixe)
+            {36, 120, 9500, 1, 280},
+            {42, 150, 11000, 2, 2}};  // SQUARE5
     private static final String[][] MOVE_NAMES = {
-            /* NORMAL   */ {"Ataque Rápido", "Corpo a Corpo", "Golpe Brutal", "Explosão Normal"},
-            /* FIRE     */ {"Brasa", "Roda de Fogo", "Lança-Chamas", "Inferno"},
-            /* WATER    */ {"Jato d'Água", "Maré Alta", "Hidro Bomba", "Tsunami"},
-            /* PLANT    */ {"Folha Navalha", "Esporos", "Chicote Solar", "Tempestade de Folhas"},
-            /* ELECTRIC */ {"Choque do Trovão", "Onda de Choque", "Trovão Forte", "Tempestade Elétrica"},
-            /* ICE      */ {"Raio de Gelo", "Nevasca", "Lança de Gelo", "Era Glacial"},
-            /* ROCK     */ {"Pedrada", "Avalanche", "Rocha Afiada", "Terremoto"},
-            /* POISON   */ {"Ferrão Tóxico", "Nuvem Tóxica", "Bomba de Lodo", "Chuva Ácida"},
-            /* PSYCHIC  */ {"Confusão", "Onda Psíquica", "Psicorte", "Mente Esmagadora"},
-            /* DRAGON   */ {"Garra de Dragão", "Sopro Dracônico", "Pulso do Dragão", "Cometa Dracônico"}};
+            /* NORMAL   */ {"Ataque Rápido", "Pisotear", "Corpo a Corpo", "Cruz de Impacto", "Golpe Brutal", "Rugido", "Explosão Normal", "Impacto Final"},
+            /* FIRE     */ {"Brasa", "Chão em Chamas", "Roda de Fogo", "Cruz Flamejante", "Lança-Chamas", "Rajada de Fogo", "Inferno", "Mar de Chamas"},
+            /* WATER    */ {"Jato d'Água", "Poça Gigante", "Maré Alta", "Cruz de Bolhas", "Hidro Bomba", "Onda Marinha", "Tsunami", "Dilúvio"},
+            /* PLANT    */ {"Folha Navalha", "Esporos", "Chuva de Sementes", "Cruz de Espinhos", "Chicote Solar", "Vinha Selvagem", "Tempestade de Folhas", "Floresta Viva"},
+            /* ELECTRIC */ {"Choque do Trovão", "Campo Elétrico", "Onda de Choque", "Cruz de Raios", "Trovão Forte", "Raio Linear", "Tempestade Elétrica", "Fúria dos Céus"},
+            /* ICE      */ {"Raio de Gelo", "Chão Congelado", "Nevasca", "Cruz de Cristais", "Lança de Gelo", "Vento Glacial", "Era Glacial", "Zero Absoluto"},
+            /* ROCK     */ {"Pedrada", "Chuva de Pedras", "Avalanche", "Cruz de Rochas", "Rocha Afiada", "Deslizamento", "Terremoto", "Cataclismo"},
+            /* POISON   */ {"Ferrão Tóxico", "Esporos Venenosos", "Nuvem Tóxica", "Cruz Tóxica", "Bomba de Lodo", "Rajada Ácida", "Chuva Ácida", "Pântano Mortal"},
+            /* PSYCHIC  */ {"Confusão", "Runas Místicas", "Onda Psíquica", "Cruz Psíquica", "Psicorte", "Raio Mental", "Mente Esmagadora", "Colapso Mental"},
+            /* DRAGON   */ {"Garra de Dragão", "Chamas Dracônicas", "Sopro Dracônico", "Cruz Dracônica", "Pulso do Dragão", "Fúria Linear", "Cometa Dracônico", "Ira do Dragão"}};
     private static final int[] MOVE_COLORS = {
             Color.LTGRAY, Color.rgb(255, 110, 30), Color.rgb(60, 140, 255), Color.rgb(80, 200, 80), Color.YELLOW,
             Color.CYAN, Color.rgb(170, 140, 100), Color.rgb(170, 70, 210), Color.rgb(255, 100, 180), Color.rgb(100, 90, 240)};
+    private static final SkillPattern[] PATTERNS = {SkillPattern.NONE, SkillPattern.SQUARE3, SkillPattern.SQUARE5, SkillPattern.CROSS, SkillPattern.RING, SkillPattern.LINE, SkillPattern.CONE};
+
+    /** Estado que os golpes do tipo causam (null: nenhum). O 2º golpe (grade 3x3) é o "esporo": chance maior. */
+    private static Status statusForType(ElementalType t, int slot) {
+        switch (t) {
+            case FIRE: return Status.BURN;
+            case POISON: return Status.POISON;
+            case ELECTRIC: return Status.PARALYZE;
+            case ICE: return Status.FREEZE;
+            case PSYCHIC: return slot == 1 || slot == 7 ? Status.SLEEP : null;
+            case PLANT: return slot == 1 ? Status.SLEEP : slot == 3 ? Status.POISON : null;
+            default: return null;
+        }
+    }
 
     private boolean hasSkill(String name) {
         for (Skill k : skills) if (k.getName().equalsIgnoreCase(name)) return true;
@@ -294,8 +320,8 @@ public class Companion {
 
     /** Acrescenta os golpes do(s) tipo(s) do Pokémon que o nível atual já libera (sem repetir os da espécie). */
     private void addTypeMoves() {
-        addMovesOf(type1, new int[]{0, 1, 2, 3});
-        if (type2 != null && type2 != type1) addMovesOf(type2, new int[]{1, 2});   // tipo secundário: só 1 área e 1 direto
+        addMovesOf(type1, new int[]{0, 1, 2, 3, 4, 5, 6, 7});
+        if (type2 != null && type2 != type1) addMovesOf(type2, new int[]{1, 4});   // tipo secundário: só 1 área e 1 direto
     }
 
     private void addMovesOf(ElementalType t, int[] slots) {
@@ -307,7 +333,17 @@ public class Companion {
             int[] m = MOVE_SLOTS[si];
             String name = MOVE_NAMES[ti][si];
             if (level < m[0] || hasSkill(name)) continue;
-            skills.add(m[3] > 0 ? new Skill(name, m[1], m[2], MOVE_COLORS[ti], t, m[3]) : new Skill(name, m[1], m[2], MOVE_COLORS[ti], t));
+            Skill sk;
+            if (m[3] == 2) {
+                int pi = m[4];
+                // o 6º golpe é um feixe (linha) nos tipos de raio/jato e um cone nos demais
+                if (si == 5 && (t == ElementalType.ELECTRIC || t == ElementalType.PSYCHIC || t == ElementalType.DRAGON || t == ElementalType.POISON || t == ElementalType.WATER)) pi = 5;
+                sk = new Skill(name, m[1], m[2], MOVE_COLORS[ti], t).withPattern(PATTERNS[pi]);
+            } else if (m[3] == 1) sk = new Skill(name, m[1], m[2], MOVE_COLORS[ti], t, m[4]);
+            else sk = new Skill(name, m[1], m[2], MOVE_COLORS[ti], t);
+            Status st = statusForType(t, si);
+            if (st != null) sk.withStatus(st, si == 1 ? 0.45f : m[3] == 0 ? 0.2f : 0.3f);
+            skills.add(sk);
         }
     }
 
@@ -348,6 +384,15 @@ public class Companion {
     public void update(Player player, List<Enemy> enemies, EffectManager effects, ParticleManager particles, WorldManager world, String weather) {
         lastDamageDealt = 0; lastTargetHit = null;
         checkMegaTimeout();
+        if (status.any() && hp > 0) {
+            int dot = status.tick(maxHp, false);
+            if (dot > 0) {
+                hp = Math.max(0, hp - dot);
+                if (effects != null) effects.addText("-" + dot, (float) positionX, (float) positionY - 80, status.has(Status.POISON) ? 0xFFC070F0 : 0xFFFF8030);
+            }
+            if (status.stunned()) { isMoving = false; return; }                     // dormindo/congelado: não age
+            if (status.has(Status.PARALYZE) && (++paraTick & 1) == 0) return;       // paralisado: metade do ritmo
+        }
         
         if (pendingSkillIndex != -1) {
             handlePendingSkill(effects, particles, world, weather);
@@ -506,6 +551,7 @@ public class Companion {
             
             // Barra de Vida e XP
             drawHealthBar(canvas);
+            status.draw(canvas, positionX, positionY, 45);
 
             // Desenha Emote
             if (!currentEmote.isEmpty()) {
@@ -647,6 +693,7 @@ public class Companion {
                 double multiplier = ElementalType.getMultiplier(type1, targetEnemy.getType(), type2);
                 int finalDamage = (int)(damage * multiplier);
                 targetEnemy.takeDamage(finalDamage); addRage(5); applyVampirism(finalDamage);
+                com.example.pokeworld.managers.SoundManager.play("hit");
                 lastDamageDealt = finalDamage; lastTargetHit = targetEnemy; lastAttackTime = now;
                 if (effects != null) {
                     effects.addText("-" + finalDamage, targetEnemy.getPositionX(), targetEnemy.getPositionY() - 20, Color.WHITE);
@@ -754,29 +801,49 @@ public class Companion {
                         currentCastingSpecies = (species.equalsIgnoreCase("Squirtle")) ? (isShiny ? "squirtle_shiny_jatodeagua" : "squirtle_jatodeagua") : null;
                     }
                 } else {
-                    // Golpe genérico: animação 3x1 do elemento (direta ou em área)
+                    // Golpe genérico: grade de quadrados (PokeTibia), explosão em área ou projétil direto
                     double tx = targetEnemy.getPositionX(), ty = targetEnemy.getPositionY();
-                    if (skill.isArea() && world != null) {
+                    int tile = TileMap.TILE_SIZE;
+                    if (skill.getPattern() != SkillPattern.NONE && world != null) {
+                        java.util.List<double[]> cells = skill.getPattern().cells(tx, ty, positionX, positionY, tile);
+                        if (effects != null) effects.addTilePattern(skill.getType(), cells, 1500);
+                        for (Enemy e : world.enemies) {
+                            if (!e.isAlive() || e.isPet) continue;   // não acerta os defensores da base
+                            for (double[] c : cells) {
+                                if (Math.hypot(e.getPositionX() - c[0], e.getPositionY() - c[1]) <= tile * 0.75 + e.getRadius() * 0.5) {
+                                    e.takeDamage(totalDamage);
+                                    if (effects != null) effects.addText("-" + totalDamage, e.getPositionX(), e.getPositionY() - 20, Color.WHITE);
+                                    applySkillStatus(skill, e, effects);
+                                    break;
+                                }
+                            }
+                        }
+                        skillCastEndTime = System.currentTimeMillis() + 700;
+                    } else if (skill.isArea() && world != null) {
                         double r = skill.getRadius();
                         if (effects != null) effects.addAreaAttack(skill.getType(), tx, ty, (float) (r * 0.9), 900);
                         for (Enemy e : world.enemies) {
-                            if (!e.isAlive() || e.isPet) continue;   // não acerta os defensores da base
+                            if (!e.isAlive() || e.isPet) continue;
                             if (Math.hypot(e.getPositionX() - tx, e.getPositionY() - ty) <= r) {
                                 e.takeDamage(totalDamage);
                                 if (effects != null) effects.addText("-" + totalDamage, e.getPositionX(), e.getPositionY() - 20, Color.WHITE);
+                                applySkillStatus(skill, e, effects);
                             }
                         }
                         skillCastEndTime = System.currentTimeMillis() + 700;
                     } else if (effects != null) {
-                        effects.addDirectAttack(skill.getType(), positionX, positionY, tx, ty, (float) TileMap.TILE_SIZE * 0.9f, totalDamage, targetEnemy);
+                        effects.addDirectAttack(skill.getType(), positionX, positionY, tx, ty, (float) tile * 0.9f, totalDamage, targetEnemy);
                         effects.addText("-" + totalDamage, tx, ty - 20, Color.WHITE);
+                        applySkillStatus(skill, targetEnemy, effects);
                         skillCastEndTime = System.currentTimeMillis() + 500;
                         currentCastingSpecies = (skill.getType() == ElementalType.FIRE && species.equalsIgnoreCase("Charmander")) ? species : null;
-                        if (skill.getType() == ElementalType.FIRE && Math.random() < 0.2) effects.addText("🔥 QUEIMADURA!", (float) tx, (float) ty, Color.RED);
                     } else {
                         targetEnemy.takeDamage(totalDamage);
                     }
                 }
+                com.example.pokeworld.managers.SoundManager.play(skill.getType().name().toLowerCase());
+                com.example.pokeworld.managers.VibrationManager.tap(isCritical ? 55 : 22);
+                if (isCritical) com.example.pokeworld.managers.SoundManager.play("crit");
 
                 addRage(10);
                 lastDamageDealt = totalDamage;
@@ -796,6 +863,19 @@ public class Companion {
             }
         }
         return false;
+    }
+
+    /** Sorteia e aplica o estado do golpe (queimar, envenenar...) no inimigo atingido. */
+    private void applySkillStatus(Skill skill, Enemy e, EffectManager effects) {
+        Status st = skill.getStatus();
+        if (st == null || e == null || !e.isAlive()) return;
+        if (Math.random() > skill.getStatusChance() + talent("Status")) return;
+        long dur = st.durationMs;
+        if (e.isBoss && st.stuns()) dur = (long) (dur * 0.4);   // chefes resistem a sono e gelo
+        if (e.status.apply(st, dur, e.getType()) && effects != null) {
+            effects.addText(st.icon + " " + st.label + "!", e.getPositionX(), e.getPositionY() - 55, st.color);
+            com.example.pokeworld.managers.SoundManager.play("status");
+        }
     }
 
     private void handlePendingSkill(EffectManager effects, ParticleManager particles, WorldManager world, String weather) {
@@ -835,7 +915,7 @@ public class Companion {
 
     public boolean canUseUltimate() { return rage >= MAX_RAGE && targetEnemy != null; }
 
-    public void healFull() { this.hp = this.maxHp; rage = 0; }
+    public void healFull() { this.hp = this.maxHp; rage = 0; status.clear(); }
 
     private void activateMega(EffectManager effects, ParticleManager particles) {
         this.isMega = true;

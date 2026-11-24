@@ -20,6 +20,7 @@ public class EffectManager {
     private List<CaptureEffect> captureEffects = new ArrayList<>();
     private final List<StaticAnimation> animations = new ArrayList<>();
     private final List<DirectionalAnimation> dirAnimations = new ArrayList<>();
+    private final List<TileFx> tileFx = new ArrayList<>();
     private Paint paint = new Paint();
 
     private static class CaptureEffect {
@@ -211,6 +212,28 @@ public class EffectManager {
         }
     }
 
+    /** Golpe em quadrados do chão: cada célula toca a animação de 1 tile do elemento, em onda (uma após a outra). */
+    private static class TileFx {
+        final Bitmap[][] sheet; final List<double[]> cells; final long start, end;
+        TileFx(Bitmap[][] sheet, List<double[]> cells, int durationMs) {
+            this.sheet = sheet; this.cells = cells; this.start = System.currentTimeMillis(); this.end = start + durationMs;
+        }
+        void draw(Canvas canvas, Paint p) {
+            long now = System.currentTimeMillis();
+            int half = com.example.pokeworld.world.TileMap.TILE_SIZE / 2 + 4;
+            for (int i = 0; i < cells.size(); i++) {
+                long t = now - start - Math.min(400, i * 35L);
+                if (t < 0) continue;
+                long left = end - now;
+                p.setAlpha(left < 300 ? (int) (255 * Math.max(0, left) / 300f) : 255);
+                Bitmap b = sheet[0][(int) ((t / 110 + i) % sheet[0].length)];
+                double[] c = cells.get(i);
+                canvas.drawBitmap(b, null, new Rect((int) c[0] - half, (int) c[1] - half, (int) c[0] + half, (int) c[1] + half), p);
+            }
+            p.setAlpha(255);
+        }
+    }
+
     private static class Projectile {
         Bitmap sprite;
         Bitmap[][] sheet;
@@ -314,6 +337,13 @@ public class EffectManager {
         animations.add(a);
     }
 
+    /** GOLPE EM GRADE (PokeTibia): anima o quadrado/cruz/anel/linha/cone de células do elemento. */
+    public void addTilePattern(ElementalType type, List<double[]> cells, int durationMs) {
+        Bitmap[][] sheet = SpriteManager.getInstance().getTileFxSheet(elem(type));
+        if (sheet == null || cells.isEmpty()) return;
+        tileFx.add(new TileFx(sheet, cells, durationMs));
+    }
+
     public void addCaptureEffect(double x, double y, Loot target, Runnable onComplete) {
         Bitmap[][] sheet = SpriteManager.getInstance().getUnitSheet("pokebola");
         if (sheet != null) {
@@ -407,6 +437,9 @@ public class EffectManager {
             if (System.currentTimeMillis() > ait.next().endTime) ait.remove();
         }
 
+        Iterator<TileFx> tit = tileFx.iterator();
+        while (tit.hasNext()) { if (System.currentTimeMillis() > tit.next().end) tit.remove(); }
+
         Iterator<DirectionalAnimation> dit = dirAnimations.iterator();
         while (dit.hasNext()) {
             if (System.currentTimeMillis() > dit.next().endTime) dit.remove();
@@ -439,6 +472,8 @@ public class EffectManager {
         for (StaticAnimation a : animations) {
             a.draw(canvas);
         }
+
+        for (TileFx tf : tileFx) tf.draw(canvas, paint);   // por baixo dos outros efeitos: é "chão"
 
         for (DirectionalAnimation d : dirAnimations) {
             d.draw(canvas);

@@ -50,6 +50,10 @@ public class Enemy {
 
     private boolean isSelected = false;
 
+    /** Queimadura, veneno, sono, paralisia e gelo que os golpes do jogador causam. */
+    public final StatusSet status = new StatusSet();
+    private int paraTick = 0;
+
     public Enemy(String name, double x, double y, double r, int color, boolean isBoss) {
         this(name, x, y, r, color, isBoss, 1);
     }
@@ -85,6 +89,9 @@ public class Enemy {
         else if (n.contains("BULBASAUR") || n.contains("VENUSAUR") || n.contains("ODDISH")) type = ElementalType.PLANT;
         else if (n.contains("PIKACHU") || n.contains("RAICHU") || n.contains("PICHU") || n.contains("ZAPDOS")) type = ElementalType.ELECTRIC;
         else if (n.contains("GEODUDE") || n.contains("GRAVELER") || n.contains("GOLEM") || n.contains("ONIX") || n.contains("RHYHORN") || n.contains("RHYDON") || n.contains("LARVITAR") || n.contains("ARON")) type = ElementalType.ROCK;
+        else if (n.contains("EKANS") || n.contains("ARBOK") || n.contains("ZUBAT") || n.contains("GOLBAT") || n.contains("WEEDLE") || n.contains("KAKUNA") || n.contains("BEEDRILL") || n.contains("GRIMER") || n.contains("KOFFING") || n.contains("NIDO")) type = ElementalType.POISON;
+        else if (n.contains("ABRA") || n.contains("KADABRA") || n.contains("ALAKAZAM") || n.contains("DROWZEE") || n.contains("GASTLY") || n.contains("HAUNTER") || n.contains("GENGAR")) type = ElementalType.PSYCHIC;
+        else if (n.contains("DRATINI") || n.contains("DRAGONAIR") || n.contains("DRAGONITE") || n.contains("RAIQUAZA") || n.contains("DRAGAO")) type = ElementalType.DRAGON;
         else if (n.contains("SWINUB") || n.contains("PILOSWINE") || n.contains("SNEASEL") || n.contains("ARTICUNO")) type = ElementalType.ICE;
         else type = ElementalType.NORMAL;
     }
@@ -93,6 +100,16 @@ public class Enemy {
 
     public void update(Companion companion, EffectManager effects, ParticleManager particles, TileMap tileMap, boolean isNight) {
         if (!isAlive) return;
+        if (status.any()) {
+            int dot = status.tick(maxHp, isBoss);
+            if (dot > 0 && !isPet) {
+                hp -= dot;
+                if (effects != null) effects.addText("-" + dot, positionX, positionY - radius, status.has(Status.POISON) ? 0xFFC070F0 : 0xFFFF8030);
+                if (hp <= 0) { isAlive = false; return; }
+            }
+            if (status.stunned()) { isMoving = false; frameIndex = 1; return; }                       // dormindo/congelado: não faz nada
+            if (status.has(Status.PARALYZE) && (++paraTick & 1) == 0) return;                          // paralisado: age na metade do ritmo
+        }
         if (isRaider || controlled) { updateAnimation(); return; } // quem move o invasor é a BaseDefense
         isMoving = false;
 
@@ -181,9 +198,21 @@ public class Enemy {
                         effects.addText("-" + finalDmg, comp.getPositionX(), comp.getPositionY() - 20, Color.RED);
                         skillCastEndTime = System.currentTimeMillis() + 800;
                     }
+                } else if (type == ElementalType.POISON || type == ElementalType.ELECTRIC || type == ElementalType.ICE
+                        || type == ElementalType.ROCK || type == ElementalType.PSYCHIC || type == ElementalType.DRAGON) {
+                    // golpe em quadrados do chão sobre o alvo (ex.: esporos venenosos)
+                    effects.addTilePattern(type, SkillPattern.SQUARE3.cells(comp.getPositionX(), comp.getPositionY(), positionX, positionY, TileMap.TILE_SIZE), 900);
+                    comp.takeDamage(finalDmg);
+                    effects.addText("-" + finalDmg, comp.getPositionX(), comp.getPositionY() - 20, Color.RED);
+                    skillCastEndTime = System.currentTimeMillis() + 500;
                 } else {
                     comp.takeDamage(finalDmg);
                     effects.addText("-" + finalDmg, comp.getPositionX(), comp.getPositionY() - 20, Color.RED);
+                }
+                Status st = statusOfType(type);   // alguns inimigos também causam estados
+                if (st != null && Math.random() < (isBoss ? 0.30 : 0.15) && comp.status.apply(st, st.durationMs, comp.getType1())) {
+                    effects.addText(st.icon + " " + st.label, comp.getPositionX(), comp.getPositionY() - 70, st.color);
+                    com.example.pokeworld.managers.SoundManager.play("status");
                 }
                 if (multiplier > 1.0) effects.addText("🔥 SUPER EFETIVO!", (float)comp.getPositionX(), (float)comp.getPositionY() - 50, Color.YELLOW);
                 else if (multiplier < 1.0) effects.addText("💤 Pouco efetivo...", (float)comp.getPositionX(), (float)comp.getPositionY() - 50, Color.GRAY);
@@ -192,6 +221,17 @@ public class Enemy {
             }
             
             lastAttackTime = now;
+        }
+    }
+
+    private static Status statusOfType(ElementalType t) {
+        switch (t) {
+            case FIRE: return Status.BURN;
+            case POISON: case PLANT: return Status.POISON;
+            case ELECTRIC: return Status.PARALYZE;
+            case ICE: return Status.FREEZE;
+            case PSYCHIC: return Status.SLEEP;
+            default: return null;
         }
     }
 
@@ -326,6 +366,7 @@ public class Enemy {
             drawName(canvas);
             drawHealthBar(canvas);
         }
+        status.draw(canvas, positionX, positionY, radius);
     }
 
     private void drawName(Canvas canvas) {
@@ -359,6 +400,7 @@ public class Enemy {
 
     public void takeDamage(int dmg) {
         if (isPet) return; 
+        status.wake();
         hp -= dmg;
         if (hp <= 0) isAlive = false;
     }
@@ -366,6 +408,8 @@ public class Enemy {
     public double stepToward(double tx, double ty, double speed) {
         double vx = tx - positionX, vy = ty - positionY;
         double d = Math.sqrt(vx * vx + vy * vy);
+        if (status.stunned()) { isMoving = false; return d; }
+        if (status.has(Status.PARALYZE)) speed *= 0.5;
         if (d > 1) {
             double k = Math.min(speed, d) / d;
             positionX += vx * k; positionY += vy * k;

@@ -20,6 +20,7 @@ public class SpriteManager {
     private final Map<String, Bitmap> spellSprites = new HashMap<>();
 
     private Context appContext;
+    private final java.util.Set<String> missing = new java.util.HashSet<>();
 
     private SpriteManager() {}
 
@@ -319,12 +320,20 @@ public class SpriteManager {
      * primeira vez (poupa RAM). {@code elem}: fire, water, plant, electric, ice, rock, poison, psychic, dragon, normal.
      */
     public Bitmap[][] getFxSheet(String elem, boolean area) {
-        String name = "fx_" + elem.toLowerCase() + (area ? "_area" : "_direct") + "_3x1";
+        return getSheet("fx_" + elem.toLowerCase() + (area ? "_area" : "_direct") + "_3x1");
+    }
+
+    /** Efeito de 1 quadrado do chão (3 quadros) do elemento: usado nos golpes em grade. */
+    public Bitmap[][] getTileFxSheet(String elem) { return getSheet("fxt_" + elem.toLowerCase() + "_3x1"); }
+
+    /** Folha 3x1 qualquer, carregada só na primeira vez que alguém pede. */
+    public Bitmap[][] getSheet(String name) {
         String key = normalizeName(name);
         Bitmap[][] sheet = unitSprites.get(key);
-        if (sheet == null && appContext != null) {
+        if (sheet == null && appContext != null && !missing.contains(key)) {
             loadUnitSheet(appContext, name, 1, 3);
             sheet = unitSprites.get(key);
+            if (sheet == null) missing.add(key);   // não tenta de novo a cada quadro
         }
         return sheet;
     }
