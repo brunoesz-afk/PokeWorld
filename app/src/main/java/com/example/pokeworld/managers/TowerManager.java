@@ -12,6 +12,7 @@ public class TowerManager {
     private static final int TOTAL_WAVES = 3; // 3 hordas por andar
     private boolean waveActive = false;
     private boolean waitingForNpcAdvance = false;
+    private boolean endless = false;   // modo infinito: andares 21, 22, 23... sem fim
 
     public TowerManager(GameView gv) {
         this.gv = gv;
@@ -21,7 +22,19 @@ public class TowerManager {
         startTowerAtFloor(1);
     }
 
+    /** Modo infinito (libera ao concluir o andar 20): começa no andar 21 e segue enquanto você aguentar. */
+    public void startEndless() {
+        startTowerAtFloor(MAX_FLOOR + 1);
+        endless = true;
+        gv.ui.showMessage("♾️ MODO INFINITO! Recorde: andar " + getEndlessBest());
+    }
+
+    public boolean isEndless() { return endless; }
+    public int getEndlessBest() { return Math.max(MAX_FLOOR, gv.activity.dbHelper.getKv("tower_endless_best", MAX_FLOOR)); }
+    public boolean isEndlessUnlocked() { return getHighestCleared() >= MAX_FLOOR; }
+
     public void startTowerAtFloor(int floor) {
+        endless = floor > MAX_FLOOR;
         towerFloor = floor;
         currentWave = 1;
         waveActive = false;
@@ -48,14 +61,18 @@ public class TowerManager {
                     gv.ui.showMessage("⚡ ONDA " + currentWave + " / " + TOTAL_WAVES + " INICIANDO!");
                     new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::spawnWave, 1500);
                 } else {
-                    int goldReward = rewardGold(towerFloor);
+                    int goldReward = (int) Math.round(rewardGold(towerFloor) * (1.0 + EventCalendar.towerGoldBonus()));
                     gv.player.addGold(goldReward);
                     String item = rewardItem(towerFloor);
                     int amount = rewardItemAmount(towerFloor);
                     gv.player.addItem(item, amount);
                     int gemsB = rewardBoostGems(towerFloor);
                     if (gemsB > 0) gv.player.addItem("Gema de Boost", gemsB);
-                    markCleared(towerFloor);
+                    if (towerFloor <= MAX_FLOOR) markCleared(towerFloor);
+                    else if (towerFloor > getEndlessBest()) {
+                        gv.activity.dbHelper.setKv("tower_endless_best", towerFloor);
+                        gv.ui.showMessage("🏅 NOVO RECORDE NO MODO INFINITO: andar " + towerFloor + "!");
+                    }
                     gv.missions.count(MissionManager.Metric.TOWER_RUNS);
                     gv.ui.showMessage("🎉 ANDAR " + towerFloor + " CONCLUÍDO! +" + goldReward + "🪙  +" + amount + " " + item + (gemsB > 0 ? "  +" + gemsB + " 💎 Gema de Boost" : ""));
                     waitingForNpcAdvance = true;
@@ -77,7 +94,7 @@ public class TowerManager {
     }
 
     public void advanceFloor() {
-        if (waitingForNpcAdvance && towerFloor < 20) {
+        if (waitingForNpcAdvance && (towerFloor < MAX_FLOOR || endless)) {
             towerFloor++;
             currentWave = 1;
             waitingForNpcAdvance = false;
@@ -102,8 +119,11 @@ public class TowerManager {
         double px = gv.player.getPositionX();
         double py = gv.player.getPositionY() - 250;
 
-        String[] pool = {"Rattata", "Pidgey", "Zubat", "Caterpie", "Ekans", "Oddish", "Pikachu", "Charmander"};
+        String[] pool = towerFloor > MAX_FLOOR
+                ? new String[]{"Growlithe", "Machop", "Gastly", "Onix", "Arbok", "Haunter", "Golbat", "Ponyta"}
+                : new String[]{"Rattata", "Pidgey", "Zubat", "Caterpie", "Ekans", "Oddish", "Pikachu", "Charmander"};
         int count = (towerFloor == 1 && currentWave == 1) ? 3 : 2 + currentWave;
+        if (towerFloor > MAX_FLOOR) count = Math.min(9, count + (towerFloor - MAX_FLOOR) / 4);   // mais inimigos conforme sobe
         int baseLevel = towerFloor * 2 + currentWave;
         int color = Color.rgb(150, 50, 200);
 

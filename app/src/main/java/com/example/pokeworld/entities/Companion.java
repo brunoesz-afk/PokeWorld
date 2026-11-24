@@ -610,7 +610,7 @@ public class Companion {
     }
 
     public void gainExp(int amount) {
-        this.exp += (int) Math.round(amount * (1.0 + talent("Estudioso") + (team != null ? team.xp : 0)));
+        this.exp += (int) Math.round(amount * (1.0 + talent("Estudioso") + (team != null ? team.xp : 0) + com.example.pokeworld.managers.EventCalendar.xpBonus()));
         int nextLevelExp = Progression.expToNext(level);
         if (this.exp >= nextLevelExp) {
             this.exp -= nextLevelExp;

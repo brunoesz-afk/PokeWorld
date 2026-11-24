@@ -15,6 +15,13 @@ public class TowerSelectInput implements InputExtension {
             return true;
         }
 
+        if (!ui.endlessBtn.isEmpty() && ui.endlessBtn.contains(x, y)) {
+            if (gv.tower.isEndlessUnlocked()) {
+                gv.tower.startEndless();
+                gv.ui.state = UIManager.UIState.EXPLORING;
+            } else gv.ui.showMessage("🔒 Conclua o andar 20 para liberar o modo infinito.");
+            return true;
+        }
         for (TowerSelectUI.FloorCard card : ui.floorCards) {
             if (card.rect.contains(x, y)) {
                 ui.selectedFloor = card.floor;

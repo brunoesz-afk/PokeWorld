@@ -79,7 +79,7 @@ public final class ExpeditionManager {
         if (squadSize(gv) == 0) return "Precisa de Pokémon fora do time (na Caixa ou na Defesa) para enviar.";
         int power = squadPower(gv);
         gv.activity.dbHelper.setKv("exp_dest", dest + 1);
-        gv.activity.dbHelper.setKv("exp_end", nowSec() + DESTS[dest].minutes * 60);
+        gv.activity.dbHelper.setKv("exp_end", nowSec() + (int) Math.round(DESTS[dest].minutes * 60 * (1.0 - EventCalendar.expeditionTimeCut())));
         gv.activity.dbHelper.setKv("exp_power", power);
         SoundManager.play("click");
         return DESTS[dest].icon + " Expedição enviada para " + DESTS[dest].name + " (poder " + power + "). Volta em " + DESTS[dest].minutes + " min — pode fechar o jogo!";

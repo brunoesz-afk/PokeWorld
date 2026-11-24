@@ -24,7 +24,7 @@ public class MissionManager {
         KILLS, BOSS_KILLS, CAPTURES, FISH, HARVESTS, RAIDS_WON, STONES_USED,                 // contadores salvos
         SPECIES_CAPTURED, SPECIES_SEEN, COMPANION_LEVEL, PLAYER_LEVEL, TOWER, TALENTS, RUNE, // estado do jogo
         EVOLVED, SHINY, DEFENDERS, HQ_LEVEL, BUILT, BASE_PIECES,
-        BOOSTS, FUSIONS, TOWER_RUNS, EXPEDITIONS, RIVAL_WINS                                                           // contadores novos
+        BOOSTS, FUSIONS, TOWER_RUNS, EXPEDITIONS, RIVAL_WINS, ENDLESS_BEST                                                           // contadores novos
     }
 
     public static final class Quest {
@@ -92,6 +92,7 @@ public class MissionManager {
         // Ato VI — a lenda
         q(6, "nivel45", "Além do Limite", "Leve um Pokémon ao nível 45", "Combine boost, runa e time completo para encarar as zonas finais.", Metric.COMPANION_LEVEL, null, 45, 9000, 5, "Gema de Boost", 2);
         q(6, "rival5", "Saqueador de Bases", "Vença 5 bases rivais", "Capitão de Expedição ➜ Bases Rivais. Três bases novas todo dia.", Metric.RIVAL_WINS, null, 5, 9000, 4, "Gema de Boost", 1);
+        q(6, "infinito25", "Sem Limites", "Chegue ao andar 25 da Torre (modo infinito)", "Conclua o andar 20 e use o botão ♾️ na tela da Torre. Boss a cada 5 andares.", Metric.ENDLESS_BEST, null, 25, 12000, 6, "Gema de Boost", 2);
         q(6, "boost3", "Poder Condensado", "Faça 3 aumentos de boost", "Cada nível de boost dá +8% de ataque e vida.", Metric.BOOSTS, null, 3, 8000, 4, "Gema de Boost", 1);
         q(6, "especies80", "Enciclopédia Viva", "Descubra 80 espécies na Pokédex", "Explore todos os mapas, de dia e de noite.", Metric.SPECIES_SEEN, null, 80, 10000, 5, "Ultra Ball", 5);
         q(6, "chefes10", "Terror dos Chefes", "Derrote 10 chefes", "Chefes têm pontos fixos de respawn e soltam gemas e pedras raras.", Metric.BOSS_KILLS, null, 10, 12000, 6, "Gema de Boost", 2);
@@ -136,6 +137,7 @@ public class MissionManager {
             case SPECIES_SEEN: return gv.bestiary.seenCount();
             case COMPANION_LEVEL: return gv.companion.getLevel();
             case PLAYER_LEVEL: return gv.player.getLevel();
+            case ENDLESS_BEST: return gv.tower.getEndlessBest();
             case TOWER: return gv.tower.getHighestCleared();
             case TALENTS: return TalentTree.spentPoints(gv.player);
             case RUNE: return gv.companion.getRune() != null ? 1 : 0;

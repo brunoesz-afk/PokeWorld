@@ -21,7 +21,10 @@ public class InputHandler {
     public InputHandler(GameView gv) {
         this.gv = gv;
         // Joystick em posição fixa no canto inferior esquerdo
-        this.joystick = new Joystick(250, 550, 140, 70);
+        // Joystick no canto inferior esquerdo, proporcional ao tamanho real da tela (antes era fixo em 250,550 pixels)
+        float sw = gv.getWidth(), sh = gv.getHeight();
+        float k = com.example.pokeworld.ui.handlers.ExploringUI.uiScale(sw, sh);
+        this.joystick = new Joystick((int) (250 * k), (int) (sh - 170 * k), (int) (140 * k), (int) (70 * k));
 
         handlers.put(UIManager.UIState.EXPLORING, new ExploringInput());
         handlers.put(UIManager.UIState.INVENTORY, new InventoryInput());

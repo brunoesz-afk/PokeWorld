@@ -9,8 +9,9 @@ public class MissionInput implements InputExtension {
     public boolean handle(float x, float y, GameView gv) {
         MissionUI ui = (MissionUI) gv.ui.getHandler(UIManager.UIState.MISSIONS);
         if (ui != null) {
-            if (ui.tabJourney.contains(x, y)) { ui.showDaily = false; return true; }
-            if (ui.tabDaily.contains(x, y)) { ui.showDaily = true; return true; }
+            if (ui.tabJourney.contains(x, y)) { ui.showDaily = false; ui.showEvents = false; return true; }
+            if (ui.tabDaily.contains(x, y)) { ui.showDaily = true; ui.showEvents = false; return true; }
+            if (ui.tabEvents.contains(x, y)) { ui.showEvents = true; ui.showDaily = false; return true; }
             if (ui.exitBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.EXPLORING; return true; }
             return true;
         }

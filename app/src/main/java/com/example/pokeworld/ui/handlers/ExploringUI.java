@@ -60,11 +60,21 @@ public class ExploringUI extends BaseUI {
     /** Posição de cada slot da troca rápida (linha horizontal centralizada no topo). Usada também pelo toque. */
     public final List<RectF> swapSlots = new ArrayList<>();
 
-    public static RectF partySlot(float screenW, int index, int count) {
-        float size = 84, gap = 10;
+    /** Fator de escala da interface (a tela é em pixels reais: 1.0 = 1280x720). */
+    public static float uiScale(float w, float h) { return Math.max(0.85f, Math.min(1.6f, Math.min(w / 1280f, h / 720f))); }
+
+    /**
+     * Linha da troca rápida: fica entre o painel do treinador (esquerda) e o botão do mapa + minimapa (direita),
+     * centralizada nesse espaço e encolhendo se o time for grande, para nunca encostar em nada.
+     */
+    public static RectF partySlot(float screenW, float screenH, int index, int count) {
+        float k = uiScale(screenW, screenH);
+        float left = 420 * k + 16 * k, right = screenW - (240 + 130) * k;
+        float gap = 8 * k;
+        float size = Math.min(84 * k, (right - left - gap * Math.max(0, count - 1)) / Math.max(1, count));
         float total = count * size + Math.max(0, count - 1) * gap;
-        float x = screenW / 2f - total / 2f + index * (size + gap);
-        return new RectF(x, 8, x + size, 8 + size);
+        float x = (left + right) / 2f - total / 2f + index * (size + gap);
+        return new RectF(x, 8 * k, x + size, 8 * k + size);
     }
 
     @Override
@@ -76,9 +86,9 @@ public class ExploringUI extends BaseUI {
         boolean isOnline = com.example.pokeworld.managers.MultiplayerManager.getInstance().isConnected();
         String serverStatus = isOnline ? "🟢 Servidor Online" : "🟡 Conectando ao Servidor...";
         paint.setColor(isOnline ? Color.GREEN : Color.YELLOW);
-        paint.setTextSize(16);
+        paint.setTextSize(14 * uiScale(canvas.getWidth(), canvas.getHeight()));
         paint.setTextAlign(Paint.Align.RIGHT);
-        canvas.drawText(serverStatus, canvas.getWidth() - 30, 45, paint);
+        canvas.drawText(serverStatus, canvas.getWidth() - 20, 22 * uiScale(canvas.getWidth(), canvas.getHeight()), paint);
         
         drawHUD(canvas, gv.companion, gv.player, gv);
         drawMinimap(canvas, gv);
@@ -93,18 +103,19 @@ public class ExploringUI extends BaseUI {
     }
 
     private void updateButtonPositions(int w, int h) {
-        float padding = 20;
-        float btnSize = 100;
-        float spacing = 10;
+        final float k = uiScale(w, h);
+        float padding = 20 * k;
+        float btnSize = 100 * k;
+        float spacing = 10 * k;
         
-        tacticBtn.set(20, h - 350, 140, h - 250);
+        tacticBtn.set(16 * k, h - 350 * k, 16 * k + 90 * k, h - 350 * k + 90 * k);   // fora do raio do joystick
         fishingBtn.set(w/2f - 60, h * 0.15f, w/2f + 60, h * 0.15f + 120);
 
         inventoryBtn.set(w - btnSize - padding, h - btnSize - padding, w - padding, h - padding);
         achBtn.set(w - (btnSize + spacing) * 2 + spacing - padding, h - btnSize - padding, w - btnSize - spacing - padding, h - padding);
         runesBtn.set(w - (btnSize + spacing) * 3 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 2 - padding, h - padding);
-        teleportBtn.set(w - (btnSize + spacing) * 4 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 3 - padding, h - padding);
-        towerBtn.set(w - (btnSize + spacing) * 5 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 4 - padding, h - padding);
+        // o botão do MAPA (bússola) agora é grande e fica ao lado do minimapa, no topo; a torre ocupa o lugar dele na fileira
+        towerBtn.set(w - (btnSize + spacing) * 4 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 3 - padding, h - padding);
 
         creaturesBtn.set(w - btnSize - padding, h - (btnSize + spacing) * 2 + spacing - padding, w - padding, h - btnSize - spacing - padding);
         missionsBtn.set(w - (btnSize + spacing) * 2 + spacing - padding, h - (btnSize + spacing) * 2 + spacing - padding, w - btnSize - spacing - padding, h - btnSize - spacing - padding);
@@ -122,18 +133,19 @@ public class ExploringUI extends BaseUI {
         
         trainerSkillsBtn.set(w - btnSize - padding, h - (btnSize + spacing) * 5 + spacing - padding, w - padding, h - (btnSize + spacing) * 4 - padding);
 
-        zoomInBtn.set(w - 220 - padding, padding + 260, w - 120 - padding, padding + 320);
-        zoomOutBtn.set(w - 110 - padding, padding + 260, w - padding, padding + 320);
-
-        minimapRect.set(w - 220 - padding, padding + 50, w - padding, padding + 250);
+        minimapRect.set(w - 220 * k - padding, 70 * k, w - padding, 70 * k + 200 * k);
+        zoomInBtn.set(minimapRect.left, minimapRect.bottom + 8 * k, minimapRect.left + 100 * k, minimapRect.bottom + 8 * k + 56 * k);
+        zoomOutBtn.set(minimapRect.right - 100 * k, minimapRect.bottom + 8 * k, minimapRect.right, minimapRect.bottom + 8 * k + 56 * k);
+        teleportBtn.set(minimapRect.left - 8 * k - 110 * k, minimapRect.top, minimapRect.left - 8 * k, minimapRect.top + 110 * k);
         
         interactBtn.set(w/2f - 150, h - 120, w/2f + 150, h - 40);
         captureBtn.set(w/2f - 150, h - 220, w/2f + 150, h - 140);
         constructBuildingBtn.set(w/2f - 150, h - 220, w/2f + 150, h - 140);
         
-        quickHealBtn.set(200, h - 150, 300, h - 50);
-        
-        dialogueBox.set(100, 450, w - 100, 620);
+        float healL = Math.max(405 * k, w / 2f - 150 * k - 80 * k - 16 * k);
+        quickHealBtn.set(healL, h - 120 * k, healL + 80 * k, h - 40 * k);   // ao lado do botão de interagir, fora do joystick
+
+        dialogueBox.set(100 * k, h * 0.62f, w - 100 * k, h * 0.86f);
     }
 
     private void updateFishingBarVisibility(GameView gv) {
@@ -181,7 +193,9 @@ public class ExploringUI extends BaseUI {
         drawButton(canvas, zoomInBtn, "+");
         drawButton(canvas, zoomOutBtn, "-");
         
-        RectF trainerPanel = new RectF(20, 20, 420, 260);
+        final float ks = uiScale(canvas.getWidth(), canvas.getHeight());
+        canvas.save(); canvas.scale(ks, ks);   // painel do treinador em coordenadas 1280x720
+        RectF trainerPanel = new RectF(20, 20, 420, 285);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.argb(180, 0, 0, 0));
         canvas.drawRoundRect(trainerPanel, 15, 15, paint);
@@ -211,14 +225,24 @@ public class ExploringUI extends BaseUI {
         canvas.drawText("🔴 " + p.getInventory().getOrDefault("Pokébola", 0), 280, 250, paint);
 
         paint.setColor(Color.LTGRAY); paint.setTextSize(16);
-        canvas.drawText(comp.getPassiveDescription(), 40, 275, paint);
+        canvas.drawText(fit(comp.getPassiveDescription(), 360), 40, 275, paint);
+        canvas.restore();
 
+        canvas.save(); canvas.scale(ks, ks);   // missões ativas logo ABAIXO do painel (antes escreviam por cima dele)
         drawQuestLog(canvas, p, gv);
+        canvas.restore();
 
         paint.setTextAlign(Paint.Align.RIGHT);
         paint.setColor(Color.argb(150, 0, 0, 0));
-        canvas.drawText(gv.time.getTimeString() + (gv.time.isNight() ? " 🌙" : " ☀️"), canvas.getWidth() - 40, 50, paint);
+        paint.setColor(Color.WHITE); paint.setTextSize(20 * uiScale(canvas.getWidth(), canvas.getHeight()));
+        canvas.drawText(gv.time.getTimeString() + (gv.time.isNight() ? " 🌙" : " ☀️"), canvas.getWidth() - 20, 50 * uiScale(canvas.getWidth(), canvas.getHeight()), paint);
         
+        {   // evento do dia (bônus semanal), logo abaixo do relógio
+            com.example.pokeworld.managers.EventCalendar.Event ev = com.example.pokeworld.managers.EventCalendar.today();
+            float kk = uiScale(canvas.getWidth(), canvas.getHeight());
+            paint.setColor(Color.rgb(255, 214, 120)); paint.setTextSize(15 * kk); paint.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText(ev.icon + " " + ev.name, canvas.getWidth() - 20, 70 * kk + 200 * kk + 56 * kk + 40 * kk, paint);
+        }
         if (gv.dungeon.isInDungeon()) {
             paint.setColor(Color.WHITE); paint.setTextSize(30); paint.setTextAlign(Paint.Align.CENTER);
             canvas.drawText("🏰 ANDAR: " + gv.dungeon.getCurrentFloor(), canvas.getWidth()/2f, 110, paint);
@@ -230,7 +254,7 @@ public class ExploringUI extends BaseUI {
         swapSlots.clear();
         for (int i = 0; i < party.size(); i++) {
             CapturedCreature c = party.get(i);
-            RectF slotRect = partySlot(w, i, party.size());
+            RectF slotRect = partySlot(w, canvas.getHeight(), i, party.size());
             swapSlots.add(slotRect);
             boolean isActive = c.name.equalsIgnoreCase(comp.getSpecies());
 
@@ -268,6 +292,8 @@ public class ExploringUI extends BaseUI {
         drawIcon(canvas, achBtn, "🏆");
         drawIcon(canvas, runesBtn, "🔷");
         drawIcon(canvas, teleportBtn, "🧭");
+        paint.setColor(Color.WHITE); paint.setTextSize(16 * uiScale(canvas.getWidth(), canvas.getHeight())); paint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText("MAPA", teleportBtn.centerX(), teleportBtn.bottom + 18 * uiScale(canvas.getWidth(), canvas.getHeight()), paint);
         drawIcon(canvas, towerBtn, "🗼");
         
         drawIcon(canvas, creaturesBtn, "🐾");
@@ -391,7 +417,7 @@ public class ExploringUI extends BaseUI {
         paint.setStyle(Paint.Style.FILL);
         paint.setTextAlign(Paint.Align.LEFT);
         paint.setTextSize(18);
-        int y = 170, shown = 0;
+        int y = 315, shown = 0;
         for (com.example.pokeworld.managers.MissionManager.Quest q : qs) {
             if (shown++ >= 3) break;
             int prog = Math.min(q.target, gv.missions.progress(q, gv));

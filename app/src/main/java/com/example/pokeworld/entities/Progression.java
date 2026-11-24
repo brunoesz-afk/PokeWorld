@@ -21,7 +21,7 @@ public final class Progression {
      * o nível do seu companheiro e o talento Domador ajudam.
      */
     public static double captureChance(int targetLevel, boolean boss, boolean shiny, int myLevel, double domadorBonus) {
-        double c = 0.60 - 0.01 * targetLevel + 0.004 * myLevel + domadorBonus;
+        double c = 0.60 - 0.01 * targetLevel + 0.004 * myLevel + domadorBonus + com.example.pokeworld.managers.EventCalendar.captureBonus();
         if (boss) c -= 0.30;
         if (shiny) c -= 0.15;
         if (targetLevel <= 1) c = Math.max(c, 0.90);   // Pokémon de nível 1 (tutorial) é fácil

@@ -14,6 +14,7 @@ import java.util.List;
 
 /** Seleção de andares da Torre: mapa de 20 andares com progresso à esquerda e detalhes/prêmios do andar à direita. */
 public class TowerSelectUI extends BaseUI {
+    public RectF endlessBtn = new RectF();
     public RectF exitBtn = new RectF();
     public RectF enterBtn = new RectF();
     public List<FloorCard> floorCards = new ArrayList<>();
@@ -99,6 +100,9 @@ public class TowerSelectUI extends BaseUI {
         if (TowerManager.rewardBoostGems(f) > 0)
             text(canvas, "💎 " + TowerManager.rewardBoostGems(f) + "x Gema de Boost", det.left + 24, y + 94, 22, Color.rgb(120, 200, 255), Paint.Align.LEFT, false);
 
+        endlessBtn.set(det.left + 24, det.bottom - 154, det.right - 24, det.bottom - 98);
+        boolean eu = gv.tower.isEndlessUnlocked();
+        actionButton(canvas, endlessBtn, eu ? "♾️ MODO INFINITO (recorde: andar " + gv.tower.getEndlessBest() + ")" : "♾️ INFINITO: conclua o andar 20", eu, Color.rgb(190, 120, 255));
         enterBtn.set(det.left + 24, det.bottom - 84, det.right - 24, det.bottom - 24);
         actionButton(canvas, enterBtn, unlocked ? "ENTRAR" : "BLOQUEADO", unlocked, C_GOOD);
     }
