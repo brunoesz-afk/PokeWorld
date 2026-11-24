@@ -66,7 +66,9 @@ public class RandomEventManager {
     private void trySpawnMerchant() {
         if (random.nextDouble() < 0.3) {
             if (travelingMerchant == null) {
-                travelingMerchant = new NPC("Mercador Viajante", "Tenho itens raros hoje!", TileMap.TILE_SIZE * 12, TileMap.TILE_SIZE * 8, NPC.Type.SHOPKEEPER);
+                travelingMerchant = new NPC("Mercador Viajante", "Tenho itens raros hoje!", TileMap.TILE_SIZE * com.example.pokeworld.world.CityDistricts.MERCHANT_TX, TileMap.TILE_SIZE * com.example.pokeworld.world.CityDistricts.MERCHANT_TY, NPC.Type.SHOPKEEPER);
+                travelingMerchant.setAction("SHOP");
+                travelingMerchant.setRole("✨ ITENS RAROS", android.graphics.Color.rgb(255, 214, 90));
                 gv.world.npcs.add(travelingMerchant);
                 gv.ui.showMessage("📢 Um Mercador Viajante chegou à cidade!");
             }

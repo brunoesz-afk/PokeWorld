@@ -35,6 +35,7 @@ public class InputHandler {
         handlers.put(UIManager.UIState.TRAINING, new TrainingInput());
         handlers.put(UIManager.UIState.TRADE, new TradeInput());
         handlers.put(UIManager.UIState.FRIENDS, new FriendsInput());
+        handlers.put(UIManager.UIState.COLISEUM, new ColiseumInput());
         handlers.put(UIManager.UIState.BOOSTLAB, new BoostLabInput());
         handlers.put(UIManager.UIState.FORGE, new ForgeInput());
         handlers.put(UIManager.UIState.TALENTS, new TalentInput());

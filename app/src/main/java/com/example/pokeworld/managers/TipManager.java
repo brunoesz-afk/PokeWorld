@@ -34,7 +34,8 @@ public class TipManager {
         TEXT.put("screen_MISSIONS", "Jornada: as missões do ato atual aparecem aqui. As recompensas são entregues sozinhas, e o próximo ato abre quando você termina este.");
         // mapas
         TEXT.put("map_HOME", "Esta é a sua BASE. Toque em 🔨 para construir. Pokémon da defesa andam por aqui, e invasões de tempos em tempos testam suas muralhas e torres.");
-        TEXT.put("map_CITY", "Cidade: fale com a Enfermeira para curar o time e com o Mercador para vender materiais.");
+        TEXT.put("map_CITY", "Cidade em distritos: Praça dos Eventos (centro), Cura e Mercado (norte), Coliseu (nordeste), Guilda de Missões (sudeste) e Mestres (sudoeste). Um \"!\" sobre o NPC indica novidade.");
+        TEXT.put("screen_COLISEUM", "Coliseu: reúne os desafios de combate (Torre, Torre Infinita, Ginásio e Bases Rivais) e mostra o bônus do dia.");
         TEXT.put("map_wild", "Mapa selvagem: os Pokémon só aparecem quando você chega perto, em pontos fixos. Depois que um cai, o ponto demora um pouco para renascer.");
         TEXT.put("map_SMALL_LAKE", "Um lago! Chegue perto da água e use a ação de pescar.");
         TEXT.put("map_VOLCANO", "Vulcão: há um chefe Charizard brilhante aqui. Leve Poções e uma runa antes de enfrentá-lo.");

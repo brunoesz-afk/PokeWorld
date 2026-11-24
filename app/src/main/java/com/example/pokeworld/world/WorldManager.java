@@ -171,13 +171,11 @@ public class WorldManager {
 
     private void spawnCityEntities() {
         double midX = (tileMap.getCols() * TileMap.TILE_SIZE) / 2.0, midY = (tileMap.getRows() * TileMap.TILE_SIZE) / 2.0;
-        npcs.add(new NPC("Enfermeira", "Deseja curar seus Pokémons?", midX - 150, midY - 150, NPC.Type.HEALER));
-        npcs.add(new NPC("Mercador", "Ouro por itens?", midX + 150, midY - 150, NPC.Type.SHOPKEEPER));
-        npcs.add(new NPC("Guarda Real", "Bem-vindo ao Reino!", midX, midY + 300, NPC.Type.GUARD));
+        CityDistricts.spawn(npcs);   // NPCs de cada distrito (Praça, Cura, Mercado, Coliseu, Guilda, Mestres)
         // Prédios da cidade em "quadras" fixas (cada prédio tem 10x10 tiles): longe das avenidas, da praça central e uns dos outros.
         // (Antes as linhas eram espaçadas por 225px e os prédios de 640px se sobrepunham.)
         final String[] slotName = {"Centro de Cura", "Loja", "Castelo", "Ginásio", "Mural de Caça"};
-        final double[][] slotPos = {{midX - 1200, midY - 950}, {midX + 400, midY - 950}, {midX + 400, midY + 200}, {midX - 1200, midY + 200}, {midX - 2150, midY + 190}};
+        final double[][] slotPos = {{midX - 1200, midY - 950}, {midX + 400, midY - 950}, {midX + 400, midY + 200}, {midX - 1200, midY + 200}, {midX + 1664, midY + 390}};   // Mural de Caça: no pátio da Guilda de Missões
         for (Map.Entry<String, BuildingData> entry : activity.dbHelper.getBuildings().entrySet()) {
             String name = entry.getKey();
             for (int i = 0; i < slotName.length; i++) {
@@ -383,6 +381,7 @@ public class WorldManager {
     public void update(Player p, Companion c, GameView gv) {
         if (tileMap.isPortal(p.getPositionX(), p.getPositionY())) handlePortal(p, c, gv);
         currentZoom += (targetZoom - currentZoom) * 0.05f;
+        if ("CITY".equals(tileMap.getMapName())) CityDistricts.update(p, gv);
 
         // Pontos de spawn: nasce/some conforme a distância do jogador (2x por segundo)
         long nowZ = System.currentTimeMillis();
@@ -629,9 +628,12 @@ public class WorldManager {
         long nowMs = System.currentTimeMillis();
         float vl = cameraX, vt = cameraY, vr = cameraX + sw / currentZoom, vb = cameraY + sh / currentZoom;
         if (tileMap != null) tileMap.draw(canvas, p, sw, sh, currentZoom);
+        boolean inCity = tileMap != null && "CITY".equals(tileMap.getMapName());
+        if (inCity) CityDistricts.drawGround(canvas, vl, vt, vr, vb);
         if (base != null) base.drawWorld(canvas, nowMs, vl, vt, vr, vb);
         for (Building b : buildings) b.draw(canvas, p);
         for (NPC n : npcs) n.draw(canvas);
+        if (inCity) CityDistricts.drawLabels(canvas, vl, vt, vr, vb);
         for (Loot l : loots) l.draw(canvas);
         for (Enemy e : enemies) e.draw(canvas);
 

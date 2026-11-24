@@ -251,6 +251,7 @@ public class ExploringInput implements InputExtension {
 
             for (NPC n : gv.world.npcs) {
                 if (n.isNearby(gv.player)) {
+                    if (!n.getAction().isEmpty()) { CityActions.run(gv, n.getAction()); return true; }
                     if (n.getName().contains("Trocas")) { gv.ui.state = UIManager.UIState.TRADE; return true; }
                     if (n.getName().contains("Boost")) { gv.ui.state = UIManager.UIState.BOOSTLAB; return true; }
                     if (n.getName().contains("Treino")) { gv.ui.state = UIManager.UIState.TRAINING; return true; }

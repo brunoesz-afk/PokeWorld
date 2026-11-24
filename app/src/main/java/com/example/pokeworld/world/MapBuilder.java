@@ -330,35 +330,9 @@ public final class MapBuilder {
         b.rect(top + 2, mc - 2, bot - 2, mc + 2, ROAD);
         b.rect(mr - 2, left + 2, mr + 2, right - 2, ROAD);
 
-        // Cantos: casas com telhado
-        b.house(top + 3, left + 4, 5);
-        b.house(top + 3, left + 11, 4);
-        b.house(top + 3, right - 8, 5);
-        b.house(top + 3, right - 14, 4);
-        b.house(bot - 6, left + 4, 5);
-        b.house(bot - 6, left + 11, 4);
-        b.house(bot - 6, right - 8, 5);
-        b.house(bot - 6, right - 14, 4);
-
         // Fontes (bacias 3x3 com água) ao norte e ao sul da praça
         b.rect(top + 4, mc - 1, top + 6, mc + 1, FOUNTAIN);
         b.rect(bot - 8, mc - 1, bot - 6, mc + 1, FOUNTAIN);
-
-        // Canteiros de flores e árvores decorativas dentro da muralha
-        for (int i = 0; i < 6; i++) {
-            int c = left + 5 + i * 3;
-            b.set(top + 9, c, FLOWERS);
-        }
-        b.rect(top + 8, left + 3, top + 10, left + 8, GRASS);
-        b.rect(top + 8, right - 8, top + 10, right - 3, GRASS);
-        b.rect(bot - 10, left + 3, bot - 8, left + 8, GRASS);
-        b.rect(bot - 10, right - 8, bot - 8, right - 3, GRASS);
-        b.rectOn(top + 8, left + 3, top + 10, left + 8, FLOWERS, GRASS);
-        b.rectOn(top + 8, right - 8, top + 10, right - 3, FLOWERS, GRASS);
-        b.rectOn(bot - 10, left + 3, bot - 8, left + 8, FLOWERS, GRASS);
-        b.rectOn(bot - 10, right - 8, bot - 8, right - 3, FLOWERS, GRASS);
-        b.set(top + 9, left + 5, TREE); b.set(top + 9, right - 5, TREE);
-        b.set(bot - 9, left + 5, TREE); b.set(bot - 9, right - 5, TREE);
 
         // Pilares ladeando as avenidas
         for (int i = 0; i < 3; i++) {
@@ -381,8 +355,40 @@ public final class MapBuilder {
         b.rectOn(mr - 6, mc - 8, mr + 8, mc + 8, STONE_PAVEMENT, TREE, FLOWERS, FOUNTAIN, PILLAR, GRASS);
         b.rectOn(mr - 2, left + 2, mr + 2, right - 2, ROAD, STONE_PAVEMENT);
         b.rectOn(top + 2, mc - 2, bot - 2, mc + 2, ROAD, STONE_PAVEMENT);
+        districts(b);
         b.set(mr + 3, mc + 6, SIGN);
         return b.g;
+    }
+
+    /**
+     * Distritos da cidade (ver CityDistricts): cada NPC ganha um tapete 5x3 para ficar "no seu espaço",
+     * o Coliseu ganha arena com tapete central, e cada distrito recebe pilares/braseiros nos cantos.
+     */
+    private static void districts(MapBuilder b) {
+        // Jardim do Quarteirão da Cura (noroeste)
+        b.rect(10, 16, 13, 22, GRASS);
+        b.rectOn(10, 16, 13, 22, FLOWERS, GRASS);
+        b.set(10, 16, TREE); b.set(10, 22, TREE);
+
+        // Coliseu: pavimento de arena, tapete central, pilares nos cantos e braseiros na entrada sul
+        b.rect(9, 70, 22, 85, STONE_PAVEMENT);
+        b.rect(12, 74, 18, 81, CARPET);
+        b.set(10, 71, PILLAR); b.set(10, 84, PILLAR); b.set(21, 71, PILLAR); b.set(21, 84, PILLAR);
+        b.set(10, 76, BRAZIER); b.set(10, 79, BRAZIER);
+
+        // Guilda de Missões: pátio com pilares e braseiros ladeando o Mural
+        b.rect(29, 70, 41, 85, STONE_PAVEMENT);
+        b.set(29, 71, PILLAR); b.set(29, 84, PILLAR); b.set(40, 71, PILLAR); b.set(40, 84, PILLAR);
+        b.set(30, 75, BRAZIER); b.set(30, 81, BRAZIER);
+
+        // Distrito dos Mestres: braseiros marcando o pátio da Forja e dos Clãs
+        b.set(30, 15, BRAZIER); b.set(40, 15, BRAZIER); b.set(30, 29, BRAZIER); b.set(40, 29, BRAZIER);
+
+        // Um tapete (5 de largura x 3 de altura) sob cada NPC
+        for (CityDistricts.Spot s : CityDistricts.SPOTS) {
+            int r = (int) Math.floor(s.ty), c = (int) Math.floor(s.tx);
+            b.rect(r - 1, c - 2, r + 1, c + 2, CARPET);
+        }
     }
 
     // ------------------------------------------------------------------

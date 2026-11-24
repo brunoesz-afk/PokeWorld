@@ -1,0 +1,12 @@
+-XDshould-stop.ifError=GENERATE
+-Xmaxerrs
+5000
+-d
+/tmp/out3
+-proc:none
+-sourcepath
+app/src/main/java:/tmp/shim:/tmp/shim2
+-cp
+/tmp/out3
+@/tmp/all.txt
+/tmp/citytest/com/example/pokeworld/world/CityCheck.java

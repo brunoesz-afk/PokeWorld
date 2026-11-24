@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 
 import com.example.pokeworld.managers.SpriteManager;
 
@@ -18,6 +19,10 @@ public class NPC {
     private Paint paint;
     private Type type;
     private QuestIcon questIcon = QuestIcon.NONE;
+    private String action = "";      // o que o NPC abre ao ser tocado (vazio = diálogo normal)
+    private String sprite = null;    // sprite fixo (sobrepõe o escolhido pelo nome/tipo)
+    private String role = "";        // etiqueta embaixo do NPC, ex.: "🎉 EVENTOS"
+    private int roleColor = Color.WHITE;
 
     public NPC(String name, String dialogue, double x, double y, Type type) {
         this.name = name;
@@ -48,6 +53,8 @@ public class NPC {
         else if (name.contains("Caçador")) spriteName = "prof_mural";
         else if (name.contains("Treino")) spriteName = "treinador_academia";
         
+        if (sprite != null) spriteName = sprite;
+
         // Pequena animação idle para os NPCs
         int frameIndex = (int)((System.currentTimeMillis() / 500) % 3);
         
@@ -59,6 +66,19 @@ public class NPC {
         
         // Desenha o nome acima do NPC
         canvas.drawText(name, (float)positionX, (float)positionY - (float)radius - 10, paint);
+
+        // Etiqueta de função embaixo dos pés
+        if (!role.isEmpty()) {
+            paint.setTextSize(20);
+            float tw = paint.measureText(role);
+            float ry = (float) positionY + (float) radius + 8;
+            paint.setColor(Color.argb(170, 0, 0, 0));
+            canvas.drawRoundRect(new RectF((float) positionX - tw / 2 - 12, ry, (float) positionX + tw / 2 + 12, ry + 30), 14, 14, paint);
+            paint.setColor(roleColor);
+            canvas.drawText(role, (float) positionX, ry + 22, paint);
+            paint.setColor(Color.WHITE);
+            paint.setTextSize(30);
+        }
 
         // Desenha Indicador de Missão
         if (questIcon != QuestIcon.NONE) {
@@ -77,6 +97,10 @@ public class NPC {
     }
 
     public void setQuestIcon(QuestIcon icon) { this.questIcon = icon; }
+    public void setAction(String a) { this.action = a == null ? "" : a; }
+    public String getAction() { return action; }
+    public void setSprite(String s) { this.sprite = s; }
+    public void setRole(String r, int color) { this.role = r == null ? "" : r; this.roleColor = color; }
 
     public boolean isNearby(Player player) {
         double distance = Math.sqrt(Math.pow(positionX - player.getPositionX(), 2) + 

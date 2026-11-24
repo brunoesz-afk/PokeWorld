@@ -384,11 +384,21 @@ public class ExploringUI extends BaseUI {
 
             for (NPC n : gv.world.npcs) {
                 if (n.isNearby(p)) {
-                    drawButton(canvas, interactBtn, "FALAR (" + n.getName() + ")");
+                    drawFittedButton(canvas, interactBtn, "FALAR (" + n.getName() + ")");
                     break;
                 }
             }
         }
+    }
+
+    /** Botão com o texto reduzido até caber (nomes longos de NPC). */
+    private void drawFittedButton(Canvas canvas, RectF b, String t) {
+        drawButton(canvas, b, "");
+        float size = 26;
+        paint.setTextSize(size);
+        while (size > 14 && paint.measureText(t) > b.width() - 24) { size -= 1; paint.setTextSize(size); }
+        paint.setStyle(Paint.Style.FILL); paint.setColor(Color.WHITE); paint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText(t, b.centerX(), b.centerY() + size * 0.38f, paint);
     }
 
     private void drawPokeBallButton(Canvas canvas, Player p) {
