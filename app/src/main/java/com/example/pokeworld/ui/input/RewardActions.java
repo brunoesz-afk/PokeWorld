@@ -54,6 +54,8 @@ public final class RewardActions {
             case RewardBar.JOURNEY: openMissions(gv, false, false); break;
             case RewardBar.ACH: gv.ui.state = UIManager.UIState.ACHIEVEMENTS; break;
             case RewardBar.RECHARGE: claimRecharge(gv); break;
+            case RewardBar.PASS: gv.ui.state = UIManager.UIState.PASS; break;
+            case RewardBar.SHOP: gv.ui.state = UIManager.UIState.POINTS_SHOP; break;
             case RewardBar.ALL: claimAll(gv); break;
             default: break;
         }

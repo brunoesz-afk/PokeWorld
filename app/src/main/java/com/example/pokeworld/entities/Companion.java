@@ -550,7 +550,10 @@ public class Companion {
 
         if (frame != null) {
             int r = 56; // Proporcional ao player (maior que antes)
-            canvas.drawBitmap(frame, null, new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r), null);
+            com.example.pokeworld.managers.SkinManager.Skin skin = com.example.pokeworld.ui.handlers.SkinFx.equipped(com.example.pokeworld.managers.SkinManager.Kind.POKEMON);
+            Paint sp = null;
+            if (skin != null) { sp = new Paint(); com.example.pokeworld.ui.handlers.SkinFx.apply(sp, skin); com.example.pokeworld.ui.handlers.SkinFx.aura(canvas, (float)positionX, (float)positionY + 8, 80, skin); }
+            canvas.drawBitmap(frame, null, new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r), sp);
             
             // Desenha Nome com cor do Gênero
             drawName(canvas);
@@ -610,7 +613,7 @@ public class Companion {
     }
 
     public void gainExp(int amount) {
-        this.exp += (int) Math.round(amount * (1.0 + talent("Estudioso") + (team != null ? team.xp : 0) + com.example.pokeworld.managers.EventCalendar.xpBonus()));
+        this.exp += (int) Math.round(amount * (1.0 + talent("Estudioso") + (team != null ? team.xp : 0) + com.example.pokeworld.managers.EventCalendar.xpBonus() + com.example.pokeworld.managers.PointsManager.vipXpBonus()));
         int nextLevelExp = Progression.expToNext(level);
         if (this.exp >= nextLevelExp) {
             this.exp -= nextLevelExp;

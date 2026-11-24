@@ -14,7 +14,7 @@ import com.example.pokeworld.managers.RewardManager;
  * Cada ícone mostra um selo vermelho com a quantidade pronta para reivindicar.
  */
 public class RewardBar {
-    public static final int GIFT = 0, EVENT = 1, DAILY = 2, JOURNEY = 3, ACH = 4, RECHARGE = 5, ALL = 6, COUNT = 7;
+    public static final int GIFT = 0, EVENT = 1, DAILY = 2, JOURNEY = 3, ACH = 4, RECHARGE = 5, PASS = 6, SHOP = 7, ALL = 8, COUNT = 9;
 
     private final RectF[] rects = new RectF[COUNT];
     private final Paint paint = new Paint();
@@ -69,7 +69,8 @@ public class RewardBar {
         rechargeLeft = RewardManager.rechargeSecondsLeft(st);
         badge[RECHARGE] = rechargeLeft == 0 ? 1 : 0;
         dailiesDone = gv.missions.dailiesDone();
-        pending = badge[GIFT] + badge[EVENT] + badge[DAILY] + badge[JOURNEY] + badge[ACH] + badge[RECHARGE];
+        badge[PASS] = com.example.pokeworld.managers.PassManager.readyCount(st);
+        pending = badge[GIFT] + badge[EVENT] + badge[DAILY] + badge[JOURNEY] + badge[ACH] + badge[RECHARGE] + badge[PASS];
         badge[ALL] = pending;
         eventIcon = EventCalendar.today().icon;
     }
@@ -79,8 +80,8 @@ public class RewardBar {
         float k = ExploringUI.uiScale(w, h);
         layout(w, h);
         refresh(gv);
-        String[] icons = {"🎁", eventIcon, "📅", "📖", "🏆", "🔋", "✨"};
-        String[] labels = {"Presente", "Evento", "Diárias", "Jornada", "Conquistas", "Recarga", "Coletar tudo"};
+        String[] icons = {"🎁", eventIcon, "📅", "📖", "🏆", "🔋", "🎟️", "💠", "✨"};
+        String[] labels = {"Presente", "Evento", "Diárias", "Jornada", "Conquistas", "Recarga", "Passe", "Loja", "Coletar tudo"};
         float pulse = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 260.0);
 
         for (int i = 0; i < COUNT; i++) {

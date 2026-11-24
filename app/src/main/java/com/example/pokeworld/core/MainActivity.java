@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
             android.widget.ProgressBar progressBar = findViewById(R.id.progressBar);
 
             dbHelper = new DatabaseHelper(this);
+            com.example.pokeworld.managers.PointsManager.init(dbHelper);
             com.example.pokeworld.managers.SupabaseManager.getInstance().loadSession(this);
 
             if (progressBar != null) progressBar.setProgress(30);

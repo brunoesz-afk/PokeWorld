@@ -58,7 +58,7 @@ public class RewardsUI extends BaseUI {
         boolean rech = RewardManager.rechargeReady(s);
         panel(canvas, b, C_PANEL, rech ? C_GOOD : C_LINE, rech ? 3 : 1);
         text(canvas, "🔋 RECARGA DE SUPRIMENTOS", b.left + 16, b.top + 34, 22, Color.WHITE, Paint.Align.LEFT, true);
-        wrap(canvas, "Cura o time e completa até " + RewardManager.POTION_CAP + " Poções e " + RewardManager.BALL_CAP + " Pokébolas. Disponível a cada 6 horas.",
+        wrap(canvas, "Cura o time e completa até " + RewardManager.POTION_CAP + " Poções e " + RewardManager.BALL_CAP + " Pokébolas. Disponível a cada " + (RewardManager.rechargeCooldown() / 3600) + " horas" + (com.example.pokeworld.managers.PointsManager.isVip() ? " (VIP 👑)." : "."),
                 b.left + 16, b.top + 62, b.width() - 32, 16, C_MUTED, 22);
         rechargeBtn.set(b.left + 16, b.bottom - 58, b.right - 16, b.bottom - 12);
         actionButton(canvas, rechargeBtn, rech ? "RECARREGAR" : "Próxima em " + RewardManager.countdown(RewardManager.rechargeSecondsLeft(s)), rech, C_GOOD);

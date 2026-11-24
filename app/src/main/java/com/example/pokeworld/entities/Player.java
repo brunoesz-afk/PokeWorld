@@ -237,14 +237,18 @@ public class Player {
             p.setColorFilter(new android.graphics.PorterDuffColorFilter(skinColor, android.graphics.PorterDuff.Mode.MULTIPLY));
         }
         
+        com.example.pokeworld.managers.SkinManager.Skin skin = com.example.pokeworld.ui.handlers.SkinFx.equipped(isMounted ? com.example.pokeworld.managers.SkinManager.Kind.POKEMON : com.example.pokeworld.managers.SkinManager.Kind.CHAR);
+        if (skin != null) com.example.pokeworld.ui.handlers.SkinFx.apply(p, skin);
+
         canvas.drawOval((float)positionX - 30, (float)positionY + 10, (float)positionX + 30, (float)positionY + 30, new Paint()); // Sombra fixa
+        com.example.pokeworld.ui.handlers.SkinFx.aura(canvas, (float)positionX, (float)positionY + 8, isMounted ? 110 : 90, skin);
 
         if (sprite != null) {
             int r = isMounted ? 80 : 64; // Montaria é maior
             canvas.drawBitmap(sprite, null, new android.graphics.Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r), p);
             
             p.setColor(Color.WHITE); p.setTextSize(24); p.setTextAlign(Paint.Align.CENTER); p.setFakeBoldText(true);
-            canvas.drawText("Treinador [Nv." + level + "]", (float)positionX, (float)positionY - r - 40, p);
+            canvas.drawText((com.example.pokeworld.managers.PointsManager.isVip() ? "👑 " : "") + "Treinador [Nv." + level + "]", (float)positionX, (float)positionY - r - 40, p);
             
             drawHealthBar(canvas, r);
         }

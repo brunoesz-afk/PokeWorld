@@ -113,13 +113,16 @@ public final class RewardManager {
     // ------------------------------------------------------------------ recarga de suprimentos
     public static final int RECHARGE_SECONDS = 6 * 3600, POTION_CAP = 5, BALL_CAP = 10;
 
-    private static int nowSec() { return (int) (clock.get().getTimeInMillis() / 1000L); }
+    static int nowSec() { return (int) (clock.get().getTimeInMillis() / 1000L); }
 
     public static int rechargeSecondsLeft(Store s) {
         int last = s.get("recharge_last", 0);
         if (last == 0) return 0;
-        return Math.max(0, last + RECHARGE_SECONDS - nowSec());
+        return Math.max(0, last + rechargeCooldown() - nowSec());
     }
+
+    /** VIP recarrega a cada 3 horas em vez de 6. */
+    public static int rechargeCooldown() { return PointsManager.isVip() ? RECHARGE_SECONDS / 2 : RECHARGE_SECONDS; }
 
     public static boolean rechargeReady(Store s) { return rechargeSecondsLeft(s) == 0; }
 
@@ -150,7 +153,7 @@ public final class RewardManager {
         if (giftReady(s)) n++;
         if (chestReady(s)) n++;
         if (rechargeReady(s)) n++;
-        n += gv.missions.readyJourneyCount() + gv.missions.readyDailyCount() + gv.achievements.readyCount();
+        n += gv.missions.readyJourneyCount() + gv.missions.readyDailyCount() + gv.achievements.readyCount() + PassManager.readyCount(s);
         return n;
     }
 
@@ -166,6 +169,7 @@ public final class RewardManager {
         n += gv.missions.claimAllQuests(gv);
         n += gv.missions.claimAllDailies(gv);
         n += gv.achievements.claimAll(gv);
+        n += PassManager.claimAll(gv, s);
         if (n > 0) gv.activity.saveCurrentGame();
         return n;
     }

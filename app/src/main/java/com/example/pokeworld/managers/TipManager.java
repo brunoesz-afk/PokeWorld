@@ -35,6 +35,8 @@ public class TipManager {
         // mapas
         TEXT.put("map_HOME", "Esta é a sua BASE. Toque em 🔨 para construir. Pokémon da defesa andam por aqui, e invasões de tempos em tempos testam suas muralhas e torres.");
         TEXT.put("map_CITY", "Cidade em distritos: Praça dos Eventos (centro), Cura e Mercado (norte), Coliseu (nordeste), Guilda de Missões (sudeste) e Mestres (sudoeste). Um \"!\" sobre o NPC indica novidade.");
+        TEXT.put("screen_PASS", "Passe da Temporada: complete as missões do passe, reivindique o XP e depois pegue a recompensa de cada nível. A trilha ⭐ premium custa 35 pontos e vale até o fim do mês.");
+        TEXT.put("screen_POINTS_SHOP", "Loja de Pontos: 1 real = 1 ponto. VIP (10 pts) dá bônus de XP/ouro e recarga mais rápida; o Passe (35 pts) libera a trilha premium; as skins são só visuais. Toque duas vezes para confirmar uma compra.");
         TEXT.put("screen_REWARDS", "Central de Recompensas: pegue o Presente Diário (7 dias seguidos, o 7º é o melhor), o Baú do Evento e a Recarga grátis de suprimentos. A barra de ícones no topo da cidade e da base avisa quando há algo para reivindicar.");
         TEXT.put("screen_COLISEUM", "Coliseu: reúne os desafios de combate (Torre, Torre Infinita, Ginásio e Bases Rivais) e mostra o bônus do dia.");
         TEXT.put("map_wild", "Mapa selvagem: os Pokémon só aparecem quando você chega perto, em pontos fixos. Depois que um cai, o ponto demora um pouco para renascer.");

@@ -1,171 +1,114 @@
 package com.example.pokeworld.ui.handlers;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
 import com.example.pokeworld.core.GameView;
-import com.example.pokeworld.entities.BuildingData;
-import com.example.pokeworld.entities.ItemCatalog;
-import com.example.pokeworld.entities.ShopCatalog;
+import com.example.pokeworld.managers.PassManager;
+import com.example.pokeworld.managers.PointsManager;
+import com.example.pokeworld.managers.RewardManager;
+import com.example.pokeworld.managers.SkinManager;
+import com.example.pokeworld.managers.SpriteManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-/** Mercado: abas COMPRAR / VENDER, lista rolável à esquerda e detalhe com quantidade à direita. */
+/** Loja de Pontos: VIP, Passe e skins (1 real = 1 ponto). */
 public class ShopUI extends BaseUI {
-    public static final int[] BUY_QTY = {1, 5, 10};
-    public static final int[] SELL_QTY = {1, 10, 0};   // 0 = tudo
+    public static final class SkinCard { public final RectF btn = new RectF(); public SkinManager.Skin skin; }
 
-    public boolean selling = false;
-    public int buyIndex = 0;
-    public String sellItem = null;
-    public int qtyIndex = 0;
-    public float scroll = 0, maxScroll = 0;
+    public final RectF exitBtn = new RectF(), depositBtn = new RectF(), vipBtn = new RectF(), passBtn = new RectF();
+    public final RectF[] tabs = {new RectF(), new RectF(), new RectF()};
+    public final List<SkinCard> skinCards = new ArrayList<>();
+    public int tab = 0;   // 0 acesso, 1 skins de Pokémon, 2 skins do personagem
 
-    public RectF exitBtn = new RectF(), listArea = new RectF(), actionBtn = new RectF(), scrapBtn = new RectF();
-    public List<RectF> tabRects = new ArrayList<>();
-    public List<RectF> qtyRects = new ArrayList<>();
-    public List<RectF> rowRects = new ArrayList<>();
-    public List<String> rowKeys = new ArrayList<>();   // buy: índice da oferta; sell: nome do item
-
-    public int shopLevel(GameView gv) {
-        Map<String, BuildingData> b = gv.activity.dbHelper.getBuildings();
-        return b.containsKey("Loja") ? b.get("Loja").level : 1;
-    }
-
-    public int qty(int owned) {
-        int[] set = selling ? SELL_QTY : BUY_QTY;
-        int q = set[Math.min(qtyIndex, set.length - 1)];
-        return q == 0 ? owned : q;
-    }
+    private static final int GOLD = Color.rgb(255, 214, 90), BLUE = Color.rgb(120, 190, 255);
 
     @Override
     public void draw(Canvas canvas, GameView gv) {
         float w = canvas.getWidth(), h = canvas.getHeight();
-        int shopLv = shopLevel(gv);
-        int disc = gv.kingdom.getShopDiscount(shopLv);
-        drawHeader(canvas, "🛒 MERCADO", "Seu ouro: " + gv.player.getGold() + " 🪙   •   Loja nível " + shopLv + (disc > 0 ? "  (desconto de " + disc + " 🪙 nas poções)" : ""), exitBtn);
+        RewardManager.Store s = PointsManager.store();
+        drawHeader(canvas, "💠 LOJA DE PONTOS", "1 real = 1 ponto  •  VIP, Passe e skins (só visual, nenhuma dá vantagem em combate)", exitBtn);
 
-        // dica de dinheiro que muda a cada 7s, no rodapé
-        final String[] tips = {
-            "💡 Ouro é raro: faça as missões diárias 📅 e as expedições 🎒 todo dia.",
-            "💡 Madeira, Ferro, Pedra, Fruta e Pelo não são vendidos de propósito: a base precisa deles.",
-            "💡 Prefira Frutas e Peixes para curar quando puder: Poções custam 50 🪙.",
-            "💡 A Loja do reino (nível maior) dá desconto nas Poções.",
-            "💡 Great/Ultra Ball valem a pena só para chefes e Pokémon raros.",
-            "💡 Sábado: invasões pagam mais e expedições levam metade do tempo.",
-            "💡 A Gema de Boost (1500 🪙) rende mais que várias Poções: use em quem você mais usa."};
-        paint.setStyle(Paint.Style.FILL);
-        text(canvas, tips[(int) ((System.currentTimeMillis() / 7000) % tips.length)], w / 2f, h - 6, 15, C_MUTED, Paint.Align.CENTER, false);
+        float y = 116, gap = 10;
+        depositBtn.set(w - 30 - 330, y, w - 30, y + 56);
+        text(canvas, "💠 " + PointsManager.balance(s) + " pontos", 30, y + 40, 34, BLUE, Paint.Align.LEFT, true);
+        if (PointsManager.TEST_MODE) actionButton(canvas, depositBtn, "+" + PointsManager.TEST_GRANT + " pts (TESTE)", true, Color.rgb(255, 150, 90));
+        else actionButton(canvas, depositBtn, "DEPOSITAR (em breve)", false, C_ACCENT);
 
-        // abas
-        tabRects.clear();
-        String[] tabs = {"COMPRAR", "VENDER"};
-        for (int i = 0; i < 2; i++) {
-            RectF r = new RectF(30 + i * 190, 118, 30 + i * 190 + 180, 160);
-            tabRects.add(r);
-            chip(canvas, r, tabs[i], (i == 1) == selling, C_ACCENT);
+        float ty = 186, tw = Math.min(280, (w - 60 - 2 * gap) / 3f);
+        String[] names = {"⭐ VIP e Passe", "🐾 Skins de Pokémon", "🧑 Skins do Personagem"};
+        for (int i = 0; i < 3; i++) {
+            tabs[i].set(30 + i * (tw + gap), ty, 30 + i * (tw + gap) + tw, ty + 44);
+            chip(canvas, tabs[i], names[i], tab == i, C_ACCENT);
         }
 
-        listArea.set(30, 174, w * 0.56f, h - 24);
-        panel(canvas, listArea, Color.argb(120, 10, 16, 28), C_LINE, 2);
-        RectF det = new RectF(listArea.right + 18, 174, w - 30, h - 24);
-        panel(canvas, det, C_PANEL, C_LINE, 2);
-        rowRects.clear(); rowKeys.clear(); qtyRects.clear(); scrapBtn.setEmpty(); actionBtn.setEmpty();
-
-        List<String> keys = new ArrayList<>();
-        if (selling) keys.addAll(ShopCatalog.sellable(gv.player.getInventory()));
-        else for (int i = 0; i < ShopCatalog.BUY.size(); i++) keys.add(String.valueOf(i));
-
-        if (selling) {
-            if (sellItem == null || !keys.contains(sellItem)) sellItem = keys.isEmpty() ? null : keys.get(0);
-        } else {
-            buyIndex = Math.max(0, Math.min(ShopCatalog.BUY.size() - 1, buyIndex));
-        }
-
-        // --- lista ---
-        if (keys.isEmpty()) {
-            text(canvas, "Nada para vender por enquanto.", listArea.centerX(), listArea.centerY() - 8, 24, C_MUTED, Paint.Align.CENTER, false);
-            text(canvas, "Materiais dropam dos Pokémon que você derrota.", listArea.centerX(), listArea.centerY() + 26, 18, C_MUTED, Paint.Align.CENTER, false);
-        } else {
-            float rowH = 84, gap = 8, pad = 12;
-            float content = pad * 2 + keys.size() * (rowH + gap) - gap;
-            maxScroll = Math.max(0, content - listArea.height());
-            scroll = Math.max(0, Math.min(maxScroll, scroll));
-            canvas.save();
-            canvas.clipRect(listArea);
-            for (int i = 0; i < keys.size(); i++) {
-                String key = keys.get(i);
-                String name = selling ? key : ShopCatalog.BUY.get(Integer.parseInt(key)).name;
-                int price = selling ? ShopCatalog.sellPrice(name) : ShopCatalog.buyPrice(ShopCatalog.BUY.get(Integer.parseInt(key)), gv.kingdom, shopLv);
-                int owned = gv.player.getInventory().getOrDefault(name, 0);
-                float y = listArea.top + pad + i * (rowH + gap) - scroll;
-                RectF r = new RectF(listArea.left + pad, y, listArea.right - pad - 10, y + rowH);
-                rowRects.add(r); rowKeys.add(key);
-                if (r.bottom < listArea.top || r.top > listArea.bottom) continue;
-                boolean sel = selling ? key.equals(sellItem) : i == buyIndex;
-                boolean afford = selling || gv.player.getGold() >= price;
-                panel(canvas, r, sel ? C_PANEL_HI : C_PANEL, sel ? Color.WHITE : C_LINE, sel ? 4 : 2);
-                text(canvas, ItemCatalog.get(name).icon, r.left + 38, r.centerY() + 14, 40, Color.WHITE, Paint.Align.CENTER, false);
-                paint.setTextSize(24);
-                text(canvas, fit(name, r.width() - 250), r.left + 80, r.top + 36, 24, Color.WHITE, Paint.Align.LEFT, true);
-                text(canvas, "Você tem: " + owned, r.left + 80, r.top + 64, 17, C_MUTED, Paint.Align.LEFT, false);
-                text(canvas, price + " 🪙", r.right - 16, r.centerY() + 9, 26, afford ? Color.rgb(255, 214, 90) : C_BAD, Paint.Align.RIGHT, true);
-            }
-            canvas.restore();
-            scrollbar(canvas, listArea, scroll, maxScroll);
-        }
-
-        // --- detalhe ---
-        String name = null; int price = 0; String desc = "";
-        if (selling && sellItem != null) { name = sellItem; price = ShopCatalog.sellPrice(name); desc = ItemCatalog.get(name).desc; }
-        else if (!selling) { ShopCatalog.Offer o = ShopCatalog.BUY.get(buyIndex); name = o.name; price = ShopCatalog.buyPrice(o, gv.kingdom, shopLv); desc = o.desc; }
-        if (name == null) return;
-
-        int owned = gv.player.getInventory().getOrDefault(name, 0);
-        text(canvas, ItemCatalog.get(name).icon, det.left + 54, det.top + 78, 64, Color.WHITE, Paint.Align.CENTER, false);
-        paint.setTextSize(28);
-        text(canvas, fit(name, det.width() - 130), det.left + 104, det.top + 56, 28, Color.WHITE, Paint.Align.LEFT, true);
-        text(canvas, selling ? "Mercador paga " + price + " 🪙 cada" : price + " 🪙 cada", det.left + 104, det.top + 86, 19, Color.rgb(255, 214, 90), Paint.Align.LEFT, false);
-        float y = wrap(canvas, desc, det.left + 24, det.top + 132, det.width() - 48, 18, Color.rgb(210, 216, 230), 25);
-        text(canvas, "Na mochila: " + owned, det.left + 24, y + 12, 19, C_ACCENT, Paint.Align.LEFT, true);
-
-        // quantidade
-        int[] set = selling ? SELL_QTY : BUY_QTY;
-        float qy = det.bottom - 250, qw = (det.width() - 48 - 16) / 3f;
-        text(canvas, "Quantidade", det.left + 24, qy - 10, 16, C_MUTED, Paint.Align.LEFT, true);
-        for (int i = 0; i < set.length; i++) {
-            RectF r = new RectF(det.left + 24 + i * (qw + 8), qy, det.left + 24 + i * (qw + 8) + qw, qy + 44);
-            qtyRects.add(r);
-            chip(canvas, r, set[i] == 0 ? "TUDO" : "x" + set[i], i == Math.min(qtyIndex, set.length - 1), C_ACCENT);
-        }
-
-        int q = qty(owned);
-        int total = price * q;
-        boolean can = selling ? owned > 0 && q > 0 : gv.player.getGold() >= price;
-        if (!selling) q = Math.max(1, Math.min(q, price > 0 ? Math.max(1, gv.player.getGold() / price) : q));   // compra o que dá, no máximo o pedido
-        total = price * q;
-        text(canvas, selling ? "Total: +" + total + " 🪙" : "Total: " + total + " 🪙", det.centerX(), qy + 84, 24, selling ? C_GOOD : (can ? Color.rgb(255, 214, 90) : C_BAD), Paint.Align.CENTER, true);
-        actionBtn.set(det.left + 24, det.bottom - 150, det.right - 24, det.bottom - 90);
-        String label = selling ? (can ? "VENDER " + q : "NADA PARA VENDER") : (can ? "COMPRAR " + q : "OURO INSUFICIENTE");
-        actionButton(canvas, actionBtn, label, can, selling ? Color.rgb(120, 200, 140) : C_ACCENT);
-        if (selling) {
-            scrapBtn.set(det.left + 24, det.bottom - 76, det.right - 24, det.bottom - 24);
-            int scrap = scrapValue(gv);
-            actionButton(canvas, scrapBtn, scrap > 0 ? "VENDER SUCATA (+" + scrap + " 🪙)" : "SEM SUCATA", scrap > 0, Color.rgb(240, 190, 90));
-        }
+        skinCards.clear();
+        float top = ty + 44 + 16;
+        if (tab == 0) drawAccess(canvas, s, w, h, top);
+        else drawSkins(canvas, gv, s, w, h, top, tab == 1 ? SkinManager.Kind.POKEMON : SkinManager.Kind.CHAR);
     }
 
-    /** Quanto rende vender tudo o que não é de construção/oficina. */
-    public int scrapValue(GameView gv) {
-        int t = 0;
-        for (Map.Entry<String, Integer> e : gv.player.getInventory().entrySet()) {
-            if (ShopCatalog.isKept(e.getKey())) continue;
-            t += ShopCatalog.sellPrice(e.getKey()) * Math.max(0, e.getValue());
+    private void drawAccess(Canvas canvas, RewardManager.Store s, float w, float h, float top) {
+        float gap = 14, cw = (w - 60 - gap) / 2f, ch = Math.min(400, h - top - 24);
+        RectF a = new RectF(30, top, 30 + cw, top + ch), b = new RectF(a.right + gap, top, w - 30, top + ch);
+
+        boolean vip = PointsManager.isVip(s);
+        panel(canvas, a, C_PANEL, vip ? C_GOOD : GOLD, 3);
+        text(canvas, "👑 VIP — 30 dias", a.left + 20, a.top + 44, 28, Color.WHITE, Paint.Align.LEFT, true);
+        text(canvas, PointsManager.PRICE_VIP + " pontos", a.left + 20, a.top + 80, 22, GOLD, Paint.Align.LEFT, true);
+        String[] vb = {"• +10% de XP para o time", "• +10% de ouro nos abates", "• Recarga de suprimentos a cada 3h (em vez de 6h)", "• Coroa 👑 no nome do treinador", "• Renovar soma +30 dias ao que sobrou"};
+        for (int i = 0; i < vb.length; i++) text(canvas, fit2(vb[i], a.width() - 40), a.left + 20, a.top + 118 + i * 30, 18, C_MUTED, Paint.Align.LEFT, false);
+        text(canvas, vip ? "✔ VIP ativo: restam " + PointsManager.vipText(s) : "VIP inativo", a.left + 20, a.bottom - 84, 19, vip ? C_GOOD : C_MUTED, Paint.Align.LEFT, true);
+        vipBtn.set(a.left + 20, a.bottom - 66, a.right - 20, a.bottom - 14);
+        actionButton(canvas, vipBtn, vip ? "RENOVAR +30 DIAS" : "COMPRAR VIP", true, GOLD);
+
+        boolean prem = PassManager.premium(s);
+        panel(canvas, b, C_PANEL, prem ? C_GOOD : GOLD, 3);
+        text(canvas, "🎟️ Passe Premium — temporada", b.left + 20, b.top + 44, 28, Color.WHITE, Paint.Align.LEFT, true);
+        text(canvas, PointsManager.PRICE_PASS + " pontos", b.left + 20, b.top + 80, 22, GOLD, Paint.Align.LEFT, true);
+        String[] pb = {"• 30 níveis com recompensas em dobro", "• Pokébolas melhores, gemas e Gemas de Boost", "• 3 skins exclusivas (níveis 10, 20 e 30)", "• Vale até o fim do mês (faltam " + PassManager.daysLeft() + " dias)", "• Missões do passe são grátis para todos"};
+        for (int i = 0; i < pb.length; i++) text(canvas, fit2(pb[i], b.width() - 40), b.left + 20, b.top + 118 + i * 30, 18, C_MUTED, Paint.Align.LEFT, false);
+        text(canvas, prem ? "✔ Passe premium ativo (nível " + PassManager.level(s) + ")" : "Passe premium não comprado", b.left + 20, b.bottom - 84, 19, prem ? C_GOOD : C_MUTED, Paint.Align.LEFT, true);
+        passBtn.set(b.left + 20, b.bottom - 66, b.right - 20, b.bottom - 14);
+        actionButton(canvas, passBtn, prem ? "ABRIR PASSE" : "COMPRAR PASSE", true, GOLD);
+    }
+
+    private String fit2(String t, float maxW) { paint.setTextSize(18); return fit(t, maxW); }
+
+    private void drawSkins(Canvas canvas, GameView gv, RewardManager.Store s, float w, float h, float top, SkinManager.Kind kind) {
+        List<SkinManager.Skin> list = SkinManager.of(kind);
+        int cols = 4, rows = 2;
+        float gap = 12, cw = (w - 60 - (cols - 1) * gap) / cols, ch = Math.min(260, (h - top - 20 - gap) / rows);
+        SkinManager.Skin eq = SkinManager.equipped(s, kind);
+        String species = kind == SkinManager.Kind.POKEMON && gv.companion != null ? gv.companion.getSpecies() : "personagem";
+        Bitmap sprite = SpriteManager.getInstance().getUnitSprite(species, 0, 1, false);
+        for (int i = 0; i < list.size() && i < cols * rows; i++) {
+            SkinManager.Skin k = list.get(i);
+            float x = 30 + (i % cols) * (cw + gap), y = top + (i / cols) * (ch + gap);
+            RectF r = new RectF(x, y, x + cw, y + ch);
+            boolean own = SkinManager.owned(s, k), on = eq == k;
+            panel(canvas, r, C_PANEL, on ? C_GOOD : own ? C_ACCENT : C_LINE, on ? 4 : 2);
+
+            float pr = Math.min(52, ch * 0.2f), cx = r.centerX(), cy = r.top + 14 + pr;
+            SkinFx.aura(canvas, cx, cy + pr * 0.4f, pr * 1.4f, k);
+            if (sprite != null) {
+                Paint sp = new Paint(); SkinFx.apply(sp, k);
+                canvas.drawBitmap(sprite, null, new android.graphics.Rect((int) (cx - pr), (int) (cy - pr), (int) (cx + pr), (int) (cy + pr)), sp);
+            }
+            paint.setTextSize(20);
+            text(canvas, fit(k.icon + " " + k.name, cw - 20), cx, r.top + 14 + pr * 2 + 26, 20, Color.WHITE, Paint.Align.CENTER, true);
+            String info = !k.forSale() ? k.source : own ? "Você tem" : k.price + " pontos";
+            text(canvas, info, cx, r.top + 14 + pr * 2 + 50, 16, own ? C_GOOD : k.forSale() ? GOLD : Color.rgb(150, 230, 255), Paint.Align.CENTER, false);
+
+            SkinCard sc = new SkinCard(); sc.skin = k; sc.btn.set(r.left + 12, r.bottom - 50, r.right - 12, r.bottom - 12); skinCards.add(sc);
+            if (on) pillButton(canvas, sc.btn, "EQUIPADA (tirar)", C_GOOD, 17);
+            else if (own) pillButton(canvas, sc.btn, "EQUIPAR", C_ACCENT, 18);
+            else if (k.forSale()) pillButton(canvas, sc.btn, "COMPRAR", BLUE, 18);
+            else pillButton(canvas, sc.btn, "🔒 NO PASSE", Color.rgb(90, 98, 114), 17);
         }
-        return t;
     }
 }

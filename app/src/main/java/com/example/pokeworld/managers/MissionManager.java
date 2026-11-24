@@ -124,6 +124,7 @@ public class MissionManager {
     public void count(Metric m) {
         if (db == null) return;
         db.setKv("stat_" + m.name(), db.getKv("stat_" + m.name(), 0) + 1);
+        PassManager.onMetric(m);
     }
 
     private boolean isDone(Quest q) { return db != null && db.getKv("quest_" + q.id, 0) == 1; }
