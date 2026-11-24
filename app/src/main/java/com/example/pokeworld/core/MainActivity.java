@@ -380,6 +380,7 @@ public class MainActivity extends AppCompatActivity {
         
         if (c != null) {
             // Salva os dados específicos do pet ativo
+            com.example.pokeworld.managers.PartyManager.storeHp(gameView, c.getSpecies(), c.getHp());
             dbHelper.savePet(
                 c.getSpecies(),
                 c.getLevel(),

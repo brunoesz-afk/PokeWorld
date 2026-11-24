@@ -27,6 +27,7 @@ public class TutorialManager {
         CLICK_COMPASS_TUTORIAL,
         NURSE_JOY_FAINT_DIALOGUE,
         NURSE_JOY_HEALED_DIALOGUE,
+        FAINT_INFO_DIALOGUE,
         FINISHED
     }
 
@@ -63,7 +64,7 @@ public class TutorialManager {
             gv.tower.startTower();
             gv.ui.showMessage("🏰 Bem-vindo à Torre de Desafios!");
         } else if (currentState == State.NURSE_JOY_FAINT_DIALOGUE) {
-            gv.companion.healFull();
+            PartyManager.healAll(gv);
             gv.world.loadMap("CITY", gv.player, gv.companion, "CENTER");
             currentState = State.NURSE_JOY_HEALED_DIALOGUE;
             gv.ui.isDialogueActive = true;
@@ -75,6 +76,9 @@ public class TutorialManager {
             gv.ui.currentSpeaker = "Prof. Invocador";
             gv.ui.currentDialogue = "Excelente! Agora que seus Pokémons estão curados, toque no ícone da Bússola (🧭) no menu inferior para escolher os mapas de exploração do mundo aberto!";
         } else if (currentState == State.CLICK_COMPASS_TUTORIAL) {
+            currentState = State.FINISHED;
+            gv.ui.isDialogueActive = false;
+        } else if (currentState == State.FAINT_INFO_DIALOGUE) {
             currentState = State.FINISHED;
             gv.ui.isDialogueActive = false;
         }
@@ -147,21 +151,24 @@ public class TutorialManager {
             }
         }
 
-        // Checagem de primeiro desmaio do Pokémon em batalha
-        if (gv.companion != null && gv.companion.getHp() <= 0 && !hasExperiencedFaint) {
-            onPetFainted();
-        }
     }
 
+    /**
+     * Primeiro desmaio de um Pokémon: explica uma única vez (salvo no banco) como funciona.
+     * Nas próximas vezes não aparece nada — o jogo só troca o Pokémon sozinho.
+     */
     public void onPetFainted() {
-        if (!hasExperiencedFaint) {
-            hasExperiencedFaint = true;
-            currentState = State.NURSE_JOY_FAINT_DIALOGUE;
-            gv.ui.isDialogueActive = true;
-            gv.ui.currentSpeaker = "Prof. Invocador";
-            gv.ui.currentDialogue = "Oh não! O seu Pokémon ficou sem forças e foi derrotado em batalha!\n" +
-                    "Quando isso acontecer, você deve ir imediatamente até o Centro de Cura na Cidade falar com a Enfermeira Joy!";
-        }
+        if (hasExperiencedFaint || gv.activity.dbHelper.getKv("tut_faint", 0) == 1) { hasExperiencedFaint = true; return; }
+        if (isTutorialActive()) return;
+        hasExperiencedFaint = true;
+        gv.activity.dbHelper.setKv("tut_faint", 1);
+        currentState = State.FAINT_INFO_DIALOGUE;
+        gv.ui.isDialogueActive = true;
+        gv.ui.currentSpeaker = "Prof. Invocador";
+        gv.ui.currentDialogue = "Seu Pokémon ficou sem forças e voltou para a Pokébola!\n" +
+                "Se ainda houver outro Pokémon com vida no seu time, ele entra na luta na hora. " +
+                "Se o time inteiro desmaiar, você é levado ao Centro de Cura e a Enfermeira Joy cuida de todos. " +
+                "Por isso, leve até 6 Pokémon no time!";
     }
 
     public void onCompassClicked() {

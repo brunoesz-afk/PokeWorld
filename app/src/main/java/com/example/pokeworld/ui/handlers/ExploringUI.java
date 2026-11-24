@@ -58,11 +58,13 @@ public class ExploringUI extends BaseUI {
     private boolean isFishingBarVisible = false;
 
     /** Posição de cada slot da troca rápida (linha horizontal centralizada no topo). Usada também pelo toque. */
+    public final List<RectF> swapSlots = new ArrayList<>();
+
     public static RectF partySlot(float screenW, int index, int count) {
-        float size = 58, gap = 8;
+        float size = 84, gap = 10;
         float total = count * size + Math.max(0, count - 1) * gap;
         float x = screenW / 2f - total / 2f + index * (size + gap);
-        return new RectF(x, 10, x + size, 10 + size);
+        return new RectF(x, 8, x + size, 8 + size);
     }
 
     @Override
@@ -216,9 +218,11 @@ public class ExploringUI extends BaseUI {
         // --- TROCA RÁPIDA DE POKÉMON: linha horizontal no topo, perto do meio da tela ---
         float w = canvas.getWidth();
         List<CapturedCreature> party = p.getParty();
+        swapSlots.clear();
         for (int i = 0; i < party.size(); i++) {
             CapturedCreature c = party.get(i);
             RectF slotRect = partySlot(w, i, party.size());
+            swapSlots.add(slotRect);
             boolean isActive = c.name.equalsIgnoreCase(comp.getSpecies());
 
             paint.setStyle(Paint.Style.FILL);
@@ -232,6 +236,13 @@ public class ExploringUI extends BaseUI {
             Bitmap icon = SpriteManager.getInstance().getUnitSprite(c.name, 0, 0, c.isShiny);
             if (icon != null) {
                 canvas.drawBitmap(icon, null, new Rect((int) slotRect.left + 4, (int) slotRect.top + 4, (int) slotRect.right - 4, (int) slotRect.bottom - 4), null);
+            }
+            if (com.example.pokeworld.managers.PartyManager.isFainted(gv, c)) {   // desmaiado: escurece e mostra a caveira
+                paint.setStyle(Paint.Style.FILL);
+                paint.setColor(Color.argb(170, 0, 0, 0));
+                canvas.drawRoundRect(slotRect, 12, 12, paint);
+                paint.setColor(Color.WHITE); paint.setTextSize(36); paint.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText("💀", slotRect.centerX(), slotRect.centerY() + 13, paint);
             }
             if (isActive) { // barra de vida do Pokémon ativo embaixo do slot
                 float f = Math.max(0f, Math.min(1f, (float) comp.getHp() / Math.max(1, comp.getMaxHp())));

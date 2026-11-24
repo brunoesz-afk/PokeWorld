@@ -28,7 +28,7 @@ public class HomeManager {
     }
 
     public void rest() {
-        gv.companion.healFull();
+        com.example.pokeworld.managers.PartyManager.healAll(gv);
         gv.ui.showMessage("💤 Você descansou. HP e Fúria restaurados!");
         gv.vibration.vibrate(100);
     }

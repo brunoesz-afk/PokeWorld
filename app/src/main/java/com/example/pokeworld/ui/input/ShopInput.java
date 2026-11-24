@@ -1,76 +1,93 @@
 package com.example.pokeworld.ui.input;
 
 import com.example.pokeworld.core.GameView;
-import com.example.pokeworld.entities.BuildingData;
+import com.example.pokeworld.entities.ShopCatalog;
 import com.example.pokeworld.ui.UIManager;
 import com.example.pokeworld.ui.handlers.ShopUI;
 
-import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-public class ShopInput implements InputExtension {
+public class ShopInput extends TapScrollInput {
     @Override
-    public boolean handle(float x, float y, GameView gv) {
-        Map<String, BuildingData> buildings = gv.activity.dbHelper.getBuildings();
-        int shopLv = buildings.containsKey("Loja") ? buildings.get("Loja").level : 1;
+    protected void onScroll(float x, float y, float dy, GameView gv) {
         ShopUI ui = (ShopUI) gv.ui.getHandler(UIManager.UIState.SHOP);
+        if (ui != null && ui.listArea.contains(x, y)) ui.scroll = Math.max(0, Math.min(ui.maxScroll, ui.scroll - dy));
+    }
 
-        if (ui.buyPotionBtn.contains(x, y)) buy(gv, "Poção", gv.kingdom.calculateDiscountedPrice(50, shopLv));
-        else if (ui.buyCrystalBtn.contains(x, y)) buy(gv, "Cristal", gv.kingdom.calculateDiscountedPrice(200, shopLv));
-        else if (ui.buyBallBtn.contains(x, y)) buy(gv, "Pokébola", 100);
-        else if (ui.buyGreatBallBtn.contains(x, y)) buy(gv, "Great Ball", 300);
-        else if (ui.buyUltraBallBtn.contains(x, y)) buy(gv, "Ultra Ball", 800);
-        else if (ui.buySmokeBtn.contains(x, y)) buy(gv, "Bomba Fumaça", 100);
-        else if (ui.sellBtn.contains(x, y)) sellAllMaterials(gv);
-        else gv.ui.state = UIManager.UIState.EXPLORING;
+    @Override
+    protected boolean onTap(float x, float y, GameView gv) {
+        ShopUI ui = (ShopUI) gv.ui.getHandler(UIManager.UIState.SHOP);
+        if (ui == null) return false;
+        if (ui.exitBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.EXPLORING; return true; }
+
+        for (int i = 0; i < ui.tabRects.size(); i++) {
+            if (ui.tabRects.get(i).contains(x, y)) {
+                boolean sell = i == 1;
+                if (sell != ui.selling) { ui.selling = sell; ui.qtyIndex = 0; ui.scroll = 0; }
+                return true;
+            }
+        }
+        if (ui.listArea.contains(x, y)) {
+            for (int i = 0; i < ui.rowRects.size(); i++) {
+                if (!ui.rowRects.get(i).contains(x, y)) continue;
+                if (ui.selling) ui.sellItem = ui.rowKeys.get(i); else ui.buyIndex = Integer.parseInt(ui.rowKeys.get(i));
+                return true;
+            }
+            return true;
+        }
+        for (int i = 0; i < ui.qtyRects.size(); i++) {
+            if (ui.qtyRects.get(i).contains(x, y)) { ui.qtyIndex = i; return true; }
+        }
+        if (!ui.scrapBtn.isEmpty() && ui.scrapBtn.contains(x, y)) { sellScrap(gv, ui); return true; }
+        if (!ui.actionBtn.isEmpty() && ui.actionBtn.contains(x, y)) {
+            if (ui.selling) sell(gv, ui); else buy(gv, ui);
+            return true;
+        }
         return true;
     }
 
-    private void sellAllMaterials(GameView gv) {
-        int totalGold = 0;
-        Map<String, Integer> inv = gv.player.getInventory();
-        
-        // Lista expandida com os novos recursos dos biomas
-        String[] materials = {
-            "Madeira", "Ferro", "Pedra", "Fruta", 
-            "Carvão", "Essência de Fogo", "Obsidiana",
-            "Pérola", "Coral", "Cristal de Água",
-            "Poeira Mística", "Fragmento Shiny",
-            "Presa", "Gosma", "Ferrão", "Pelo", "Núcleo de Rocha", "Essência Vital"
-        };
-
-        List<String> toRemove = new ArrayList<>();
-        for (String m : materials) {
-            if (inv.containsKey(m)) {
-                int count = inv.get(m);
-                // Preço base 15, itens raros valem mais
-                int price = 15;
-                if (m.equals("Pérola") || m.equals("Obsidiana")) price = 50;
-                if (m.equals("Fragmento Shiny")) price = 100;
-                
-                totalGold += count * price;
-                toRemove.add(m);
-            }
-        }
-        
-        for (String m : toRemove) inv.remove(m);
-
-        if (totalGold > 0) {
-            gv.player.addGold(totalGold);
-            gv.ui.showMessage("Vendeu tudo por " + totalGold + " 🪙");
-            gv.activity.saveCurrentGame();
-        } else {
-            gv.ui.showMessage("Nada para vender!");
-        }
+    private void buy(GameView gv, ShopUI ui) {
+        ShopCatalog.Offer o = ShopCatalog.BUY.get(ui.buyIndex);
+        int price = ShopCatalog.buyPrice(o, gv.kingdom, ui.shopLevel(gv));
+        int want = ui.qty(0);
+        int can = price > 0 ? gv.player.getGold() / price : 0;
+        if (can <= 0) { gv.ui.showMessage("Ouro insuficiente para " + o.name + "!"); return; }
+        int n = Math.min(want, can);
+        gv.player.addGold(-price * n);
+        gv.player.addItem(o.name, n);
+        gv.ui.showMessage("🛒 Comprou " + n + "x " + o.name + " por " + (price * n) + " 🪙" + (n < want ? " (era o que dava com seu ouro)" : ""));
+        gv.activity.saveCurrentGame();
     }
 
-    private void buy(GameView gv, String item, int cost) {
-        if (gv.player.getGold() >= cost) {
-            gv.player.addGold(-cost);
-            gv.player.addItem(item);
-            gv.ui.showMessage("Comprou " + item);
-            gv.activity.saveCurrentGame();
-        } else gv.ui.showMessage("Ouro insuficiente!");
+    private void sell(GameView gv, ShopUI ui) {
+        if (ui.sellItem == null) return;
+        Map<String, Integer> inv = gv.player.getInventory();
+        int owned = inv.getOrDefault(ui.sellItem, 0);
+        int n = Math.min(owned, ui.qty(owned));
+        if (n <= 0) return;
+        int gold = ShopCatalog.sellPrice(ui.sellItem) * n;
+        if (n >= owned) inv.remove(ui.sellItem); else inv.put(ui.sellItem, owned - n);
+        gv.player.addGold(gold);
+        gv.ui.showMessage("💰 Vendeu " + n + "x " + ui.sellItem + " por " + gold + " 🪙");
+        gv.activity.saveCurrentGame();
+    }
+
+    /** Vende tudo o que o Mercador compra, menos o que a base/oficina usa (madeira, ferro, pedra, fruta, pelo). */
+    private void sellScrap(GameView gv, ShopUI ui) {
+        Map<String, Integer> inv = gv.player.getInventory();
+        int total = 0;
+        List<String> remove = new ArrayList<>();
+        for (Map.Entry<String, Integer> e : inv.entrySet()) {
+            if (ShopCatalog.isKept(e.getKey())) continue;
+            int p = ShopCatalog.sellPrice(e.getKey());
+            if (p > 0 && e.getValue() > 0) { total += p * e.getValue(); remove.add(e.getKey()); }
+        }
+        if (total <= 0) { gv.ui.showMessage("Nenhuma sucata para vender."); return; }
+        for (String k : remove) inv.remove(k);
+        gv.player.addGold(total);
+        gv.ui.showMessage("💰 Sucata vendida por " + total + " 🪙 (madeira, ferro, pedra, fruta e pelo foram mantidos)");
+        gv.activity.saveCurrentGame();
     }
 }

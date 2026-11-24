@@ -19,14 +19,15 @@ public class ExploringInput implements InputExtension {
 
         switch (action) {
             case android.view.MotionEvent.ACTION_DOWN:
-                // Verifica toque na linha de troca rápida do Time (topo da tela)
+                // Toque na linha de troca rápida do Time (topo da tela): usa os mesmos retângulos que foram desenhados,
+                // com uma folga de 8px ao redor para facilitar o toque
                 java.util.List<com.example.pokeworld.entities.CapturedCreature> party = gv.player.getParty();
-                for (int i = 0; i < party.size(); i++) {
-                    android.graphics.RectF slotRect = ExploringUI.partySlot(gv.getWidth(), i, party.size());
-                    if (slotRect.contains(x, y)) {
+                for (int i = 0; i < party.size() && i < ui.swapSlots.size(); i++) {
+                    android.graphics.RectF r = ui.swapSlots.get(i);
+                    if (x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 14) {
                         com.example.pokeworld.entities.CapturedCreature c = party.get(i);
                         if (com.example.pokeworld.managers.PartyManager.switchActive(gv, c))
-                            gv.ui.showMessage("🔄 Pokémon ativo alterado para: " + c.name);
+                            gv.ui.showMessage("🔴 Vai, " + c.name + "!");
                         return true;
                     }
                 }
@@ -260,7 +261,7 @@ public class ExploringInput implements InputExtension {
                     gv.ui.isDialogueActive = true;
                     gv.ui.currentSpeaker = n.getName();
                     gv.ui.currentDialogue = n.getDialogue();
-                    if (n.getType() == NPC.Type.HEALER) gv.companion.healFull();
+                    if (n.getType() == NPC.Type.HEALER) { com.example.pokeworld.managers.PartyManager.healAll(gv); gv.ui.showMessage("🏥 Todo o seu time foi curado!"); }
                     gv.missions.checkRewards(n);
                     return true;
                 }

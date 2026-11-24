@@ -936,6 +936,7 @@ public class Companion {
     public int getHp() { return hp; }
     public int getMaxHp() { return maxHp; }
     public void setMaxHp(int maxHp) { this.maxHp = maxHp; }
+    public void setHp(int hp) { this.hp = Math.max(0, Math.min(maxHp, hp)); }
     public float getRage() { return rage; }
     public float getMaxRage() { return MAX_RAGE; }
     public String getSpecies() { return species; }

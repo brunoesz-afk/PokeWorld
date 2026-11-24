@@ -131,6 +131,7 @@ public class GameView {
         } else {
             world.loadMap("CITY", player, companion, "CENTER");
         }
+        com.example.pokeworld.managers.PartyManager.restoreActiveHp(this);
     }
 
     public void applyKingdomBonuses() {
@@ -217,6 +218,7 @@ public class GameView {
             achievements.check(this);
             missions.check(this);
             tips.update();
+            com.example.pokeworld.managers.PartyManager.updateFaint(this);
             
             effects.update();
             particles.update();
