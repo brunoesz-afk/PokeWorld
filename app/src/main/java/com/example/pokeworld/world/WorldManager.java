@@ -174,12 +174,16 @@ public class WorldManager {
         npcs.add(new NPC("Enfermeira", "Deseja curar seus Pokémons?", midX - 150, midY - 150, NPC.Type.HEALER));
         npcs.add(new NPC("Mercador", "Ouro por itens?", midX + 150, midY - 150, NPC.Type.SHOPKEEPER));
         npcs.add(new NPC("Guarda Real", "Bem-vindo ao Reino!", midX, midY + 300, NPC.Type.GUARD));
-        int idx = 0;
+        // Prédios da cidade em "quadras" fixas (cada prédio tem 10x10 tiles): longe das avenidas, da praça central e uns dos outros.
+        // (Antes as linhas eram espaçadas por 225px e os prédios de 640px se sobrepunham.)
+        final String[] slotName = {"Centro de Cura", "Loja", "Castelo", "Ginásio", "Mural de Caça"};
+        final double[][] slotPos = {{midX - 1200, midY - 950}, {midX + 400, midY - 950}, {midX + 400, midY + 200}, {midX - 1200, midY + 200}, {midX - 2150, midY + 190}};
         for (Map.Entry<String, BuildingData> entry : activity.dbHelper.getBuildings().entrySet()) {
             String name = entry.getKey();
-            if (name.equals("Centro de Cura") || name.equals("Loja") || name.equals("Castelo") || name.equals("Ginásio") || name.equals("Mural de Caça")) {
-                double bx = midX + (idx % 2 == 0 ? -800 : 800), by = (midY - 400) + ((idx / 2.0) * 450);
-                Building b = new Building(name, bx, by, entry.getValue().level); b.setConstructed(true); buildings.add(b); idx++;
+            for (int i = 0; i < slotName.length; i++) {
+                if (!slotName[i].equals(name)) continue;
+                Building b = new Building(name, slotPos[i][0], slotPos[i][1], entry.getValue().level);
+                b.setConstructed(true); buildings.add(b);
             }
         }
     }

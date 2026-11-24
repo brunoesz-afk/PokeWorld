@@ -167,6 +167,15 @@ public class ExploringUI extends BaseUI {
 
         // Atalhos Rápidos
         drawIcon(canvas, quickHealBtn, "🧪");
+        // pisca quando a vida está baixa e há poção: lembra da cura rápida
+        if (gv.companion.getHp() > 0 && gv.companion.getHp() < gv.companion.getMaxHp() * 0.4f && gv.player.getInventory().getOrDefault("Poção", 0) > 0) {
+            float pulse = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 180.0);
+            Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+            ring.setStyle(Paint.Style.STROKE); ring.setStrokeWidth(6);
+            ring.setColor(Color.argb((int) (120 + 135 * pulse), 90, 230, 140));
+            canvas.drawRoundRect(new RectF(quickHealBtn.left - 6 - 4 * pulse, quickHealBtn.top - 6 - 4 * pulse, quickHealBtn.right + 6 + 4 * pulse, quickHealBtn.bottom + 6 + 4 * pulse), 18, 18, ring);
+            text(canvas, "x" + gv.player.getInventory().getOrDefault("Poção", 0), quickHealBtn.right - 8, quickHealBtn.bottom - 8, 18, Color.WHITE, Paint.Align.RIGHT, true);
+        }
         drawIcon(canvas, trainerSkillsBtn, "🧙‍♂️");
         
         drawButton(canvas, zoomInBtn, "+");

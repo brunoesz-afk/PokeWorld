@@ -38,6 +38,10 @@ public class TipManager {
         TEXT.put("talentpoints", "Você tem pontos de talento para gastar! Abra o menu de talentos e escolha um ramo.");
         TEXT.put("noballs", "Suas Pokébolas acabaram. Elas caem de chefes e invasões e são produzidas na Horta 🌱 e na Oficina da base.");
         TEXT.put("evolve_close", "Seu Pokémon está perto de evoluir! Veja os níveis de evolução na tela do Time.");
+        // guia de início (uma vez só, depois do tutorial)
+        TEXT.put("intro_potion", "🧪 CURA RÁPIDA: o botão da poção (canto inferior esquerdo) cura o seu Pokémon ativo na hora e gasta 1 Poção. Ele pisca quando a vida está baixa. Compre Poções no Mercado da cidade.");
+        TEXT.put("intro_swap", "🔴 TROCA: os ícones do seu time ficam no topo da tela. Toque em um deles para trocar de Pokémon na hora. Se um desmaiar, o próximo do time entra sozinho. Todos regeneram vida devagar com o tempo.");
+        TEXT.put("intro_skills", "⚔ GOLPES: os botões de golpes ficam na lateral. Alguns atingem uma área (marcados com ◎) e podem causar estados: queimadura, veneno, sono, paralisia e gelo. Pokémon reserva dão bônus ao ativo!");
         TEXT.put("lowhp", "Vida baixa! Use uma Poção na Mochila ou volte à cidade para a Enfermeira.");
     }
 
@@ -74,6 +78,7 @@ public class TipManager {
         }
         boolean wild = !map.equals("HOME") && !map.equals("CITY");
         if (gv.player.getTalentPoints() > 0 && gv.player.getLevel() >= 2) enqueue("talentpoints");
+        if (!gv.tutorial.isTutorialActive() && !map.equals("TOWER")) { enqueue("intro_potion"); enqueue("intro_swap"); enqueue("intro_skills"); }
         if (wild && gv.player.getInventory().getOrDefault("Pokébola", 0) <= 0 && !gv.tutorial.isTutorialActive()) enqueue("noballs");
         if (gv.companion.getHp() > 0 && gv.companion.getHp() < gv.companion.getMaxHp() * 0.25f) enqueue("lowhp");
 

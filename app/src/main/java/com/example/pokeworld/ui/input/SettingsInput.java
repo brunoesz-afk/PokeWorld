@@ -11,7 +11,14 @@ public class SettingsInput implements InputExtension {
         SettingsUI ui = (SettingsUI) gv.ui.getHandler(UIManager.UIState.SETTINGS);
         if (ui.toggleVibrationBtn.contains(x, y)) {
             gv.vibration.setEnabled(!gv.vibration.isEnabled());
+            gv.activity.dbHelper.setKv("set_vib", gv.vibration.isEnabled() ? 1 : 0);
             gv.ui.showMessage("VIBRAÇÃO: " + (gv.vibration.isEnabled() ? "ON" : "OFF"));
+            return true;
+        } else if (ui.toggleSoundBtn.contains(x, y)) {
+            com.example.pokeworld.managers.SoundManager sm = com.example.pokeworld.managers.SoundManager.getInstance(gv.activity);
+            sm.setEnabled(!sm.isEnabled());
+            gv.activity.dbHelper.setKv("set_sound", sm.isEnabled() ? 1 : 0);
+            gv.ui.showMessage("SONS: " + (sm.isEnabled() ? "ON" : "OFF"));
             return true;
         } else if (ui.saveExitBtn.contains(x, y)) {
             gv.activity.saveCurrentGame();

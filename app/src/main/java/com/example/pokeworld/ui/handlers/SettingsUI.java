@@ -9,6 +9,7 @@ import com.example.pokeworld.core.GameView;
 public class SettingsUI extends BaseUI {
     public RectF toggleVibrationBtn = new RectF(100, 150, 450, 230);
     public RectF toggleJoystickBtn = new RectF(100, 250, 450, 330);
+    public RectF toggleSoundBtn = new RectF(100, 450, 450, 530);
     public RectF saveExitBtn = new RectF(100, 350, 450, 430);
     
     public RectF skinRedBtn = new RectF(600, 200, 850, 280);
@@ -22,6 +23,7 @@ public class SettingsUI extends BaseUI {
         String vibStatus = gv.vibration.isEnabled() ? "ON" : "OFF";
         drawButton(canvas, toggleVibrationBtn, "VIBRAÇÃO: " + vibStatus);
         drawButton(canvas, toggleJoystickBtn, "JOYSTICK: FIXO");
+        drawButton(canvas, toggleSoundBtn, "SONS: " + (com.example.pokeworld.managers.SoundManager.getInstance(gv.activity).isEnabled() ? "ON" : "OFF"));
         drawButton(canvas, saveExitBtn, "SAIR E SALVAR");
         
         // Customização
