@@ -43,6 +43,7 @@ public class CreatureInput implements InputExtension {
             gv.player.useItem("Gema de Boost");
             if (Math.random() * 100 < CreatureUI.boostChance(c.boost)) {
                 c.boost++;
+                gv.missions.count(MissionManager.Metric.BOOSTS);
                 SoundManager.play("boost");
                 gv.ui.showMessage("💎 " + c.name + " subiu para +" + c.boost + "! (+8% ataque e vida por nível)");
                 VibrationManager.tap(40);
@@ -56,6 +57,7 @@ public class CreatureInput implements InputExtension {
         if (!ui.fuseBtn.isEmpty() && ui.fuseBtn.contains(x, y) && ui.selected != null) {
             CapturedCreature c = ui.selected;
             if (gv.fusion.attemptUpgrade(c.name, c.rarity, c.isShiny, gv.companion.getSpecies())) {
+                gv.missions.count(MissionManager.Metric.FUSIONS);
                 ui.selected = null;
                 gv.activity.saveCurrentGame();
             }

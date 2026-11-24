@@ -56,6 +56,7 @@ public class TowerManager {
                     int gemsB = rewardBoostGems(towerFloor);
                     if (gemsB > 0) gv.player.addItem("Gema de Boost", gemsB);
                     markCleared(towerFloor);
+                    gv.missions.count(MissionManager.Metric.TOWER_RUNS);
                     gv.ui.showMessage("🎉 ANDAR " + towerFloor + " CONCLUÍDO! +" + goldReward + "🪙  +" + amount + " " + item + (gemsB > 0 ? "  +" + gemsB + " 💎 Gema de Boost" : ""));
                     waitingForNpcAdvance = true;
                     
@@ -115,8 +116,18 @@ public class TowerManager {
             gv.world.addEnemy(species, ex, ey, 32, color, false, false, baseLevel, 0);
         }
 
+        // Andares 5, 10, 15 e 20: um CHEFE aparece na última onda (solta gemas, pedras e runas)
+        if (isBossFloor(towerFloor) && currentWave == TOTAL_WAVES) {
+            String[] bosses = {"Onix", "Gengar", "Arcanine", "Charizard"};
+            String boss = bosses[(towerFloor / 5 - 1) % bosses.length];
+            gv.world.addEnemy(boss, px, py - 40, 56, Color.rgb(220, 60, 60), true, false, towerFloor * 2 + currentWave + 3, 0);
+            gv.ui.showMessage("👑 CHEFE DO ANDAR: " + boss + "!");
+        }
+
         waveActive = true;
     }
+
+    public static boolean isBossFloor(int floor) { return floor % 5 == 0; }
 
     public int getTowerFloor() {
         return towerFloor;

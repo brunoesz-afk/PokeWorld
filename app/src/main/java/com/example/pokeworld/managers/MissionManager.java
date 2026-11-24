@@ -23,7 +23,8 @@ public class MissionManager {
     public enum Metric {
         KILLS, BOSS_KILLS, CAPTURES, FISH, HARVESTS, RAIDS_WON, STONES_USED,                 // contadores salvos
         SPECIES_CAPTURED, SPECIES_SEEN, COMPANION_LEVEL, PLAYER_LEVEL, TOWER, TALENTS, RUNE, // estado do jogo
-        EVOLVED, SHINY, DEFENDERS, HQ_LEVEL, BUILT, BASE_PIECES
+        EVOLVED, SHINY, DEFENDERS, HQ_LEVEL, BUILT, BASE_PIECES,
+        BOOSTS, FUSIONS, TOWER_RUNS                                                           // contadores novos
     }
 
     public static final class Quest {
@@ -44,7 +45,7 @@ public class MissionManager {
         }
     }
 
-    public static final String[] ACT_NAMES = {"", "Ato I — Primeiros Passos", "Ato II — A Expansão do Domínio", "Ato III — Torre, Talentos e Runas", "Ato IV — Mestres e Feras"};
+    public static final String[] ACT_NAMES = {"", "Ato I — Primeiros Passos", "Ato II — A Expansão do Domínio", "Ato III — Torre, Talentos e Runas", "Ato IV — Mestres e Feras", "Ato V — Poder Máximo", "Ato VI — Lenda Viva"};
     public static final List<Quest> QUESTS = new ArrayList<>();
 
     private static void q(int act, String id, String title, String desc, String hint, Metric m, String arg, int target, int gold, int gems, String item, int qty) {
@@ -79,6 +80,22 @@ public class MissionManager {
         q(4, "torre20", "Mestre da Torre", "Conclua o andar 20 da Torre", "O desafio final: 20 andares.", Metric.TOWER, null, 20, 8000, 8, "Runa de Zeus", 1);
     }
 
+    static {
+        // Ato V — boost, fusão e time forte
+        q(5, "boost1", "Gema Brilhante", "Suba o boost de um Pokémon (Gema de Boost)", "Ganhe gemas nos andares 5/10/15/20 da Torre e em chefes. Use na ficha do Pokémon.", Metric.BOOSTS, null, 1, 3000, 2, "Gema de Boost", 1);
+        q(5, "fusao", "4 em 1", "Funda 4 Pokémon iguais em uma raridade maior", "Time ➜ ficha do Pokémon ➜ FUNDIR. Precisa de 4 da mesma espécie e raridade (sem boost).", Metric.FUSIONS, null, 1, 3500, 2, "Pokébola", 10);
+        q(5, "evo5", "Linhagem Forte", "Tenha 5 Pokémon evoluídos", "Evolua por nível ou pedra pela ficha do Pokémon.", Metric.EVOLVED, null, 5, 4000, 2, "Pedra Trovão", 1);
+        q(5, "defensores4", "Muralha Viva", "Escale 4 defensores na base", "Quanto maior o Quartel, mais defensores você pode escalar.", Metric.DEFENDERS, null, 4, 4500, 2, "Runa de Ferro", 1);
+        q(5, "invasao3", "Rei da Defesa", "Repele 3 invasões na base", "Deixe bons defensores na base e esteja lá quando o alarme tocar.", Metric.RAIDS_WON, null, 3, 5000, 3, "Gema de Boost", 1);
+        q(5, "quartel5", "Capital do Reino", "Suba o Quartel para o nível 5", "É o nível máximo do Quartel.", Metric.HQ_LEVEL, null, 5, 6000, 3, "Ferro", 30);
+        // Ato VI — a lenda
+        q(6, "nivel45", "Além do Limite", "Leve um Pokémon ao nível 45", "Combine boost, runa e time completo para encarar as zonas finais.", Metric.COMPANION_LEVEL, null, 45, 9000, 5, "Gema de Boost", 2);
+        q(6, "boost3", "Poder Condensado", "Faça 3 aumentos de boost", "Cada nível de boost dá +8% de ataque e vida.", Metric.BOOSTS, null, 3, 8000, 4, "Gema de Boost", 1);
+        q(6, "especies80", "Enciclopédia Viva", "Descubra 80 espécies na Pokédex", "Explore todos os mapas, de dia e de noite.", Metric.SPECIES_SEEN, null, 80, 10000, 5, "Ultra Ball", 5);
+        q(6, "chefes10", "Terror dos Chefes", "Derrote 10 chefes", "Chefes têm pontos fixos de respawn e soltam gemas e pedras raras.", Metric.BOSS_KILLS, null, 10, 12000, 6, "Gema de Boost", 2);
+        q(6, "shiny3", "Colecionador de Brilhos", "Tenha 3 Pokémon shiny", "Shinies aparecem raramente entre os selvagens.", Metric.SHINY, null, 3, 15000, 8, null, 0);
+    }
+
     private final Player player;
     private final UIManager ui;
     private DatabaseHelper db;
@@ -111,7 +128,7 @@ public class MissionManager {
 
     public int progress(Quest q, GameView gv) {
         switch (q.metric) {
-            case KILLS: case BOSS_KILLS: case CAPTURES: case FISH: case HARVESTS: case RAIDS_WON: case STONES_USED:
+            case KILLS: case BOSS_KILLS: case CAPTURES: case FISH: case HARVESTS: case RAIDS_WON: case STONES_USED: case BOOSTS: case FUSIONS: case TOWER_RUNS:
                 return db.getKv("stat_" + q.metric.name(), 0);
             case SPECIES_CAPTURED: return gv.bestiary.capturedCount();
             case SPECIES_SEEN: return gv.bestiary.seenCount();
@@ -187,6 +204,7 @@ public class MissionManager {
         long now = System.currentTimeMillis();
         if (now - lastCheck < 1500) return;
         lastCheck = now;
+        checkDailies(gv);
         for (Quest q : activeQuests()) {
             if (progress(q, gv) >= q.target) complete(q, gv);
         }
@@ -204,6 +222,88 @@ public class MissionManager {
             ui.showMessage("🏆 JORNADA COMPLETA! Você é um Mestre Pokémon!");
         }
         gv.activity.saveCurrentGame();
+    }
+
+    // ---------------------------------------------------------------- missões diárias (3 por dia, renovam à meia-noite)
+
+    public static final class Daily {
+        public final String title; public final Metric metric; public final int target, gold; public final String item; public final int qty;
+        Daily(String t, Metric m, int target, int gold, String item, int qty) { title = t; metric = m; this.target = target; this.gold = gold; this.item = item; this.qty = qty; }
+        public String rewardText() { return "🪙 " + gold + (item != null ? "  " + qty + "x " + item : ""); }
+    }
+
+    private static final Daily[] DAILY_POOL = {
+        new Daily("Caçada: derrote 25 Pokémon", Metric.KILLS, 25, 500, "Poção", 2),
+        new Daily("Caçada pesada: derrote 60 Pokémon", Metric.KILLS, 60, 1100, "Pokébola", 5),
+        new Daily("Colecionador: capture 3 Pokémon", Metric.CAPTURES, 3, 600, "Great Ball", 2),
+        new Daily("Pescador: pesque 3 peixes", Metric.FISH, 3, 450, "Fruta", 3),
+        new Daily("Fazendeiro: colha 3 hortas", Metric.HARVESTS, 3, 450, "Madeira", 8),
+        new Daily("Caça-chefes: derrote 1 chefe", Metric.BOSS_KILLS, 1, 1200, "Pedra Fogo", 1),
+        new Daily("Defensor: repele 1 invasão", Metric.RAIDS_WON, 1, 900, "Ferro", 6),
+        new Daily("Escalador: conclua 1 andar da Torre", Metric.TOWER_RUNS, 1, 900, "Runa de Ferro", 1),
+    };
+
+    private String dayKey() {
+        java.util.Calendar c = java.util.Calendar.getInstance();
+        return c.get(java.util.Calendar.YEAR) + "" + (c.get(java.util.Calendar.DAY_OF_YEAR) + 1000);
+    }
+
+    private int dayNum() { return Integer.parseInt(dayKey()); }
+
+    private List<Daily> todayList;
+    private int todayNum = -1;
+
+    /** As 3 missões de hoje (mesmas o dia todo; sorteadas pela data). Na virada do dia guarda os contadores-base. */
+    public List<Daily> dailies() {
+        int d = dayNum();
+        if (todayList != null && todayNum == d && db != null) return todayList;
+        java.util.Random r = new java.util.Random(d * 7919L);
+        List<Daily> pool = new ArrayList<>(java.util.Arrays.asList(DAILY_POOL));
+        java.util.Collections.shuffle(pool, r);
+        todayList = new ArrayList<>(pool.subList(0, 3));
+        todayNum = d;
+        if (db == null) return todayList;     // ainda sem banco: tenta de novo no próximo quadro
+        if (db != null && db.getKv("daily_day", 0) != d) {
+            db.setKv("daily_day", d);
+            for (Metric m : Metric.values()) db.setKv("dbase_" + m.name(), db.getKv("stat_" + m.name(), 0));
+            for (int i = 0; i < 3; i++) db.setKv("daily_done_" + i, 0);
+            db.setKv("daily_bonus", 0);
+        }
+        return todayList;
+    }
+
+    public int dailyProgress(Daily q) {
+        if (db == null) return 0;
+        return Math.min(q.target, Math.max(0, db.getKv("stat_" + q.metric.name(), 0) - db.getKv("dbase_" + q.metric.name(), 0)));
+    }
+
+    public boolean dailyDone(int i) { return db != null && db.getKv("daily_done_" + i, 0) == 1; }
+    public boolean dailyBonusTaken() { return db != null && db.getKv("daily_bonus", 0) == 1; }
+    public int dailiesDone() { int n = 0; for (int i = 0; i < 3; i++) if (dailyDone(i)) n++; return n; }
+
+    private long lastDaily = 0;
+    private void checkDailies(GameView gv) {
+        long now = System.currentTimeMillis();
+        if (now - lastDaily < 2000) return;
+        lastDaily = now;
+        List<Daily> ds = dailies();
+        for (int i = 0; i < ds.size(); i++) {
+            Daily q = ds.get(i);
+            if (dailyDone(i) || dailyProgress(q) < q.target) continue;
+            db.setKv("daily_done_" + i, 1);
+            gv.player.addGold(q.gold);
+            if (q.item != null) gv.player.addItem(q.item, q.qty);
+            ui.showMessage("📅 DIÁRIA CUMPRIDA: " + q.title + "  " + q.rewardText());
+            com.example.pokeworld.managers.SoundManager.play("levelup");
+            gv.activity.saveCurrentGame();
+        }
+        if (dailiesDone() == 3 && !dailyBonusTaken()) {
+            db.setKv("daily_bonus", 1);
+            gv.player.addGems(2);
+            gv.player.addItem("Gema de Boost", 1);
+            ui.showMessage("🎁 TODAS AS DIÁRIAS! Bônus: 💎 2 gemas + 1x Gema de Boost");
+            gv.activity.saveCurrentGame();
+        }
     }
 
     public void syncNPCs(List<NPC> npcs) {

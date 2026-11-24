@@ -14,6 +14,8 @@ import java.util.List;
 /** Jornada do Treinador: cartões do ato atual com progresso, dica de como cumprir e recompensa. */
 public class MissionUI extends BaseUI {
     public RectF exitBtn = new RectF();
+    public RectF tabJourney = new RectF(), tabDaily = new RectF();
+    public boolean showDaily = false;
 
     @Override
     public void draw(Canvas canvas, GameView gv) {
@@ -25,19 +27,25 @@ public class MissionUI extends BaseUI {
         drawHeader(canvas, "JORNADA DO TREINADOR",
                 "Missões cumpridas: " + mm.doneCount() + " / " + total + "   •   recompensas entregues automaticamente", exitBtn);
 
+        // abas: Jornada | Diárias
+        tabJourney.set(36, 112, 36 + 220, 154);
+        tabDaily.set(36 + 232, 112, 36 + 232 + 260, 154);
+        actionButton(canvas, tabJourney, "📖 JORNADA", showDaily, C_ACCENT);
+        actionButton(canvas, tabDaily, "📅 DIÁRIAS " + mm.dailiesDone() + "/3", !showDaily, C_GOOD);
+        if (showDaily) { drawDaily(canvas, gv, w, h); return; }
         // barra geral da jornada
-        bar(canvas, new RectF(36, 118, w - 36, 134), mm.doneCount() / (float) total, C_ACCENT);
+        bar(canvas, new RectF(36, 162, w - 36, 176), mm.doneCount() / (float) total, C_ACCENT);
 
         if (finished) {
-            panel(canvas, new RectF(36, 160, w - 36, 300), C_PANEL, C_GOOD, 3);
-            text(canvas, "🏆 Jornada completa!", w / 2f, 220, 34, C_GOOD, Paint.Align.CENTER, true);
-            text(canvas, "Você cumpriu todas as missões. Continue evoluindo, fortaleça a base e suba a Torre.", w / 2f, 262, 22, Color.WHITE, Paint.Align.CENTER, false);
+            panel(canvas, new RectF(36, 200, w - 36, 340), C_PANEL, C_GOOD, 3);
+            text(canvas, "🏆 Jornada completa!", w / 2f, 260, 34, C_GOOD, Paint.Align.CENTER, true);
+            text(canvas, "Você cumpriu todas as missões. Continue evoluindo, fortaleça a base e suba a Torre.", w / 2f, 302, 22, Color.WHITE, Paint.Align.CENTER, false);
             return;
         }
 
-        text(canvas, MissionManager.ACT_NAMES[act], 40, 172, 28, Color.WHITE, Paint.Align.LEFT, true);
+        text(canvas, MissionManager.ACT_NAMES[act], 40, 212, 28, Color.WHITE, Paint.Align.LEFT, true);
         List<Quest> quests = mm.questsOfAct(act);
-        float top = 190, gap = 10;
+        float top = 230, gap = 10;
         float cardH = Math.min(130, (h - top - 20 - gap * (quests.size() - 1)) / Math.max(1, quests.size()));
         float y = top;
         for (Quest q : quests) {
@@ -58,5 +66,29 @@ public class MissionUI extends BaseUI {
             text(canvas, prog + " / " + q.target, pb.centerX(), pb.bottom + 20, 16, Color.WHITE, Paint.Align.CENTER, false);
             y += cardH + gap;
         }
+    }
+
+    private void drawDaily(Canvas canvas, GameView gv, float w, float h) {
+        MissionManager mm = gv.missions;
+        java.util.List<MissionManager.Daily> ds = mm.dailies();
+        text(canvas, "Missões de hoje — renovam à meia-noite", 40, 196, 24, Color.WHITE, Paint.Align.LEFT, true);
+        float y = 214, gap = 10, cardH = Math.min(110, (h - y - 120) / 3f);
+        for (int i = 0; i < ds.size(); i++) {
+            MissionManager.Daily q = ds.get(i);
+            boolean done = mm.dailyDone(i);
+            int prog = done ? q.target : mm.dailyProgress(q);
+            RectF card = new RectF(36, y, w - 36, y + cardH);
+            panel(canvas, card, done ? Color.argb(230, 20, 48, 34) : C_PANEL, done ? C_GOOD : C_LINE, 2);
+            text(canvas, fit((done ? "✅ " : "🎯 ") + q.title, card.width() * 0.6f), card.left + 18, card.top + 36, 24, done ? C_GOOD : Color.WHITE, Paint.Align.LEFT, true);
+            text(canvas, q.rewardText(), card.right - 18, card.top + 36, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
+            RectF pb = new RectF(card.left + 18, card.top + 54, card.right - 18, card.top + 70);
+            bar(canvas, pb, prog / (float) q.target, done ? C_GOOD : C_ACCENT);
+            text(canvas, prog + " / " + q.target, pb.centerX(), pb.bottom + 20, 16, Color.WHITE, Paint.Align.CENTER, false);
+            y += cardH + gap;
+        }
+        RectF bonus = new RectF(36, y, w - 36, y + 70);
+        boolean got = mm.dailyBonusTaken();
+        panel(canvas, bonus, got ? Color.argb(230, 20, 48, 34) : C_PANEL, got ? C_GOOD : Color.rgb(255, 200, 90), 2);
+        text(canvas, (got ? "✅ " : "🎁 ") + "Complete as 3 diárias: 💎 2 gemas + 1x Gema de Boost", bonus.centerX(), bonus.centerY() + 8, 22, got ? C_GOOD : Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
     }
 }
