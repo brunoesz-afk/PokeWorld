@@ -279,7 +279,8 @@ public class WorldManager {
                 case QUARTEL: who = new String[][]{
                         {"Prof. de Time", "Gerencie os Pokémons do seu time e da sua base!"},
                         {"Mestre da Base", "Gerencie o estoque!"},
-                        {"Mestre da Torre", "Quer desafiar as ondas de Pokémons na Torre?"}}; break;
+                        {"Mestre da Torre", "Quer desafiar as ondas de Pokémons na Torre?"},
+                        {"Capitão de Expedição", "Envie Pokémon em expedições e ataque bases rivais!"}}; break;
                 case OFICINA: who = new String[][]{{"Prof. de Engenharia", "Quer fabricar Pokébolas?"}}; type = NPC.Type.BLACKSMITH; break;
                 case DAYCARE: who = new String[][]{{"Prof. Criador", "Quer cruzar seus Pokémons?"}}; break;
                 case LABORATORIO: who = new String[][]{{"Prof. Invocador", "Deseja invocar novos poderes?"}}; break;

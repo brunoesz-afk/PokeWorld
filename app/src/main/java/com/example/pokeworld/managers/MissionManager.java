@@ -24,7 +24,7 @@ public class MissionManager {
         KILLS, BOSS_KILLS, CAPTURES, FISH, HARVESTS, RAIDS_WON, STONES_USED,                 // contadores salvos
         SPECIES_CAPTURED, SPECIES_SEEN, COMPANION_LEVEL, PLAYER_LEVEL, TOWER, TALENTS, RUNE, // estado do jogo
         EVOLVED, SHINY, DEFENDERS, HQ_LEVEL, BUILT, BASE_PIECES,
-        BOOSTS, FUSIONS, TOWER_RUNS                                                           // contadores novos
+        BOOSTS, FUSIONS, TOWER_RUNS, EXPEDITIONS, RIVAL_WINS                                                           // contadores novos
     }
 
     public static final class Quest {
@@ -84,12 +84,14 @@ public class MissionManager {
         // Ato V — boost, fusão e time forte
         q(5, "boost1", "Gema Brilhante", "Suba o boost de um Pokémon (Gema de Boost)", "Ganhe gemas nos andares 5/10/15/20 da Torre e em chefes. Use na ficha do Pokémon.", Metric.BOOSTS, null, 1, 3000, 2, "Gema de Boost", 1);
         q(5, "fusao", "4 em 1", "Funda 4 Pokémon iguais em uma raridade maior", "Time ➜ ficha do Pokémon ➜ FUNDIR. Precisa de 4 da mesma espécie e raridade (sem boost).", Metric.FUSIONS, null, 1, 3500, 2, "Pokébola", 10);
+        q(5, "exped", "Aventureiros", "Complete 1 expedição", "Fale com o Capitão de Expedição no Quartel. Pokémon da Caixa/Defesa viajam e voltam com recursos.", Metric.EXPEDITIONS, null, 1, 3500, 2, "Pedra Folha", 1);
         q(5, "evo5", "Linhagem Forte", "Tenha 5 Pokémon evoluídos", "Evolua por nível ou pedra pela ficha do Pokémon.", Metric.EVOLVED, null, 5, 4000, 2, "Pedra Trovão", 1);
         q(5, "defensores4", "Muralha Viva", "Escale 4 defensores na base", "Quanto maior o Quartel, mais defensores você pode escalar.", Metric.DEFENDERS, null, 4, 4500, 2, "Runa de Ferro", 1);
         q(5, "invasao3", "Rei da Defesa", "Repele 3 invasões na base", "Deixe bons defensores na base e esteja lá quando o alarme tocar.", Metric.RAIDS_WON, null, 3, 5000, 3, "Gema de Boost", 1);
         q(5, "quartel5", "Capital do Reino", "Suba o Quartel para o nível 5", "É o nível máximo do Quartel.", Metric.HQ_LEVEL, null, 5, 6000, 3, "Ferro", 30);
         // Ato VI — a lenda
         q(6, "nivel45", "Além do Limite", "Leve um Pokémon ao nível 45", "Combine boost, runa e time completo para encarar as zonas finais.", Metric.COMPANION_LEVEL, null, 45, 9000, 5, "Gema de Boost", 2);
+        q(6, "rival5", "Saqueador de Bases", "Vença 5 bases rivais", "Capitão de Expedição ➜ Bases Rivais. Três bases novas todo dia.", Metric.RIVAL_WINS, null, 5, 9000, 4, "Gema de Boost", 1);
         q(6, "boost3", "Poder Condensado", "Faça 3 aumentos de boost", "Cada nível de boost dá +8% de ataque e vida.", Metric.BOOSTS, null, 3, 8000, 4, "Gema de Boost", 1);
         q(6, "especies80", "Enciclopédia Viva", "Descubra 80 espécies na Pokédex", "Explore todos os mapas, de dia e de noite.", Metric.SPECIES_SEEN, null, 80, 10000, 5, "Ultra Ball", 5);
         q(6, "chefes10", "Terror dos Chefes", "Derrote 10 chefes", "Chefes têm pontos fixos de respawn e soltam gemas e pedras raras.", Metric.BOSS_KILLS, null, 10, 12000, 6, "Gema de Boost", 2);
@@ -128,7 +130,7 @@ public class MissionManager {
 
     public int progress(Quest q, GameView gv) {
         switch (q.metric) {
-            case KILLS: case BOSS_KILLS: case CAPTURES: case FISH: case HARVESTS: case RAIDS_WON: case STONES_USED: case BOOSTS: case FUSIONS: case TOWER_RUNS:
+            case KILLS: case BOSS_KILLS: case CAPTURES: case FISH: case HARVESTS: case RAIDS_WON: case STONES_USED: case BOOSTS: case FUSIONS: case TOWER_RUNS: case EXPEDITIONS: case RIVAL_WINS:
                 return db.getKv("stat_" + q.metric.name(), 0);
             case SPECIES_CAPTURED: return gv.bestiary.capturedCount();
             case SPECIES_SEEN: return gv.bestiary.seenCount();

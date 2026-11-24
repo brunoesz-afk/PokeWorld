@@ -42,6 +42,21 @@ public class BaseDefense {
     private static final String[] MID = {"Raticate", "Pidgeotto", "Mankey", "Sandshrew", "Ekans", "Nidorino", "Growlithe", "Machop"};
     private static final String[] LATE = {"Primeape", "Arbok", "Pinsir", "Scyther", "Rhydon", "Ponyta", "Sandslash", "Fearow"};
 
+    /** Tipos de invasão (sorteados a cada vez): mudam quantidade, nível, espécies e prêmio. */
+    private enum Kind {
+        NORMAL("Invasão", 1.0, 0, 1.0, null),
+        ENXAME("ENXAME", 1.7, -2, 1.2, null),
+        ELITE("ELITE", 0.5, 6, 1.7, null),
+        FOGO("INVASÃO DE FOGO 🔥", 1.0, 1, 1.3, new String[]{"Growlithe", "Ponyta", "Charmander", "Vulpix"}),
+        AGUA("INVASÃO DE ÁGUA 💧", 1.0, 1, 1.3, new String[]{"Poliwag", "Squirtle"}),
+        PLANTA("INVASÃO DE PLANTAS 🌿", 1.0, 1, 1.3, new String[]{"Oddish", "Bellsprout", "Bulbasaur"}),
+        VENENO("INVASÃO VENENOSA ☠️", 1.0, 1, 1.3, new String[]{"Ekans", "Arbok", "Koffing", "Grimer", "Zubat", "Golbat"}),
+        FANTASMA("INVASÃO NOTURNA 👻", 0.9, 2, 1.4, new String[]{"Gastly", "Haunter", "Zubat"});
+        final String label; final double count; final int lvl; final double reward; final String[] pool;
+        Kind(String l, double c, int lv, double r, String[] p) { label = l; count = c; lvl = lv; reward = r; pool = p; }
+    }
+    private Kind kind = Kind.NORMAL;
+
     private final BaseManager base;
     private final Host host;
     private final Random rnd = new Random();
@@ -140,9 +155,11 @@ public class BaseDefense {
     public void start(long now) {
         if (active) return;
         int hq = base.hq();
-        int count = 3 + hq * 2 + Math.min(4, host.playerLevel() / 15);
-        int lvl = Math.max(2, hq * 4 + host.playerLevel() / 6);
-        String[] pool = hq >= 4 ? LATE : hq >= 2 ? MID : EARLY;
+        Kind[] ks = Kind.values();
+        kind = hq >= 2 || rnd.nextBoolean() ? ks[rnd.nextInt(ks.length)] : Kind.NORMAL;   // no começo, quase sempre a invasão normal
+        int count = Math.max(2, (int) Math.round((3 + hq * 2 + Math.min(4, host.playerLevel() / 15)) * kind.count));
+        int lvl = Math.max(2, hq * 4 + host.playerLevel() / 6 + kind.lvl);
+        String[] pool = kind.pool != null ? kind.pool : kind.lvl >= 6 ? LATE : hq >= 4 ? LATE : hq >= 2 ? MID : EARLY;
         raiders.clear(); hp.clear(); fallen.clear(); raiderHit.clear(); guardShot.clear(); towerShot.clear();
         tracers.clear(); tracerExpire.clear();
         spawned = 0; downed = 0; wallsFallen = 0; quartelFell = false;
@@ -153,7 +170,7 @@ public class BaseDefense {
         }
         if (raiders.isEmpty()) { nextRaidAt = now + 60 * 1000L; return; }
         active = true; startTime = now; endTime = now + RAID_MAX;
-        host.say("⚔️ INVASÃO! " + raiders.size() + " Pokémons selvagens atacam a base!");
+        host.say("⚔️ " + kind.label + "! " + raiders.size() + " Pokémons selvagens atacam a base!");
     }
 
     /** Pontos nas bordas norte/leste/oeste do terreno (o sul tem a estrada). */
@@ -300,7 +317,7 @@ public class BaseDefense {
         int hq = base.hq();
         int gold = 0, wood = 0, iron = 0, balls = 0, fruit = 0;
         for (int i = 0; i < spawned; i++) {
-            gold += 30 + 15 * hq + rnd.nextInt(20);
+            gold += (int) ((30 + 15 * hq + rnd.nextInt(20)) * kind.reward);
             wood += 1 + rnd.nextInt(3);
             if (rnd.nextDouble() < 0.7) iron += 1 + rnd.nextInt(2);
             if (rnd.nextDouble() < 0.40) balls += 1;
@@ -311,7 +328,11 @@ public class BaseDefense {
         if (iron > 0) host.giveItem("Ferro", iron);
         if (balls > 0) host.giveItem("Pokébola", balls);
         if (fruit > 0) host.giveItem("Fruta", fruit);
-        StringBuilder sb = new StringBuilder("🏆 INVASÃO REPELIDA! +" + gold + "🪙");
+        if (kind != Kind.NORMAL && rnd.nextDouble() < 0.25 * kind.reward) {   // invasões especiais podem soltar uma Gema de Boost
+            host.giveItem("Gema de Boost", 1);
+            host.say("💎 Os invasores deixaram uma Gema de Boost!");
+        }
+        StringBuilder sb = new StringBuilder("🏆 " + kind.label + " REPELIDA! +" + gold + "🪙");
         if (wood > 0) sb.append(" +").append(wood).append("🪵");
         if (iron > 0) sb.append(" +").append(iron).append("⛓️");
         if (balls > 0) sb.append(" +").append(balls).append("🔴");
@@ -384,7 +405,7 @@ public class BaseDefense {
     /** Texto do aviso fixo na tela durante a invasão (null = nada). */
     public String hudText(long now) {
         if (!active) return null;
-        return "⚔️ INVASÃO  " + countAlive() + "/" + spawned + " invasores  ⏱ " + Math.max(0, (endTime - now) / 1000) + "s";
+        return "⚔️ " + kind.label + "  " + countAlive() + "/" + spawned + " invasores  ⏱ " + Math.max(0, (endTime - now) / 1000) + "s";
     }
 
     /** Tempo até a próxima invasão automática, em segundos (-1 = em andamento). */
