@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * Jornada do Treinador: missões em capítulos (atos) que guiam o jogador pelo jogo.
- * O progresso vem de contadores salvos e do estado do jogo; as recompensas são entregues sozinhas ao cumprir.
+ * O progresso vem de contadores salvos e do estado do jogo; ao cumprir, a missão fica "pronta" e o jogador reivindica a recompensa.
  * Os atos seguintes só aparecem depois que o ato atual termina.
  */
 public class MissionManager {
@@ -203,16 +203,55 @@ public class MissionManager {
         return n;
     }
 
-    /** Confere as missões do ato atual (a cada 1,5s) e entrega as recompensas das cumpridas. */
+    // missões prontas (cumpridas e ainda não reivindicadas): contadores em cache, atualizados a cada 1,5s
+    private int readyJourney = 0, readyDaily = 0;
+    private final java.util.Set<String> notified = new java.util.HashSet<>();
+
+    public int readyJourneyCount() { return readyJourney; }
+    public int readyDailyCount() { return readyDaily; }
+
+    /** Confere as missões do ato atual (a cada 1,5s) e avisa quando alguma fica pronta para reivindicar. */
     public void check(GameView gv) {
         if (db == null) db = gv.activity.dbHelper;
         long now = System.currentTimeMillis();
         if (now - lastCheck < 1500) return;
         lastCheck = now;
         checkDailies(gv);
+        int ready = 0;
         for (Quest q : activeQuests()) {
-            if (progress(q, gv) >= q.target) complete(q, gv);
+            if (progress(q, gv) >= q.target) {
+                ready++;
+                if (notified.add("q_" + q.id)) ui.showMessage("📜 MISSÃO PRONTA: " + q.title + " — reivindique a recompensa!");
+            }
         }
+        readyJourney = ready;
+    }
+
+    /** A missão está cumprida e ainda não foi reivindicada? */
+    public boolean isQuestReady(Quest q, GameView gv) { return !isDone(q) && progress(q, gv) >= q.target; }
+
+    /** Reivindica uma missão da Jornada. */
+    public boolean claimQuest(Quest q, GameView gv) {
+        if (db == null) db = gv.activity.dbHelper;
+        if (!isQuestReady(q, gv)) return false;
+        complete(q, gv);
+        readyJourney = Math.max(0, readyJourney - 1);
+        return true;
+    }
+
+    /** Reivindica todas as prontas (inclusive as do próximo ato, que abre ao fechar o atual). Retorna quantas. */
+    public int claimAllQuests(GameView gv) {
+        if (db == null) db = gv.activity.dbHelper;
+        int n = 0;
+        for (int guard = 0; guard < QUESTS.size(); guard++) {
+            boolean any = false;
+            for (Quest q : activeQuests()) {
+                if (progress(q, gv) >= q.target) { complete(q, gv); n++; any = true; }
+            }
+            if (!any) break;
+        }
+        readyJourney = 0;
+        return n;
     }
 
     private void complete(Quest q, GameView gv) {
@@ -220,7 +259,7 @@ public class MissionManager {
         if (q.gold > 0) gv.player.addGold(q.gold);
         if (q.gems > 0) gv.player.addGems(q.gems);
         if (q.rewardItem != null) gv.player.addItem(q.rewardItem, q.itemQty);
-        ui.showMessage("📜 MISSÃO CUMPRIDA: " + q.title + "  " + q.rewardText());
+        ui.showMessage("📜 RECOMPENSA: " + q.title + "  " + q.rewardText());
         if (currentAct() != q.act && currentAct() != 0) {
             ui.showMessage("📖 NOVO CAPÍTULO: " + ACT_NAMES[currentAct()]);
         } else if (currentAct() == 0) {
@@ -292,23 +331,57 @@ public class MissionManager {
         if (now - lastDaily < 2000) return;
         lastDaily = now;
         List<Daily> ds = dailies();
+        int ready = 0;
         for (int i = 0; i < ds.size(); i++) {
             Daily q = ds.get(i);
             if (dailyDone(i) || dailyProgress(q) < q.target) continue;
-            db.setKv("daily_done_" + i, 1);
-            gv.player.addGold(q.gold);
-            if (q.item != null) gv.player.addItem(q.item, q.qty);
-            ui.showMessage("📅 DIÁRIA CUMPRIDA: " + q.title + "  " + q.rewardText());
-            com.example.pokeworld.managers.SoundManager.play("levelup");
-            gv.activity.saveCurrentGame();
+            ready++;
+            if (notified.add("d_" + dayNum() + "_" + i)) ui.showMessage("📅 DIÁRIA PRONTA: " + q.title + " — reivindique!");
         }
-        if (dailiesDone() == 3 && !dailyBonusTaken()) {
-            db.setKv("daily_bonus", 1);
-            gv.player.addGems(2);
-            gv.player.addItem("Gema de Boost", 1);
-            ui.showMessage("🎁 TODAS AS DIÁRIAS! Bônus: 💎 2 gemas + 1x Gema de Boost");
-            gv.activity.saveCurrentGame();
+        if (bonusReady()) {
+            ready++;
+            if (notified.add("db_" + dayNum())) ui.showMessage("🎁 Todas as diárias! Reivindique o bônus.");
         }
+        readyDaily = ready;
+    }
+
+    public boolean dailyReady(int i) {
+        List<Daily> ds = dailies();
+        return db != null && i >= 0 && i < ds.size() && !dailyDone(i) && dailyProgress(ds.get(i)) >= ds.get(i).target;
+    }
+
+    public boolean bonusReady() { return db != null && dailiesDone() == 3 && !dailyBonusTaken(); }
+
+    public boolean claimDaily(int i, GameView gv) {
+        if (!dailyReady(i)) return false;
+        Daily q = dailies().get(i);
+        db.setKv("daily_done_" + i, 1);
+        gv.player.addGold(q.gold);
+        if (q.item != null) gv.player.addItem(q.item, q.qty);
+        ui.showMessage("📅 RECOMPENSA: " + q.title + "  " + q.rewardText());
+        SoundManager.play("levelup");
+        readyDaily = Math.max(0, readyDaily - 1);
+        gv.activity.saveCurrentGame();
+        return true;
+    }
+
+    public boolean claimDailyBonus(GameView gv) {
+        if (!bonusReady()) return false;
+        db.setKv("daily_bonus", 1);
+        gv.player.addGems(2);
+        gv.player.addItem("Gema de Boost", 1);
+        ui.showMessage("🎁 BÔNUS DAS DIÁRIAS: 💎 2 gemas + 1x Gema de Boost");
+        readyDaily = Math.max(0, readyDaily - 1);
+        gv.activity.saveCurrentGame();
+        return true;
+    }
+
+    /** Reivindica todas as diárias prontas e o bônus. Retorna quantas. */
+    public int claimAllDailies(GameView gv) {
+        int n = 0;
+        for (int i = 0; i < 3; i++) if (claimDaily(i, gv)) n++;
+        if (claimDailyBonus(gv)) n++;
+        return n;
     }
 
     public void syncNPCs(List<NPC> npcs) {

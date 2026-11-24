@@ -27,6 +27,7 @@ public class ExploringUI extends BaseUI {
     public RectF runesBtn = new RectF();
     public RectF teleportBtn = new RectF();
     public RectF friendsBtn = new RectF();
+    public final RewardBar rewardBar = new RewardBar();
     public RectF towerBtn = new RectF();
     public RectF settingsBtn = new RectF();
     public RectF homeBtn = new RectF();
@@ -330,15 +331,17 @@ public class ExploringUI extends BaseUI {
         drawIcon(canvas, settingsBtn, "⚙️");
         drawIcon(canvas, homeBtn, "🏰");
         
+        if (rewardBar.visible(gv)) rewardBar.draw(canvas, gv);
         if (gv.world.tileMap.getMapName().equals("HOME")) {
             drawIcon(canvas, buildBtn, "🔨");
             String raid = gv.world.defense != null ? gv.world.defense.hudText(System.currentTimeMillis()) : null;
             if (raid != null) {
                 float rw = canvas.getWidth();
                 paint.setColor(Color.argb(200, 150, 20, 20));
-                canvas.drawRoundRect(new RectF(rw / 2f - 260, 150, rw / 2f + 260, 206), 18, 18, paint);
+                float ry = rewardBar.visible(gv) ? rewardBar.bottom(rw, canvas.getHeight()) + 8 : 150;
+                canvas.drawRoundRect(new RectF(rw / 2f - 260, ry, rw / 2f + 260, ry + 56), 18, 18, paint);
                 paint.setColor(Color.WHITE); paint.setTextSize(28); paint.setTextAlign(Paint.Align.CENTER);
-                canvas.drawText(raid, rw / 2f, 188, paint);
+                canvas.drawText(raid, rw / 2f, ry + 38, paint);
             }
         }
 

@@ -62,6 +62,7 @@ public class AchievementManager {
     private final UIManager ui;
     private final DatabaseHelper dbHelper;
     private final Set<String> unlockedAchievements = new HashSet<>();
+    private final Set<String> claimedAchievements = new HashSet<>();   // recompensa já reivindicada
     private long lastCheck = 0;
     private long lastBaseQuery = 0;
     private int cachedBasePieces = 0;
@@ -70,6 +71,12 @@ public class AchievementManager {
         this.ui = ui;
         this.dbHelper = dbHelper;
         unlockedAchievements.addAll(dbHelper.getUnlockedAchievements());
+        // Saves antigos pagavam na hora: tudo que já estava concluído conta como reivindicado (uma única vez).
+        if (dbHelper.getKv("ach_claim_mig", 0) == 0) {
+            for (int i = 0; i < ALL.size(); i++) if (unlockedAchievements.contains(ALL.get(i).title)) dbHelper.setKv("ach_claim_" + i, 1);
+            dbHelper.setKv("ach_claim_mig", 1);
+        }
+        for (int i = 0; i < ALL.size(); i++) if (dbHelper.getKv("ach_claim_" + i, 0) == 1) claimedAchievements.add(ALL.get(i).title);
     }
 
     public int progress(Def d, GameView gv) {
@@ -102,7 +109,7 @@ public class AchievementManager {
         }
     }
 
-    /** Verifica as conquistas (no máximo a cada 2s) e entrega as recompensas das novas. */
+    /** Verifica as conquistas (no máximo a cada 2s) e avisa quando uma é concluída (a recompensa é reivindicada depois). */
     public void check(GameView gv) {
         long now = System.currentTimeMillis();
         if (now - lastCheck < 2000) return;
@@ -116,10 +123,40 @@ public class AchievementManager {
     private void unlock(Def d, GameView gv) {
         unlockedAchievements.add(d.title);
         dbHelper.saveAchievement(d.title);
+        ui.showMessage("🏆 CONQUISTA: " + d.title + " — reivindique a recompensa!");
+        gv.activity.saveCurrentGame();
+    }
+
+    public boolean isClaimed(Def d) { return claimedAchievements.contains(d.title); }
+
+    /** Concluídas com recompensa ainda não reivindicada (barato: só conjuntos em memória). */
+    public int readyCount() {
+        int n = 0;
+        for (Def d : ALL) if (unlockedAchievements.contains(d.title) && !claimedAchievements.contains(d.title)) n++;
+        return n;
+    }
+
+    public boolean claim(Def d, GameView gv) {
+        if (!claimQuiet(d, gv)) return false;
+        gv.activity.saveCurrentGame();
+        return true;
+    }
+
+    private boolean claimQuiet(Def d, GameView gv) {
+        if (!unlockedAchievements.contains(d.title) || claimedAchievements.contains(d.title)) return false;
+        claimedAchievements.add(d.title);
+        dbHelper.setKv("ach_claim_" + ALL.indexOf(d), 1);
         if (d.rewardGold > 0) gv.player.addGold(d.rewardGold);
         if (d.rewardGems > 0) gv.player.addGems(d.rewardGems);
-        ui.showMessage("🏆 CONQUISTA: " + d.title + "  " + d.rewardText());
-        gv.activity.saveCurrentGame();
+        ui.showMessage("🏆 RECOMPENSA: " + d.title + "  " + d.rewardText());
+        return true;
+    }
+
+    public int claimAll(GameView gv) {
+        int n = 0;
+        for (Def d : ALL) if (claimQuiet(d, gv)) n++;
+        if (n > 0) gv.activity.saveCurrentGame();
+        return n;
     }
 
     public boolean isUnlocked(Def d) { return unlockedAchievements.contains(d.title); }

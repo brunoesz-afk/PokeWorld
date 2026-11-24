@@ -17,6 +17,10 @@ public class MissionUI extends BaseUI {
     public RectF tabJourney = new RectF(), tabDaily = new RectF();
     public RectF tabEvents = new RectF();
     public boolean showDaily = false, showEvents = false;
+    public final RectF claimAllBtn = new RectF();
+    /** Botões REIVINDICAR do último desenho: retângulo + chave ("q:id", "d:i" ou "bonus"). */
+    public final java.util.List<RectF> claimRects = new java.util.ArrayList<>();
+    public final java.util.List<String> claimKeys = new java.util.ArrayList<>();
 
     @Override
     public void draw(Canvas canvas, GameView gv) {
@@ -26,7 +30,13 @@ public class MissionUI extends BaseUI {
         int act = mm.currentAct();
         boolean finished = act == 0;
         drawHeader(canvas, "JORNADA DO TREINADOR",
-                "Missões cumpridas: " + mm.doneCount() + " / " + total + "   •   recompensas entregues automaticamente", exitBtn);
+                "Missões cumpridas: " + mm.doneCount() + " / " + total + "   •   toque em REIVINDICAR quando a missão estiver pronta", exitBtn);
+        claimRects.clear(); claimKeys.clear(); claimAllBtn.setEmpty();
+        int readyAll = mm.readyJourneyCount() + mm.readyDailyCount();
+        if (readyAll > 0) {
+            claimAllBtn.set(w - 36 - 360, 112, w - 36, 154);
+            pillButton(canvas, claimAllBtn, "🎁 REIVINDICAR TUDO (" + readyAll + ")", C_GOOD, 22);
+        }
 
         // abas: Jornada | Diárias
         tabJourney.set(36, 112, 36 + 220, 154);
@@ -55,19 +65,27 @@ public class MissionUI extends BaseUI {
         for (Quest q : quests) {
             boolean done = mm.isQuestDone(q);
             int prog = done ? q.target : Math.min(q.target, mm.progress(q, gv));
+            boolean ready = !done && prog >= q.target;
             RectF card = new RectF(36, y, w - 36, y + cardH);
-            panel(canvas, card, done ? Color.argb(230, 20, 48, 34) : C_PANEL, done ? C_GOOD : C_LINE, 2);
-            text(canvas, (done ? "✅ " : "🎯 ") + q.title, card.left + 18, card.top + 34, 26, done ? C_GOOD : Color.WHITE, Paint.Align.LEFT, true);
+            panel(canvas, card, done ? Color.argb(230, 20, 48, 34) : ready ? Color.argb(235, 60, 52, 18) : C_PANEL, done ? C_GOOD : ready ? C_ACCENT : C_LINE, ready ? 4 : 2);
+            text(canvas, (done ? "✅ " : ready ? "🎁 " : "🎯 ") + q.title, card.left + 18, card.top + 34, 26, done ? C_GOOD : ready ? C_ACCENT : Color.WHITE, Paint.Align.LEFT, true);
             paint.setTextSize(19);
             text(canvas, fit(q.desc, card.width() * 0.62f), card.left + 18, card.top + 62, 19, Color.rgb(210, 216, 230), Paint.Align.LEFT, false);
             if (cardH >= 100) {
                 paint.setTextSize(17);
                 text(canvas, fit("Dica: " + q.hint, card.width() - 36), card.left + 18, card.top + 88, 17, C_MUTED, Paint.Align.LEFT, false);
             }
-            text(canvas, q.rewardText(), card.right - 18, card.top + 34, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
-            RectF pb = new RectF(card.right - 260, card.top + 48, card.right - 18, card.top + 64);
-            bar(canvas, pb, prog / (float) q.target, done ? C_GOOD : C_ACCENT);
-            text(canvas, prog + " / " + q.target, pb.centerX(), pb.bottom + 20, 16, Color.WHITE, Paint.Align.CENTER, false);
+            if (ready) {
+                text(canvas, q.rewardText(), card.right - 276, card.centerY() + 7, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
+                RectF cb = new RectF(card.right - 262, card.top + 6, card.right - 14, card.bottom - 6);
+                pillButton(canvas, cb, "REIVINDICAR", C_GOOD, 22);
+                claimRects.add(cb); claimKeys.add("q:" + q.id);
+            } else {
+                text(canvas, q.rewardText(), card.right - 18, card.top + 34, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
+                RectF pb = new RectF(card.right - 260, card.top + 48, card.right - 18, card.top + 64);
+                bar(canvas, pb, prog / (float) q.target, done ? C_GOOD : C_ACCENT);
+                text(canvas, prog + " / " + q.target, pb.centerX(), pb.bottom + 20, 16, Color.WHITE, Paint.Align.CENTER, false);
+            }
             y += cardH + gap;
         }
     }
@@ -81,10 +99,18 @@ public class MissionUI extends BaseUI {
             MissionManager.Daily q = ds.get(i);
             boolean done = mm.dailyDone(i);
             int prog = done ? q.target : mm.dailyProgress(q);
+            boolean ready = !done && prog >= q.target;
             RectF card = new RectF(36, y, w - 36, y + cardH);
-            panel(canvas, card, done ? Color.argb(230, 20, 48, 34) : C_PANEL, done ? C_GOOD : C_LINE, 2);
-            text(canvas, fit((done ? "✅ " : "🎯 ") + q.title, card.width() * 0.6f), card.left + 18, card.top + 36, 24, done ? C_GOOD : Color.WHITE, Paint.Align.LEFT, true);
-            text(canvas, q.rewardText(), card.right - 18, card.top + 36, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
+            panel(canvas, card, done ? Color.argb(230, 20, 48, 34) : ready ? Color.argb(235, 60, 52, 18) : C_PANEL, done ? C_GOOD : ready ? C_ACCENT : C_LINE, ready ? 4 : 2);
+            text(canvas, fit((done ? "✅ " : ready ? "🎁 " : "🎯 ") + q.title, card.width() * 0.5f), card.left + 18, card.top + 36, 24, done ? C_GOOD : ready ? C_ACCENT : Color.WHITE, Paint.Align.LEFT, true);
+            if (ready) {
+                text(canvas, q.rewardText(), card.right - 276, card.top + 36, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
+                RectF cb = new RectF(card.right - 262, card.top + 8, card.right - 14, card.top + 8 + Math.min(52, cardH - 16));
+                pillButton(canvas, cb, "REIVINDICAR", C_GOOD, 22);
+                claimRects.add(cb); claimKeys.add("d:" + i);
+            } else {
+                text(canvas, q.rewardText(), card.right - 18, card.top + 36, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
+            }
             RectF pb = new RectF(card.left + 18, card.top + 54, card.right - 18, card.top + 70);
             bar(canvas, pb, prog / (float) q.target, done ? C_GOOD : C_ACCENT);
             text(canvas, prog + " / " + q.target, pb.centerX(), pb.bottom + 20, 16, Color.WHITE, Paint.Align.CENTER, false);
@@ -93,7 +119,15 @@ public class MissionUI extends BaseUI {
         RectF bonus = new RectF(36, y, w - 36, y + 70);
         boolean got = mm.dailyBonusTaken();
         panel(canvas, bonus, got ? Color.argb(230, 20, 48, 34) : C_PANEL, got ? C_GOOD : Color.rgb(255, 200, 90), 2);
-        text(canvas, (got ? "✅ " : "🎁 ") + "Complete as 3 diárias: 💎 2 gemas + 1x Gema de Boost", bonus.centerX(), bonus.centerY() + 8, 22, got ? C_GOOD : Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
+        boolean bonusReady = mm.bonusReady();
+        if (bonusReady) {
+            text(canvas, "🎁 Bônus pronto: 💎 2 gemas + 1x Gema de Boost", bonus.left + 20, bonus.centerY() + 8, 22, Color.rgb(255, 214, 90), Paint.Align.LEFT, true);
+            RectF cb = new RectF(bonus.right - 262, bonus.top + 10, bonus.right - 14, bonus.bottom - 10);
+            pillButton(canvas, cb, "REIVINDICAR", C_GOOD, 22);
+            claimRects.add(cb); claimKeys.add("bonus");
+        } else {
+            text(canvas, (got ? "✅ " : "🎁 ") + "Reivindique as 3 diárias: 💎 2 gemas + 1x Gema de Boost", bonus.centerX(), bonus.centerY() + 8, 22, got ? C_GOOD : Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
+        }
     }
 
     private void drawEvents(Canvas canvas, float w, float h) {

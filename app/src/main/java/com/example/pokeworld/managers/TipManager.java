@@ -26,15 +26,16 @@ public class TipManager {
         TEXT.put("screen_TALENTS", "Talentos: ganhe 1 ponto por nível de treinador. Cada nó só libera quando o nó de cima chega ao nível pedido, então planeje o ramo. Dá para resetar por ouro.");
         TEXT.put("screen_RUNES", "Runas: equipe uma por Pokémon ativo. Sangue cura, Mercúrio acelera, Sorte aumenta ouro e drops. Elas caem de chefes e dos andares 5, 10, 15 e 20 da Torre.");
         TEXT.put("screen_BESTIARY", "Pokédex: chegue perto de um Pokémon para registrá-lo. A ficha mostra onde cada espécie aparece e como ela evolui.");
-        TEXT.put("screen_ACHIEVEMENTS", "Conquistas: cada uma dá ouro ou gemas assim que é cumprida, sem precisar fazer nada.");
+        TEXT.put("screen_ACHIEVEMENTS", "Conquistas: ao cumprir uma, toque em REIVINDICAR para receber o ouro ou as gemas.");
         TEXT.put("screen_TOWER_SELECT", "Torre: cada andar tem 3 hordas e dá prêmios. Você precisa concluir um andar para liberar o próximo.");
         TEXT.put("screen_STORAGE", "Gerenciador: Pokémon na CAIXA ficam guardados e não aparecem na base. Os da DEFESA andam pelo reino e protegem contra invasões. A defesa cresce com o Quartel e com cada construção.");
         TEXT.put("screen_BUILD", "Construção: escolha uma peça, posicione e confirme. Obras levam tempo, e melhorar o Quartel libera mais peças.");
         TEXT.put("screen_EVOLUTION", "Pedras: escolha quem vai evoluir. A pedra é consumida e o Pokémon mantém nível, equipamento e runa.");
-        TEXT.put("screen_MISSIONS", "Jornada: as missões do ato atual aparecem aqui. As recompensas são entregues sozinhas, e o próximo ato abre quando você termina este.");
+        TEXT.put("screen_MISSIONS", "Jornada: as missões do ato atual aparecem aqui. Quando uma fica pronta, toque em REIVINDICAR (ou REIVINDICAR TUDO). O próximo ato abre quando você reivindica o último deste.");
         // mapas
         TEXT.put("map_HOME", "Esta é a sua BASE. Toque em 🔨 para construir. Pokémon da defesa andam por aqui, e invasões de tempos em tempos testam suas muralhas e torres.");
         TEXT.put("map_CITY", "Cidade em distritos: Praça dos Eventos (centro), Cura e Mercado (norte), Coliseu (nordeste), Guilda de Missões (sudeste) e Mestres (sudoeste). Um \"!\" sobre o NPC indica novidade.");
+        TEXT.put("screen_REWARDS", "Central de Recompensas: pegue o Presente Diário (7 dias seguidos, o 7º é o melhor), o Baú do Evento e a Recarga grátis de suprimentos. A barra de ícones no topo da cidade e da base avisa quando há algo para reivindicar.");
         TEXT.put("screen_COLISEUM", "Coliseu: reúne os desafios de combate (Torre, Torre Infinita, Ginásio e Bases Rivais) e mostra o bônus do dia.");
         TEXT.put("map_wild", "Mapa selvagem: os Pokémon só aparecem quando você chega perto, em pontos fixos. Depois que um cai, o ponto demora um pouco para renascer.");
         TEXT.put("map_SMALL_LAKE", "Um lago! Chegue perto da água e use a ação de pescar.");

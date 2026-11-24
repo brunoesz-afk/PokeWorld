@@ -20,13 +20,18 @@ public class AchievementUI extends BaseUI {
     public List<RectF> filterRects = new ArrayList<>();
     public int filter = 0;
     public float scroll = 0, maxScroll = 0;
+    public final RectF claimAllBtn = new RectF();
+    public final List<RectF> claimRects = new ArrayList<>();
+    public final List<AchievementManager.Def> claimDefs = new ArrayList<>();
 
     @Override
     public void draw(Canvas canvas, GameView gv) {
         float w = canvas.getWidth(), h = canvas.getHeight();
         AchievementManager m = gv.achievements;
         int total = AchievementManager.ALL.size();
-        drawHeader(canvas, "CONQUISTAS", "Concluídas: " + m.unlockedCount() + " / " + total + "   •   cada conquista dá uma recompensa", exitBtn);
+        drawHeader(canvas, "CONQUISTAS", "Concluídas: " + m.unlockedCount() + " / " + total + "   •   toque em REIVINDICAR para receber a recompensa", exitBtn);
+        claimRects.clear(); claimDefs.clear(); claimAllBtn.setEmpty();
+        int ready = m.readyCount();
 
         filterRects.clear();
         float fx = 30, fw = Math.min(180, (w * 0.6f - 30 - 2 * 8) / 3f);
@@ -36,7 +41,11 @@ public class AchievementUI extends BaseUI {
             chip(canvas, r, FILTERS[i], filter == i, C_ACCENT);
             fx += fw + 8;
         }
-        RectF pb = new RectF(fx + 16, 130, w - 30, 148);
+        RectF pb = new RectF(fx + 16, 130, ready > 0 ? w - 30 - 340 : w - 30, 148);
+        if (ready > 0) {
+            claimAllBtn.set(w - 30 - 320, 118, w - 30, 160);
+            pillButton(canvas, claimAllBtn, "🎁 REIVINDICAR TUDO (" + ready + ")", C_GOOD, 22);
+        }
         bar(canvas, pb, m.unlockedCount() / (float) total, C_ACCENT);
 
         listArea.set(30, 172, w - 30, h - 24);
@@ -74,6 +83,7 @@ public class AchievementUI extends BaseUI {
         for (int i = 0; i < shown.size(); i++) {
             AchievementManager.Def d = shown.get(i);
             boolean done = m.isUnlocked(d);
+            boolean claimable = done && !m.isClaimed(d);
             int cur = Math.min(d.target, m.progress(d, gv));
             float x = listArea.left + pad + (i % cols) * (cw + gap);
             float y = listArea.top + pad + (i / cols) * (ch + gap) - scroll;
@@ -87,7 +97,12 @@ public class AchievementUI extends BaseUI {
             text(canvas, fit(d.title, cw - 88 - 120), tx, r.top + 32, 21, done ? Color.rgb(255, 225, 120) : Color.WHITE, Paint.Align.LEFT, true);
             paint.setTextSize(15);
             text(canvas, fit(d.desc, cw - 100), tx, r.top + 56, 15, C_MUTED, Paint.Align.LEFT, false);
-            text(canvas, done ? "✔ Concluída" : d.rewardText(), r.right - 14, r.top + 32, 16, done ? C_GOOD : C_ACCENT, Paint.Align.RIGHT, true);
+            text(canvas, claimable ? d.rewardText() : done ? "✔ Recebida" : d.rewardText(), r.right - 14, r.top + 32, 16, claimable ? Color.rgb(255, 214, 90) : done ? C_GOOD : C_ACCENT, Paint.Align.RIGHT, true);
+            if (claimable) {
+                RectF cb = new RectF(r.right - 160, r.top + 40, r.right - 14, r.top + 76);
+                pillButton(canvas, cb, "REIVINDICAR", C_GOOD, 17);
+                claimRects.add(cb); claimDefs.add(d);
+            }
             RectF pbar = new RectF(tx, r.bottom - 34, r.right - 80, r.bottom - 20);
             bar(canvas, pbar, cur / (float) d.target, done ? Color.rgb(255, 215, 0) : C_GOOD);
             text(canvas, cur + " / " + d.target, r.right - 14, r.bottom - 19, 15, Color.WHITE, Paint.Align.RIGHT, false);

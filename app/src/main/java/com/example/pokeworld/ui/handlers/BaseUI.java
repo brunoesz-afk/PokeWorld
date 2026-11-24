@@ -202,6 +202,13 @@ public abstract class BaseUI implements UIHandler {
         text(canvas, label, r.centerX(), r.centerY() + 9, 26, enabled ? Color.BLACK : Color.rgb(120, 128, 142), Paint.Align.CENTER, true);
     }
 
+    /** Botão compacto com texto ajustado à largura (ex.: REIVINDICAR). */
+    protected void pillButton(Canvas canvas, RectF r, String label, int color, float size) {
+        panel(canvas, r, color, Color.WHITE, 2);
+        paint.setTextSize(size);
+        text(canvas, fit(label, r.width() - 12), r.centerX(), r.centerY() + size * 0.34f, size, Color.BLACK, Paint.Align.CENTER, true);
+    }
+
     protected void bar(Canvas canvas, RectF r, float frac, int color) {
         frac = Math.max(0f, Math.min(1f, frac));
         paint.setStyle(Paint.Style.FILL);

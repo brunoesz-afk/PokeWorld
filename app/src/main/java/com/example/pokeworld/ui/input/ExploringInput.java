@@ -110,6 +110,10 @@ public class ExploringInput implements InputExtension {
 
     private boolean handleButtons(float x, float y, GameView gv) {
         ExploringUI ui = (ExploringUI) gv.ui.getHandler(UIManager.UIState.EXPLORING);
+        if (ui.rewardBar.visible(gv)) {
+            int hit = ui.rewardBar.hit(x, y);
+            if (hit >= 0) { RewardActions.bar(gv, hit); return true; }
+        }
         
         if (ui.quickHealBtn.contains(x, y)) {
             if (gv.companion.getHp() >= gv.companion.getMaxHp()) { gv.ui.showMessage("❤️ O companheiro já está com a vida cheia."); return true; }

@@ -16,6 +16,12 @@ public class AchievementInput extends TapScrollInput {
         AchievementUI ui = (AchievementUI) gv.ui.getHandler(UIManager.UIState.ACHIEVEMENTS);
         if (ui == null) return false;
         if (ui.exitBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.EXPLORING; return true; }
+        if (!ui.claimAllBtn.isEmpty() && ui.claimAllBtn.contains(x, y)) { gv.achievements.claimAll(gv); return true; }
+        if (ui.listArea.contains(x, y)) {
+            for (int i = 0; i < ui.claimRects.size(); i++) {
+                if (ui.claimRects.get(i).contains(x, y)) { gv.achievements.claim(ui.claimDefs.get(i), gv); return true; }
+            }
+        }
         for (int i = 0; i < ui.filterRects.size(); i++) {
             if (ui.filterRects.get(i).contains(x, y)) { ui.filter = i; ui.scroll = 0; return true; }
         }
