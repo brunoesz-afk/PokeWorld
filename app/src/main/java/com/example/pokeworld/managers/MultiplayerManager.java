@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.example.pokeworld.entities.RemotePlayer;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -12,6 +13,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.socket.client.Ack;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 
@@ -53,14 +55,25 @@ public class MultiplayerManager {
                     isConnected = true;
                     Log.d("MultiplayerManager", "Conectado ao servidor multiplayer!");
 
+                    // entra com nome + código de amigo + segredo (FriendManager)
+                    socket.emit("join", FriendManager.getInstance().joinPayload(playerName));
+                    FriendManager.getInstance().sync();
+                });
+
+                // pedidos / aceites / remoções de amigos; confirma o recebimento para o servidor apagar da caixa
+                socket.on("friendInbox", args -> {
                     try {
-                        JSONObject playerInfo = new JSONObject();
-                        playerInfo.put("name", playerName);
-                        socket.emit("join", playerInfo);
-                    } catch (JSONException e) {
-                        Log.e("MultiplayerManager", "Erro ao enviar join: " + e.getMessage());
+                        if (args.length > 0 && args[0] instanceof JSONArray) {
+                            FriendManager.getInstance().onInbox((JSONArray) args[0]);
+                            if (args[args.length - 1] instanceof Ack) ((Ack) args[args.length - 1]).call();
+                        }
+                    } catch (Exception e) {
+                        Log.e("MultiplayerManager", "Erro na caixa de amigos: " + e.getMessage());
                     }
                 });
+
+                socket.on("identityRejected", args ->
+                        FriendManager.getInstance().notice("⚠ O servidor recusou o seu código de amigo (em uso por outro aparelho)."));
 
                 socket.on(Socket.EVENT_DISCONNECT, args -> {
                     isConnected = false;
@@ -140,6 +153,20 @@ public class MultiplayerManager {
         }
     }
 
+    /** Envia um evento e entrega a resposta do servidor ao Ack. Retorna false se estiver offline. */
+    public boolean emitAck(String event, JSONObject data, Ack ack) {
+        Socket s = socket;
+        if (!isConnected || s == null) return false;
+        s.emit(event, data, ack);
+        return true;
+    }
+
+    public void rename(String name) {
+        Socket s = socket;
+        if (!isConnected || s == null) return;
+        try { s.emit("rename", new JSONObject().put("name", name)); } catch (JSONException ignored) {}
+    }
+
     private void handlePlayerUpdate(JSONObject data) {
         try {
             String id = data.getString("id");
@@ -161,6 +188,8 @@ public class MultiplayerManager {
 
             rp.setTargetPosition(x, y, petX, petY);
             rp.mapName = map;
+            rp.name = data.optString("name", rp.name);
+            rp.code = data.optString("code", "");
             rp.direction = data.optInt("direction", 0);
             rp.frameIndex = data.optInt("frameIndex", 1);
             rp.skinColor = data.optInt("skinColor", Color.WHITE);

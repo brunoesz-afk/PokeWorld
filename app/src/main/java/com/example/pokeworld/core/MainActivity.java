@@ -342,7 +342,8 @@ public class MainActivity extends AppCompatActivity {
             isInGame = true;
             hideSystemUI();
 
-            // Conecta ao servidor multiplayer
+            // Conecta ao servidor multiplayer (com a identidade de amigos)
+            com.example.pokeworld.managers.FriendManager.getInstance().init(this);
             MultiplayerManager.getInstance().connect("Treinador");
         } catch (Exception e) {
             android.util.Log.e("MainActivity", "Erro ao iniciar o mundo: " + e.getMessage(), e);
@@ -411,7 +412,7 @@ public class MainActivity extends AppCompatActivity {
         MultiplayerManager.getInstance().disconnect();
     }
 
-    private void hideSystemUI() {
+    public void hideSystemUI() {
         if (getSupportActionBar() != null) getSupportActionBar().hide();
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |

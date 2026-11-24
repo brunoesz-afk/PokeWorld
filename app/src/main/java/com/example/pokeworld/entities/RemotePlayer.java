@@ -15,6 +15,7 @@ public class RemotePlayer {
     public String id;
     public String name = "Treinador";
     public String mapName = "CITY";
+    public String code = "";   // código de amigo (vazio se o jogador está anônimo)
 
     // Posição e animação do Treinador
     public double posX;
@@ -96,7 +97,7 @@ public class RemotePlayer {
                 int r = 80;
                 canvas.drawOval((float) posX - 30, (float) posY + 10, (float) posX + 30, (float) posY + 30, shadowPaint);
                 canvas.drawBitmap(mountSprite, null, new Rect((int) posX - r, (int) posY - r, (int) posX + r, (int) posY + r), null);
-                drawNameTag(canvas, name, (float) posX, (float) posY - r - 15);
+                drawNameTag(canvas, name, (float) posX, (float) posY - r - 15, true);
             }
             return;
         }
@@ -114,7 +115,7 @@ public class RemotePlayer {
             }
 
             canvas.drawBitmap(trainerSprite, null, new Rect((int) posX - r, (int) posY - r, (int) posX + r, (int) posY + r), p);
-            drawNameTag(canvas, name, (float) posX, (float) posY - r - 15);
+            drawNameTag(canvas, name, (float) posX, (float) posY - r - 15, true);
         }
 
         // 2. Desenha o Pokémon Acompanhante (Com raio idêntico ao Companion.java -> r = 56)
@@ -124,15 +125,21 @@ public class RemotePlayer {
                 int r = 56;
                 canvas.drawOval((float) petX - 25, (float) petY + 10, (float) petX + 25, (float) petY + 25, shadowPaint);
                 canvas.drawBitmap(petSprite, null, new Rect((int) petX - r, (int) petY - r, (int) petX + r, (int) petY + r), null);
-                drawNameTag(canvas, petSpecies, (float) petX, (float) petY - r - 15);
+                drawNameTag(canvas, petSpecies, (float) petX, (float) petY - r - 15, false);
             }
         }
     }
 
-    private void drawNameTag(Canvas canvas, String text, float textX, float textY) {
-        float textWidth = namePaint.measureText(text);
+    private void drawNameTag(Canvas canvas, String text, float textX, float textY, boolean trainer) {
+        // amigos aparecem com ★ e nome verde
+        boolean friend = trainer && !code.isEmpty() && com.example.pokeworld.managers.FriendManager.getInstance().isFriend(code);
+        String label = friend ? "★ " + text : text;
+        float textWidth = namePaint.measureText(label);
         RectF bgRect = new RectF(textX - textWidth / 2f - 8f, textY - 22f, textX + textWidth / 2f + 8f, textY + 6f);
         canvas.drawRoundRect(bgRect, 6f, 6f, nameBgPaint);
-        canvas.drawText(text, textX, textY, namePaint);
+        int old = namePaint.getColor();
+        if (friend) namePaint.setColor(Color.rgb(120, 235, 150));
+        canvas.drawText(label, textX, textY, namePaint);
+        namePaint.setColor(old);
     }
 }

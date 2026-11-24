@@ -180,6 +180,7 @@ public class ExploringInput implements InputExtension {
             }
             return true;
         }
+        if (ui.friendsBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.FRIENDS; return true; }
         if (ui.teleportBtn.contains(x, y)) {
             if (gv.tutorial != null && gv.tutorial.getCurrentState() == com.example.pokeworld.managers.TutorialManager.State.CLICK_COMPASS_TUTORIAL) {
                 gv.tutorial.onCompassClicked();

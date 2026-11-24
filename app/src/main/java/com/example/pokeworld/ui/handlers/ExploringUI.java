@@ -26,6 +26,7 @@ public class ExploringUI extends BaseUI {
     public RectF achBtn = new RectF();
     public RectF runesBtn = new RectF();
     public RectF teleportBtn = new RectF();
+    public RectF friendsBtn = new RectF();
     public RectF towerBtn = new RectF();
     public RectF settingsBtn = new RectF();
     public RectF homeBtn = new RectF();
@@ -90,6 +91,9 @@ public class ExploringUI extends BaseUI {
         paint.setTextAlign(Paint.Align.RIGHT);
         canvas.drawText(serverStatus, canvas.getWidth() - 20, 22 * uiScale(canvas.getWidth(), canvas.getHeight()), paint);
         
+        String friendNotice;
+        while ((friendNotice = com.example.pokeworld.managers.FriendManager.getInstance().pollNotice()) != null) gv.ui.showMessage(friendNotice);
+
         drawHUD(canvas, gv.companion, gv.player, gv);
         drawMinimap(canvas, gv);
         drawBossBar(canvas, gv.world);
@@ -137,6 +141,7 @@ public class ExploringUI extends BaseUI {
         zoomInBtn.set(minimapRect.left, minimapRect.bottom + 8 * k, minimapRect.left + 100 * k, minimapRect.bottom + 8 * k + 56 * k);
         zoomOutBtn.set(minimapRect.right - 100 * k, minimapRect.bottom + 8 * k, minimapRect.right, minimapRect.bottom + 8 * k + 56 * k);
         teleportBtn.set(minimapRect.left - 8 * k - 110 * k, minimapRect.top, minimapRect.left - 8 * k, minimapRect.top + 110 * k);
+        friendsBtn.set(teleportBtn.left, teleportBtn.bottom + 34 * k, teleportBtn.right, teleportBtn.bottom + 34 * k + 90 * k);
         
         interactBtn.set(w/2f - 150, h - 120, w/2f + 150, h - 40);
         captureBtn.set(w/2f - 150, h - 220, w/2f + 150, h - 140);
@@ -294,6 +299,17 @@ public class ExploringUI extends BaseUI {
         drawIcon(canvas, teleportBtn, "🧭");
         paint.setColor(Color.WHITE); paint.setTextSize(16 * uiScale(canvas.getWidth(), canvas.getHeight())); paint.setTextAlign(Paint.Align.CENTER);
         canvas.drawText("MAPA", teleportBtn.centerX(), teleportBtn.bottom + 18 * uiScale(canvas.getWidth(), canvas.getHeight()), paint);
+        drawIcon(canvas, friendsBtn, "👥");
+        paint.setStyle(Paint.Style.FILL); paint.setColor(Color.WHITE); paint.setTextSize(16 * uiScale(canvas.getWidth(), canvas.getHeight())); paint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText("AMIGOS", friendsBtn.centerX(), friendsBtn.bottom + 18 * uiScale(canvas.getWidth(), canvas.getHeight()), paint);
+        int pend = com.example.pokeworld.managers.FriendManager.getInstance().requestCount();
+        if (pend > 0) { // bolinha vermelha com o número de pedidos pendentes
+            float br = 16 * uiScale(canvas.getWidth(), canvas.getHeight());
+            paint.setStyle(Paint.Style.FILL); paint.setColor(Color.rgb(220, 50, 50));
+            canvas.drawCircle(friendsBtn.right - br * 0.3f, friendsBtn.top + br * 0.3f, br, paint);
+            paint.setColor(Color.WHITE); paint.setTextSize(br * 1.2f); paint.setTextAlign(Paint.Align.CENTER);
+            canvas.drawText(String.valueOf(Math.min(pend, 9)), friendsBtn.right - br * 0.3f, friendsBtn.top + br * 0.3f + br * 0.42f, paint);
+        }
         drawIcon(canvas, towerBtn, "🗼");
         
         drawIcon(canvas, creaturesBtn, "🐾");

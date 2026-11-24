@@ -1,5 +1,8 @@
 const express = require("express");
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
 const { Server } = require("socket.io");
 
 const app = express();
@@ -12,19 +15,112 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const players = {};
+const players = {};   // socket.id -> estado visível no mapa
+const online = {};    // código de amigo -> socket.id
+
+// ---------------------------------------------------------------------------
+// AMIGOS: cada jogador tem um código (8 letras/números) + um segredo gerado no aparelho.
+// O servidor guarda só o hash do segredo (impede que outra pessoa se passe por você),
+// o nome, os pedidos pendentes e uma caixa de entrada para quem estava offline.
+// Salvo em arquivo: em hospedagem gratuita (disco efêmero) o arquivo pode sumir num reinício,
+// nesse caso quem entrar primeiro com um código volta a ser o dono dele.
+// ---------------------------------------------------------------------------
+const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, "data.json");
+const CODE_RE = /^[A-Z0-9]{8}$/;
+const SECRET_RE = /^[A-Za-z0-9]{16,64}$/;
+
+let db = { accounts: {}, inbox: {}, reqs: {} };
+try {
+    db = { ...db, ...JSON.parse(fs.readFileSync(DATA_FILE, "utf8")) };
+} catch (e) { /* primeiro uso */ }
+
+let saveTimer = null;
+function save() {
+    if (saveTimer) return;
+    saveTimer = setTimeout(() => {
+        saveTimer = null;
+        fs.writeFile(DATA_FILE, JSON.stringify(db), () => {});
+    }, 2000);
+}
+
+const normCode = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 16) || "Treinador";
+const hash = (s) => crypto.createHash("sha256").update(String(s)).digest("hex");
+
+function allow(socket) {
+    const now = Date.now();
+    const recent = (socket.data.reqTimes || []).filter((t) => now - t < 60000);
+    if (recent.length >= 10) { socket.data.reqTimes = recent; return false; }
+    recent.push(now);
+    socket.data.reqTimes = recent;
+    return true;
+}
+
+// Coloca um aviso (pedido, aceite, remoção) na caixa de entrada do destino e entrega se ele estiver online.
+function push(code, item) {
+    const box = db.inbox[code] || (db.inbox[code] = []);
+    if (!box.some((i) => i.type === item.type && i.fromCode === item.fromCode)) {
+        box.push({ ...item, at: Date.now() });
+        if (box.length > 50) box.shift();
+    }
+    save();
+    deliver(code);
+}
+
+function deliver(code) {
+    const sid = online[code];
+    const box = db.inbox[code];
+    if (!sid || !box || !box.length) return;
+    const sock = io.sockets.sockets.get(sid);
+    if (!sock) return;
+    const snapshot = box.slice();
+    // só apaga depois que o aparelho confirmar o recebimento
+    sock.timeout(8000).emit("friendInbox", snapshot, (err) => {
+        if (err) return;
+        const rest = (db.inbox[code] || []).filter(
+            (i) => !snapshot.some((s) => s.at === i.at && s.type === i.type && s.fromCode === i.fromCode));
+        if (rest.length) db.inbox[code] = rest; else delete db.inbox[code];
+        save();
+    });
+}
+
+const noop = () => {};
+const asFn = (cb) => (typeof cb === "function" ? cb : noop);
 
 app.get("/", (req, res) => {
-    res.send("Servidor Multiplayer do PokeWorld está rodando online com Co-op na Torre!");
+    res.send("Servidor Multiplayer do PokeWorld está rodando online com Co-op na Torre e Amigos!");
 });
 
 io.on("connection", (socket) => {
     console.log(`[+] Jogador conectado: ${socket.id}`);
 
     socket.on("join", (data) => {
+        data = data || {};
+        const name = cleanName(data.name);
+        const code = normCode(data.code);
+        const secret = String(data.secret || "");
+
+        let identified = false;
+        if (CODE_RE.test(code) && SECRET_RE.test(secret)) {
+            const acc = db.accounts[code];
+            if (!acc) {
+                db.accounts[code] = { secretHash: hash(secret), name, lastSeen: Date.now() };
+                identified = true;
+            } else if (acc.secretHash === hash(secret)) {
+                acc.name = name;
+                acc.lastSeen = Date.now();
+                identified = true;
+            } else {
+                socket.emit("identityRejected", { code });
+            }
+        }
+        socket.data.code = identified ? code : null;
+        if (identified) { online[code] = socket.id; save(); }
+
         players[socket.id] = {
             id: socket.id,
-            name: data.name || "Treinador",
+            name,
+            code: identified ? code : "",
             mapName: "CITY",
             x: 0,
             y: 0,
@@ -42,16 +138,82 @@ io.on("connection", (socket) => {
 
         socket.emit("currentPlayers", players);
         socket.broadcast.emit("playerJoined", players[socket.id]);
+        if (identified) deliver(code);
     });
 
+    // Só campos de movimento/aparência: o cliente não pode trocar id, nome nem código.
+    const MOVE_FIELDS = ["mapName", "x", "y", "direction", "frameIndex", "skinColor", "isMounted",
+        "petSpecies", "petX", "petY", "petDirection", "petFrameIndex", "isShiny"];
     socket.on("move", (data) => {
-        if (players[socket.id]) {
-            players[socket.id] = {
-                ...players[socket.id],
-                ...data
-            };
-            socket.broadcast.emit("playerMoved", players[socket.id]);
-        }
+        if (!players[socket.id] || !data) return;
+        for (const f of MOVE_FIELDS) if (data[f] !== undefined) players[socket.id][f] = data[f];
+        socket.broadcast.emit("playerMoved", players[socket.id]);
+    });
+
+    // --- AMIGOS ---
+    socket.on("rename", (data) => {
+        const me = socket.data.code;
+        if (!me || !db.accounts[me]) return;
+        const name = cleanName(data && data.name);
+        db.accounts[me].name = name;
+        if (players[socket.id]) players[socket.id].name = name;
+        save();
+    });
+
+    socket.on("friendRequest", (data, cb) => {
+        cb = asFn(cb);
+        const me = socket.data.code;
+        if (!me) return cb({ ok: false, error: "Sem identidade online. Tente reconectar." });
+        if (!allow(socket)) return cb({ ok: false, error: "Muitos pedidos. Aguarde um minuto." });
+        const target = normCode(data && data.code);
+        if (!CODE_RE.test(target)) return cb({ ok: false, error: "Código inválido." });
+        if (target === me) return cb({ ok: false, error: "Esse é o seu próprio código!" });
+        const acc = db.accounts[target];
+        if (!acc) return cb({ ok: false, error: "Código não encontrado." });
+
+        (db.reqs[target] || (db.reqs[target] = {}))[me] = Date.now();
+        push(target, { type: "request", fromCode: me, fromName: db.accounts[me].name });
+        cb({ ok: true, name: acc.name });
+    });
+
+    socket.on("friendRespond", (data, cb) => {
+        cb = asFn(cb);
+        const me = socket.data.code;
+        if (!me) return cb({ ok: false, error: "Sem identidade online. Tente reconectar." });
+        const target = normCode(data && data.code);
+        const acc = db.accounts[target];
+        const pending = db.reqs[me] && db.reqs[me][target];
+        if (!acc || !pending) return cb({ ok: false, error: "Esse pedido não existe mais." });
+
+        delete db.reqs[me][target];
+        if (!Object.keys(db.reqs[me]).length) delete db.reqs[me];
+        // tira o pedido da própria caixa, se ainda estiver lá
+        if (db.inbox[me]) db.inbox[me] = db.inbox[me].filter((i) => !(i.type === "request" && i.fromCode === target));
+
+        if (data.accept) push(target, { type: "accepted", fromCode: me, fromName: db.accounts[me].name });
+        save();
+        cb({ ok: true, name: acc.name });
+    });
+
+    socket.on("friendRemove", (data, cb) => {
+        cb = asFn(cb);
+        const me = socket.data.code;
+        if (!me) return cb({ ok: false, error: "Sem identidade online." });
+        const target = normCode(data && data.code);
+        if (db.accounts[target]) push(target, { type: "removed", fromCode: me, fromName: db.accounts[me].name });
+        cb({ ok: true });
+    });
+
+    socket.on("friendsSync", (data, cb) => {
+        cb = asFn(cb);
+        if (!socket.data.code) return cb({ ok: false, friends: [] });
+        const codes = (Array.isArray(data && data.codes) ? data.codes : []).slice(0, 100).map(normCode);
+        const friends = codes.filter((c) => db.accounts[c]).map((c) => {
+            const sid = online[c];
+            const p = sid && players[sid];
+            return { code: c, name: db.accounts[c].name, online: !!sid, mapName: p ? p.mapName : "", lastSeen: db.accounts[c].lastSeen || 0 };
+        });
+        cb({ ok: true, friends });
     });
 
     // --- SISTEMA DE CO-OP NA TORRE ---
@@ -78,6 +240,11 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
         console.log(`[-] Jogador desconectado: ${socket.id}`);
+        const code = socket.data.code;
+        if (code && online[code] === socket.id) {
+            delete online[code];
+            if (db.accounts[code]) { db.accounts[code].lastSeen = Date.now(); save(); }
+        }
         delete players[socket.id];
         io.emit("playerLeft", socket.id);
     });
@@ -86,3 +253,5 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+module.exports = { io, db };
