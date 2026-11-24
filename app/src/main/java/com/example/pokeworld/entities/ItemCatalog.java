@@ -36,6 +36,7 @@ public final class ItemCatalog {
         put("Fruta", Category.CONSUMIVEL, "🍎", "Dá +25% de ataque ao companheiro por 30s. Também é ingrediente de Doce de Fruta e colhida na Horta da base.", "USAR");
         put("Doce de Fruta", Category.CONSUMIVEL, "🍬", "Feito no fogão. Recupera fome; é usado automaticamente quando você está com fome.", "COMER");
         put("Bomba Fumaça", Category.CONSUMIVEL, "🌫️", "Foge instantaneamente para a cidade.", "USAR");
+        put("Gema de Boost", Category.EVOLUCAO, "💎", "Sobe o BOOST (+1, +2...) de um Pokémon: cada nível dá +8% de ataque e vida. Use na ficha do Pokémon, na tela do Time. Quanto maior o boost, menor a chance.", null);
         put("Mega Pedra", Category.EVOLUCAO, "🔮", "Ativada no golpe especial do companheiro: faz a Mega Evolução temporária.", null);
         put("Pokébola", Category.CAPTURA, "🔴", "Usada para capturar Pokémon selvagens. Cai de chefes, e a Horta da base produz mais.", null);
         put("Pedra Fogo", Category.EVOLUCAO, "🔥", "Evolui Eevee (Flareon), Growlithe (Arcanine) e Vulpix (Ninetales). Cai de Pokémon de fogo e chefes.", "EVOLUIR");

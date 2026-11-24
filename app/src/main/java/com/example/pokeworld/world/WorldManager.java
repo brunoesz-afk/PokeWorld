@@ -531,6 +531,8 @@ public class WorldManager {
             loots.add(new Loot(stone, e.positionX + 30, e.positionY - 14, Loot.Type.ITEM));
         if (random.nextDouble() < (e.isBoss ? 0.35 : 0.012) * luck)
             loots.add(new Loot(Rune.ALL[random.nextInt(Rune.ALL.length)], e.positionX - 30, e.positionY - 14, Loot.Type.ITEM));
+        if (random.nextDouble() < (e.isBoss ? 0.25 : 0.004) * luck)
+            loots.add(new Loot("Gema de Boost", e.positionX, e.positionY - 30, Loot.Type.ITEM));
         if (e.isBoss) gv.player.addGems(1 + random.nextInt(2));
     }
 

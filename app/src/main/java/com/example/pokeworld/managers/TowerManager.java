@@ -53,8 +53,10 @@ public class TowerManager {
                     String item = rewardItem(towerFloor);
                     int amount = rewardItemAmount(towerFloor);
                     gv.player.addItem(item, amount);
+                    int gemsB = rewardBoostGems(towerFloor);
+                    if (gemsB > 0) gv.player.addItem("Gema de Boost", gemsB);
                     markCleared(towerFloor);
-                    gv.ui.showMessage("🎉 ANDAR " + towerFloor + " CONCLUÍDO! +" + goldReward + "🪙  +" + amount + " " + item);
+                    gv.ui.showMessage("🎉 ANDAR " + towerFloor + " CONCLUÍDO! +" + goldReward + "🪙  +" + amount + " " + item + (gemsB > 0 ? "  +" + gemsB + " 💎 Gema de Boost" : ""));
                     waitingForNpcAdvance = true;
                     
                     double midX = gv.player.getPositionX();
@@ -146,6 +148,9 @@ public class TowerManager {
     public static int rewardItemAmount(int floor) {
         return (floor % 5 != 0 && floor % 2 != 0) ? 2 + floor / 4 : 1;
     }
+
+    /** Gemas de Boost nos andares 5, 10, 15 e 20 (o último dá 2). */
+    public static int rewardBoostGems(int floor) { return floor % 5 == 0 ? 1 + floor / 20 : 0; }
 
     public static int rewardGold(int floor) { return floor * 150; }
 

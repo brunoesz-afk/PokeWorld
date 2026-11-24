@@ -5,6 +5,8 @@ import com.example.pokeworld.entities.CapturedCreature;
 import com.example.pokeworld.entities.EvolutionTable;
 import com.example.pokeworld.managers.MissionManager;
 import com.example.pokeworld.managers.PartyManager;
+import com.example.pokeworld.managers.SoundManager;
+import com.example.pokeworld.managers.VibrationManager;
 import com.example.pokeworld.ui.UIManager;
 import com.example.pokeworld.ui.handlers.CreatureUI;
 
@@ -32,6 +34,33 @@ public class CreatureInput implements InputExtension {
             return true;
         }
 
+        if (!ui.boostBtn.isEmpty() && ui.boostBtn.contains(x, y) && ui.selected != null) {
+            CapturedCreature c = ui.selected;
+            if (c.boost >= CreatureUI.MAX_BOOST) { gv.ui.showMessage("Boost já está no máximo!"); return true; }
+            if (gv.player.getInventory().getOrDefault("Gema de Boost", 0) <= 0) {
+                gv.ui.showMessage("💎 Sem Gema de Boost. Ganhe na Torre, em chefes ou compre no Mercado."); return true;
+            }
+            gv.player.useItem("Gema de Boost");
+            if (Math.random() * 100 < CreatureUI.boostChance(c.boost)) {
+                c.boost++;
+                SoundManager.play("boost");
+                gv.ui.showMessage("💎 " + c.name + " subiu para +" + c.boost + "! (+8% ataque e vida por nível)");
+                VibrationManager.tap(40);
+            } else {
+                SoundManager.play("hit");
+                gv.ui.showMessage("💨 A gema se desfez… " + c.name + " continua em +" + c.boost + ". Tente de novo!");
+            }
+            gv.activity.saveCurrentGame();
+            return true;
+        }
+        if (!ui.fuseBtn.isEmpty() && ui.fuseBtn.contains(x, y) && ui.selected != null) {
+            CapturedCreature c = ui.selected;
+            if (gv.fusion.attemptUpgrade(c.name, c.rarity, c.isShiny, gv.companion.getSpecies())) {
+                ui.selected = null;
+                gv.activity.saveCurrentGame();
+            }
+            return true;
+        }
         for (CreatureUI.Slot s : ui.slots) {
             if (s.rect.contains(x, y)) { ui.selected = s.creature; return true; }
         }

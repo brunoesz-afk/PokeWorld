@@ -56,6 +56,7 @@ public class CombatManager {
             gv.player.addCreatureToCollection(target.getName(), target.isShiny(), rarity, gender); 
             gv.bestiary.markAsCaptured(target.getName());
             gv.world.loots.remove(target);
+            SoundManager.play("capture");
             gv.ui.showMessage("✨ " + target.getName() + " CAPTURADO!");
             gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.CAPTURES);
             if (gv.tutorial != null) gv.tutorial.onTutorialRattataCaptured();
@@ -140,6 +141,7 @@ public class CombatManager {
             gv.world.onCapture(target.name); 
             
             // ... (resto da lógica de captura)
+            SoundManager.play("capture");
             gv.ui.showMessage("✨ " + target.name + " CAPTURADO COM " + ballUsed.toUpperCase() + "!");
             gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.CAPTURES);
             gv.particles.addExplosion(target.positionX, target.positionY, android.graphics.Color.GREEN, 40);

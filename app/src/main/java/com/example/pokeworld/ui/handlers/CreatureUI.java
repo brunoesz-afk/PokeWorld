@@ -26,6 +26,8 @@ public class CreatureUI extends BaseUI {
     public RectF exitBtn = new RectF();
     public RectF activateBtn = new RectF();
     public RectF manageBtn = new RectF();
+    public RectF boostBtn = new RectF();
+    public RectF fuseBtn = new RectF();
     public List<Slot> slots = new ArrayList<>();
     public List<EvoBtn> evoButtons = new ArrayList<>();
 
@@ -72,7 +74,7 @@ public class CreatureUI extends BaseUI {
         float w = canvas.getWidth(), h = canvas.getHeight();
         Companion comp = gv.companion;
         List<CapturedCreature> party = gv.player.getParty();
-        drawHeader(canvas, "MEU TIME", "Pokémon no time: " + party.size() + " / 6   •   toque em um para ver a ficha", exitBtn);
+        drawHeader(canvas, "MEU TIME", party.size() + "/6  •  Bônus do time: " + PartyManager.teamBonus.summary(), exitBtn);
 
         if (selected == null || !party.contains(selected)) {
             selected = null;
@@ -113,7 +115,7 @@ public class CreatureUI extends BaseUI {
             text(canvas, fit(c.name + (c.gender == 0 ? " ♂" : " ♀") + (c.isShiny ? " ✨" : ""), r.right - tx - 8), tx, r.top + sh * 0.38f, 20, nameColor, Paint.Align.LEFT, true);
             int lv = active ? comp.getLevel() : data(gv, c.name).level;
             text(canvas, "Nv. " + lv, tx, r.top + sh * 0.62f, 17, Color.WHITE, Paint.Align.LEFT, false);
-            text(canvas, c.rarity.getLabel(), tx, r.top + sh * 0.84f, 14, c.rarity.getColor() | 0xFF000000, Paint.Align.LEFT, false);
+            text(canvas, c.rarity.getLabel() + (c.boost > 0 ? "  💎+" + c.boost : ""), tx, r.top + sh * 0.84f, 14, c.rarity.getColor() | 0xFF000000, Paint.Align.LEFT, false);
             if (active) text(canvas, "⭐", r.right - 12, r.top + 28, 22, Color.WHITE, Paint.Align.RIGHT, false);
             for (EvolutionTable.Evo e : EvolutionTable.from(c.name)) {
                 if (canEvolve(gv, c, e)) { text(canvas, "⬆ EVOLUI", r.right - 10, r.bottom - 10, 15, C_GOOD, Paint.Align.RIGHT, true); break; }
@@ -124,7 +126,7 @@ public class CreatureUI extends BaseUI {
         RectF det = new RectF(left.right + 18, 124, w - 30, h - 24);
         panel(canvas, det, C_PANEL, C_LINE, 2);
         activateBtn.setEmpty();
-        manageBtn.set(det.left + 24, det.bottom - 74, det.right - 24, det.bottom - 20);
+        manageBtn.set(det.left + 24, det.bottom - 66, det.right - 24, det.bottom - 20);
         if (selected == null) {
             text(canvas, "Seu time está vazio", det.centerX(), det.centerY(), 24, C_MUTED, Paint.Align.CENTER, false);
             return;
@@ -146,7 +148,7 @@ public class CreatureUI extends BaseUI {
         float tx = det.left + bs + 36;
         paint.setTextSize(28);
         text(canvas, fit(c.name + (c.gender == 0 ? " ♂" : " ♀") + (c.isShiny ? " ✨" : ""), det.right - tx - 12), tx, det.top + 50, 28, Color.WHITE, Paint.Align.LEFT, true);
-        text(canvas, "[" + c.rarity.getLabel() + "]", tx, det.top + 80, 18, c.rarity.getColor() | 0xFF000000, Paint.Align.LEFT, true);
+        text(canvas, "[" + c.rarity.getLabel() + "]" + (c.boost > 0 ? "  💎 +" + c.boost : ""), tx, det.top + 80, 18, c.rarity.getColor() | 0xFF000000, Paint.Align.LEFT, true);
         text(canvas, "Nível " + level, tx, det.top + 112, 22, C_ACCENT, Paint.Align.LEFT, true);
         bar(canvas, new RectF(tx, det.top + 124, det.right - 24, det.top + 138), exp / (float) Progression.expToNext(level), Color.rgb(90, 170, 255));
         text(canvas, "EXP " + exp + " / " + Progression.expToNext(level), tx, det.top + 160, 14, C_MUTED, Paint.Align.LEFT, false);
@@ -173,7 +175,7 @@ public class CreatureUI extends BaseUI {
             y += 18;
             text(canvas, EvolutionTable.preEvolution(c.name) != null ? "Forma final" : "Não evolui", det.left + 24, y, 17, Color.WHITE, Paint.Align.LEFT, false);
         } else {
-            float limit = det.bottom - 144 - 12;                    // acima do botão TORNAR ATIVO
+            float limit = det.bottom - 192;                    // acima do botão TORNAR ATIVO
             float rowH = 44;
             for (EvolutionTable.Evo e : evos) {
                 if (y + rowH > limit) break;
@@ -201,8 +203,26 @@ public class CreatureUI extends BaseUI {
             }
         }
 
-        activateBtn.set(det.left + 24, det.bottom - 144, det.right - 24, det.bottom - 84);
+        activateBtn.set(det.left + 24, det.bottom - 124, det.right - 24, det.bottom - 74);
         actionButton(canvas, activateBtn, active ? "⭐ COMPANHEIRO ATIVO" : "TORNAR ATIVO", !active, C_GOOD);
+
+        // BOOST (+N com Gema de Boost) e FUNDIR (4 iguais -> próxima raridade)
+        float half = (det.width() - 48 - 10) / 2f;
+        boostBtn.set(det.left + 24, det.bottom - 184, det.left + 24 + half, det.bottom - 134);
+        fuseBtn.set(det.right - 24 - half, det.bottom - 184, det.right - 24, det.bottom - 134);
+        int gems = gv.player.getInventory().getOrDefault("Gema de Boost", 0);
+        boolean maxBoost = c.boost >= MAX_BOOST;
+        actionButton(canvas, boostBtn, maxBoost ? "💎 BOOST MÁX +" + MAX_BOOST : "💎 BOOST +" + (c.boost + 1) + " (" + boostChance(c.boost) + "%) x" + gems, !maxBoost && gems > 0, Color.rgb(120, 200, 255));
+        boolean top = c.rarity == com.example.pokeworld.entities.Rarity.LEGENDARY;
+        int have = gv.fusion.available(c.name, c.rarity, c.isShiny, gv.companion.getSpecies());
+        actionButton(canvas, fuseBtn, top ? "✨ RARIDADE MÁX" : "✨ FUNDIR " + Math.min(have, 4) + "/4 ➜ " + c.rarity.next().getLabel(), !top && have >= 4, Color.rgb(255, 200, 90));
         actionButton(canvas, manageBtn, "GERENCIAR BASE", true, Color.rgb(120, 170, 230));
+    }
+
+    public static final int MAX_BOOST = 5;
+    /** Chance (%) de a Gema de Boost funcionar para quem já está em +N. */
+    public static int boostChance(int current) {
+        int[] ch = {100, 80, 60, 40, 25};
+        return current >= 0 && current < ch.length ? ch[current] : 0;
     }
 }

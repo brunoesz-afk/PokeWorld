@@ -46,6 +46,9 @@ public class Companion {
     
     private boolean isShiny = false;
     private Rarity rarity = Rarity.COMMON;
+    private int boost = 0;                       // +N da Gema de Boost
+    private TeamBonus team = null;               // apoio dos Pokémon do time que não estão lutando
+    private long lastRegenTick = 0;
     private int friendship = 0; 
     private int gender = 0; // 0: Macho, 1: Fêmea
     private boolean isMega = false;
@@ -130,7 +133,7 @@ public class Companion {
         if (friendship >= 50 && Math.random() < 0.1) return;
         float resistance = 0;
         if (equippedRune != null && equippedRune.getEffect() == Rune.Effect.RESISTANCE) resistance = equippedRune.getValue();
-        resistance = (float) Math.min(0.8, resistance + talent("Resistencia"));
+        resistance = (float) Math.min(0.8, resistance + talent("Resistencia") + (team != null ? team.resist : 0));
         int finalDamage = (int)(amount * (1.0f - resistance));
         if (this.hp - finalDamage <= 0 && friendship >= 100 && this.hp > 1) this.hp = 1;
         else this.hp -= finalDamage;
@@ -354,8 +357,9 @@ public class Companion {
         double rarityMult = 1.0 + (rarity.ordinal() * 0.1);
         
         // Bônus de Gênero (Macho: +10% Dano, Fêmea: +10% Vida)
-        double atkMult = (gender == 0 ? 1.1 : 1.0) * (1.0 + talent("Guerreiro"));
-        double hpMult = (gender == 1 ? 1.1 : 1.0) * (1.0 + talent("Vitalidade"));
+        double boostMult = 1.0 + 0.08 * boost;                       // cada +1 = +8% de ataque e vida
+        double atkMult = (gender == 0 ? 1.1 : 1.0) * (1.0 + talent("Guerreiro")) * boostMult * (1.0 + (team != null ? team.atk : 0));
+        double hpMult = (gender == 1 ? 1.1 : 1.0) * (1.0 + talent("Vitalidade")) * boostMult * (1.0 + (team != null ? team.hp : 0));
 
         this.attackPower = (int)((baseAttackPower + forgeAttackBonus) * attackBuffMult * rarityMult * atkMult);
         this.maxHp = (int)(this.maxHp * rarityMult * hpMult);
@@ -413,12 +417,14 @@ public class Companion {
             lastEmoteTime = emoteNow;
         }
 
-        // Regeneração por Amizade (Fora de combate)
-        if (targetEnemy == null && hp > 0 && hp < maxHp) {
+        // Regeneração lenta: todo Pokémon recupera vida sozinho (bem devagar; fora de combate o dobro). Amizade e Pokémon de água ajudam.
+        if (hp > 0 && hp < maxHp) {
             long now = System.currentTimeMillis();
-            if (now - lastHealTick > 5000) { // A cada 5s
-                int heal = 1 + (friendship / 50);
-                hp = Math.min(maxHp, hp + heal);
+            if (now - lastHealTick > 2000) {
+                double rate = 0.003 + 0.003 * Math.min(1.0, friendship / 255.0);            // % da vida máxima a cada 2s
+                rate *= (1.0 + (team != null ? team.regen : 0));
+                if (targetEnemy != null) rate *= 0.5;
+                hp = Math.min(maxHp, hp + Math.max(1, (int) Math.round(maxHp * rate)));
                 lastHealTick = now;
             }
         }
@@ -604,12 +610,13 @@ public class Companion {
     }
 
     public void gainExp(int amount) {
-        this.exp += (int) Math.round(amount * (1.0 + talent("Estudioso")));
+        this.exp += (int) Math.round(amount * (1.0 + talent("Estudioso") + (team != null ? team.xp : 0)));
         int nextLevelExp = Progression.expToNext(level);
         if (this.exp >= nextLevelExp) {
             this.exp -= nextLevelExp;
             this.level++;
             this.leveledUp = true;
+            com.example.pokeworld.managers.SoundManager.play("levelup");
             checkEvolution(); 
             setSpeciesStats(this.species);
             
@@ -636,6 +643,7 @@ public class Companion {
     /** Evolui o companheiro ativo para a nova espécie, toca a cena de evolução e sincroniza Time/banco. */
     public void evolveInto(String nextS) {
         String old = this.species;
+        com.example.pokeworld.managers.SoundManager.play("evolve");
         setSpecies(nextS);
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
@@ -757,7 +765,7 @@ public class Companion {
                 }
 
                 // Sistema de Crítico
-                boolean isCritical = Math.random() < 0.15 + talent("Critico");
+                boolean isCritical = Math.random() < 0.15 + talent("Critico") + (team != null ? team.crit : 0);
                 if (isCritical) multiplier *= 2.0;
 
                 int totalDamage = (int)((damage + (attackPower * 0.5f)) * multiplier);
@@ -869,7 +877,7 @@ public class Companion {
     private void applySkillStatus(Skill skill, Enemy e, EffectManager effects) {
         Status st = skill.getStatus();
         if (st == null || e == null || !e.isAlive()) return;
-        if (Math.random() > skill.getStatusChance() + talent("Status")) return;
+        if (Math.random() > skill.getStatusChance() + talent("Status") + (team != null ? team.status : 0)) return;
         long dur = st.durationMs;
         if (e.isBoss && st.stuns()) dur = (long) (dur * 0.4);   // chefes resistem a sono e gelo
         if (e.status.apply(st, dur, e.getType()) && effects != null) {
@@ -1000,7 +1008,8 @@ public class Companion {
 
     /** Runa da Sorte: multiplicador para ouro e chances de drop (1.0 sem a runa). */
     public float getLuckMultiplier() {
-        return (equippedRune != null && equippedRune.getEffect() == Rune.Effect.LUCK) ? equippedRune.getValue() : 1.0f;
+        float base = (equippedRune != null && equippedRune.getEffect() == Rune.Effect.LUCK) ? equippedRune.getValue() : 1.0f;
+        return base * (1f + (team != null ? team.luck : 0f));
     }
 
     public void setPosition(double x, double y) { this.positionX = x; this.positionY = y; }
@@ -1008,6 +1017,20 @@ public class Companion {
     public double getPositionY() { return positionY; }
     public void setRarity(Rarity r) { this.rarity = r; resetToBaseStats(); }
     public Rarity getRarity() { return rarity; }
+    public int getBoost() { return boost; }
+    public TeamBonus getTeamBonus() { return team; }
+
+    /** Aplica boost (+N) e o apoio do time. Só recalcula quando algo mudou, mantendo a proporção de vida. */
+    public void setSupport(int newBoost, TeamBonus tb) {
+        String sigNew = tb == null ? "" : tb.signature();
+        String sigOld = team == null ? "" : team.signature();
+        if (newBoost == boost && sigNew.equals(sigOld)) return;
+        float ratio = maxHp > 0 ? hp / (float) maxHp : 1f;
+        this.boost = newBoost;
+        this.team = tb;
+        resetToBaseStats();
+        if (hp > 0) hp = Math.max(1, Math.min(maxHp, Math.round(ratio * maxHp)));
+    }
 
     public boolean isAquatic() {
         return type1 == ElementalType.WATER || (type2 != null && type2 == ElementalType.WATER);

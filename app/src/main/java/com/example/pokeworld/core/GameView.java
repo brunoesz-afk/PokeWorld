@@ -220,6 +220,7 @@ public class GameView {
             missions.check(this);
             tips.update();
             com.example.pokeworld.managers.PartyManager.updateFaint(this);
+            com.example.pokeworld.managers.PartyManager.tickTeam(this);
             
             effects.update();
             particles.update();

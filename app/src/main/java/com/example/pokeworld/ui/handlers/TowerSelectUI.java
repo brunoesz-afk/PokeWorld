@@ -96,6 +96,9 @@ public class TowerSelectUI extends BaseUI {
         paint.setTextSize(22);
         text(canvas, fit(ItemCatalog.get(item).icon + " " + TowerManager.rewardItemAmount(f) + "x " + item, det.width() - 48), det.left + 24, y + 62, 22, Color.WHITE, Paint.Align.LEFT, false);
 
+        if (TowerManager.rewardBoostGems(f) > 0)
+            text(canvas, "💎 " + TowerManager.rewardBoostGems(f) + "x Gema de Boost", det.left + 24, y + 94, 22, Color.rgb(120, 200, 255), Paint.Align.LEFT, false);
+
         enterBtn.set(det.left + 24, det.bottom - 84, det.right - 24, det.bottom - 24);
         actionButton(canvas, enterBtn, unlocked ? "ENTRAR" : "BLOQUEADO", unlocked, C_GOOD);
     }

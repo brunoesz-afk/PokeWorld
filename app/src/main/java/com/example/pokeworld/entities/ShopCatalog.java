@@ -29,6 +29,7 @@ public final class ShopCatalog {
         BUY.add(new Offer("Great Ball", 300, false, "Bola melhor: chance de captura x1,5. Usada automaticamente antes da Pokébola."));
         BUY.add(new Offer("Ultra Ball", 800, false, "A melhor bola: chance de captura x2. Tem prioridade sobre as outras."));
         BUY.add(new Offer("Fruta", 40, false, "+25% de ataque por 30s. Também serve para Doce de Fruta."));
+        BUY.add(new Offer("Gema de Boost", 1500, false, "Sobe o BOOST (+1 a +5) de um Pokémon: +8% de ataque e vida por nível. Use na ficha do Pokémon (Time)."));
         BUY.add(new Offer("Bomba Fumaça", 100, false, "Foge na hora para a cidade quando a coisa aperta."));
 
         String[] basic = {"Madeira", "Ferro", "Pedra", "Fruta", "Carvão", "Essência de Fogo", "Cristal de Água", "Coral",

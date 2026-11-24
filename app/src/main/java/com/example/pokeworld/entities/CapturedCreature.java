@@ -9,6 +9,7 @@ public class CapturedCreature {
     public Rarity rarity;
     public boolean isInParty;
     public int gender; // 0: Macho, 1: Fêmea
+    public int boost = 0;        // nível de boost (+1, +2...) dado pela Gema de Boost
     public boolean isGuard = false; // true: defensor da base (anda pelo reino); false e fora do time: guardado na caixa
 
     public CapturedCreature(String name, boolean isShiny, Rarity rarity, boolean isInParty, int gender) {

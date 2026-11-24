@@ -47,6 +47,7 @@ public class InventoryInput extends TapScrollInput {
             if (gv.companion.getHp() >= gv.companion.getMaxHp()) { gv.ui.showMessage("❤️ O companheiro já está com a vida cheia."); return; }
             gv.player.useItem(item);
             gv.companion.healFull();
+            com.example.pokeworld.managers.SoundManager.play("heal");
             gv.ui.showMessage("❤️ " + item + " usada: companheiro curado!");
         } else if (item.equals("Bomba Fumaça")) {
             gv.player.useItem(item);

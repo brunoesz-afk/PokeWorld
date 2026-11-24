@@ -112,12 +112,16 @@ public class ExploringInput implements InputExtension {
         ExploringUI ui = (ExploringUI) gv.ui.getHandler(UIManager.UIState.EXPLORING);
         
         if (ui.quickHealBtn.contains(x, y)) {
+            if (gv.companion.getHp() >= gv.companion.getMaxHp()) { gv.ui.showMessage("❤️ O companheiro já está com a vida cheia."); return true; }
             if (gv.player.getInventory().containsKey("Poção")) {
                 gv.player.useItem("Poção");
                 gv.companion.healFull();
+                com.example.pokeworld.managers.SoundManager.play("heal");
                 gv.ui.showMessage("🧪 PET CURADO!");
                 return true;
             }
+            gv.ui.showMessage("Sem Poção! Compre no Mercado ou ganhe nas missões.");
+            return true;
         }
         if (ui.quickEatBtn.contains(x, y)) {
             if (gv.player.getInventory().containsKey("Doce de Fruta")) {

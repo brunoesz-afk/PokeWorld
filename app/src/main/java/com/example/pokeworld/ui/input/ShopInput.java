@@ -57,6 +57,7 @@ public class ShopInput extends TapScrollInput {
         int n = Math.min(want, can);
         gv.player.addGold(-price * n);
         gv.player.addItem(o.name, n);
+        com.example.pokeworld.managers.SoundManager.play("buy");
         gv.ui.showMessage("🛒 Comprou " + n + "x " + o.name + " por " + (price * n) + " 🪙" + (n < want ? " (era o que dava com seu ouro)" : ""));
         gv.activity.saveCurrentGame();
     }

@@ -24,7 +24,7 @@ import java.util.Set;
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "pokeworld.db";
-    private static final int DATABASE_VERSION = 40; 
+    private static final int DATABASE_VERSION = 41; 
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -39,7 +39,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE inventory (id INTEGER PRIMARY KEY AUTOINCREMENT, item_name TEXT, quantity INTEGER)");
         
         // Tabelas de Coleção e Progresso
-        db.execSQL("CREATE TABLE collection (id INTEGER PRIMARY KEY AUTOINCREMENT, creature_name TEXT, is_shiny INTEGER DEFAULT 0, rarity TEXT DEFAULT 'COMMON', is_in_party INTEGER DEFAULT 0, gender INTEGER DEFAULT 0, is_guard INTEGER DEFAULT 0)");
+        db.execSQL("CREATE TABLE collection (id INTEGER PRIMARY KEY AUTOINCREMENT, creature_name TEXT, is_shiny INTEGER DEFAULT 0, rarity TEXT DEFAULT 'COMMON', is_in_party INTEGER DEFAULT 0, gender INTEGER DEFAULT 0, is_guard INTEGER DEFAULT 0, boost INTEGER DEFAULT 0)");
         db.execSQL("CREATE TABLE pets (species TEXT PRIMARY KEY, level INTEGER, exp INTEGER, forge_bonus INTEGER, weapon TEXT, armor TEXT, is_shiny INTEGER DEFAULT 0, personality TEXT DEFAULT 'Normal', rune TEXT DEFAULT 'Nenhum', friendship INTEGER DEFAULT 0, type2 TEXT DEFAULT 'Nenhum', rarity TEXT DEFAULT 'COMMON', gender INTEGER DEFAULT 0)");
         
         // Tabelas de Mundo e Conquistas (Adicionado colunas de posição e tempo de construção)
@@ -126,8 +126,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // 36 -> 39: migrações em sequência (NÃO apagam o progresso do jogador)
-        if (oldVersion >= 36 && oldVersion < 40) {
+        // 36 -> 41: migrações em sequência (NÃO apagam o progresso do jogador)
+        if (oldVersion >= 36 && oldVersion < 41) {
             if (oldVersion == 36) {
                 createBasePiecesTable(db);
                 migrateLegacyHomeBuildings(db);
@@ -136,13 +136,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 try { db.execSQL("ALTER TABLE base_pieces ADD COLUMN crop_ready INTEGER DEFAULT 0"); }
                 catch (Exception e) { Log.e("DatabaseHelper", "crop_ready já existe?", e); }
             }
-            createKvTable(db);   // 39 -> 40
-            if (oldVersion >= 39) return;
-            // 38 -> 39: defensores da base. Quem já estava na base continua defendendo (até 4); o resto vai para a caixa.
-            try {
-                db.execSQL("ALTER TABLE collection ADD COLUMN is_guard INTEGER DEFAULT 0");
-                db.execSQL("UPDATE collection SET is_guard = 1 WHERE id IN (SELECT id FROM collection WHERE is_in_party = 0 ORDER BY id LIMIT 4)");
-            } catch (Exception e) { Log.e("DatabaseHelper", "is_guard já existe?", e); }
+            if (oldVersion <= 38) {   // 38 -> 39: defensores da base. Quem já estava na base continua defendendo (até 4); o resto vai para a caixa.
+                try {
+                    db.execSQL("ALTER TABLE collection ADD COLUMN is_guard INTEGER DEFAULT 0");
+                    db.execSQL("UPDATE collection SET is_guard = 1 WHERE id IN (SELECT id FROM collection WHERE is_in_party = 0 ORDER BY id LIMIT 4)");
+                } catch (Exception e) { Log.e("DatabaseHelper", "is_guard já existe?", e); }
+            }
+            createKvTable(db);        // 39 -> 40
+            try { db.execSQL("ALTER TABLE collection ADD COLUMN boost INTEGER DEFAULT 0"); }   // 40 -> 41: boost (+1, +2...)
+            catch (Exception e) { Log.e("DatabaseHelper", "boost já existe?", e); }
             return;
         }
         db.execSQL("DROP TABLE IF EXISTS base_pieces");
@@ -288,6 +290,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 cv.put("is_in_party", c.isInParty ? 1 : 0);
                 cv.put("gender", c.gender);
                 cv.put("is_guard", c.isGuard ? 1 : 0);
+                cv.put("boost", c.boost);
                 db.insert("collection", null, cv);
             }
         }
@@ -385,7 +388,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         List<CapturedCreature> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         try {
-            Cursor cursor = db.rawQuery("SELECT creature_name, is_shiny, rarity, is_in_party, gender, is_guard FROM collection", null);
+            Cursor cursor = db.rawQuery("SELECT creature_name, is_shiny, rarity, is_in_party, gender, is_guard, boost FROM collection", null);
             while (cursor.moveToNext()) {
                 String name = cursor.getString(0);
                 if (name == null) continue;
@@ -395,6 +398,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 int gender = cursor.getColumnCount() > 4 ? cursor.getInt(4) : 0;
                 CapturedCreature cc = new CapturedCreature(name, cursor.getInt(1) == 1, r, cursor.getInt(3) == 1, gender);
                 cc.isGuard = cursor.getColumnCount() > 5 && cursor.getInt(5) == 1;
+                cc.boost = cursor.getColumnCount() > 6 ? cursor.getInt(6) : 0;
                 list.add(cc);
             }
             cursor.close();
