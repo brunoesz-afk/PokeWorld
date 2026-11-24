@@ -128,7 +128,7 @@ public class GameView {
         // Inicia carregando o mapa
         if (!activity.dbHelper.isTutorialCompleted()) {
             world.loadMap("STARTER_FOREST", player, companion, "CENTER");
-            tutorial.startTutorial();
+            tutorial.beginOrResume();
         } else {
             world.loadMap("CITY", player, companion, "CENTER");
         }

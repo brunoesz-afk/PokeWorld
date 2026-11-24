@@ -505,6 +505,7 @@ public class WorldManager {
                 
                 // Atualiza progresso das missões ao derrotar qualquer Pokémon selvagem
                 gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.KILLS);
+                if (gv.tutorial != null) gv.tutorial.onEnemyDefeated(e.name);
                 if (e.isBoss) gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.BOSS_KILLS);
 
                 it.remove();

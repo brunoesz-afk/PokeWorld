@@ -62,6 +62,13 @@ public class ExploringUI extends BaseUI {
     /** Posição de cada slot da troca rápida (linha horizontal centralizada no topo). Usada também pelo toque. */
     public final List<RectF> swapSlots = new ArrayList<>();
 
+    /** Escala da caixa do treinador/Pokémon (menor que 1 = caixa menor). */
+    public static final float PANEL_SCALE = 0.78f;
+    /** Borda direita da caixa do treinador (+ folga): a faixa do topo (Pokémon, recompensas) começa aqui. */
+    public static float hudLeft(float k) { return (20 + 400 * PANEL_SCALE + 16) * k; }
+    /** Onde termina a faixa do topo: logo antes do minimapa. */
+    public static float hudRight(float w, float k) { return w - 212 * k; }
+
     /** Fator de escala da interface (a tela é em pixels reais: 1.0 = 1280x720). */
     public static float uiScale(float w, float h) { return Math.max(0.85f, Math.min(1.6f, Math.min(w / 1280f, h / 720f))); }
 
@@ -71,9 +78,9 @@ public class ExploringUI extends BaseUI {
      */
     public static RectF partySlot(float screenW, float screenH, int index, int count) {
         float k = uiScale(screenW, screenH);
-        float left = 420 * k + 16 * k, right = screenW - (240 + 130) * k;
-        float gap = 8 * k;
-        float size = Math.min(84 * k, (right - left - gap * Math.max(0, count - 1)) / Math.max(1, count));
+        float left = hudLeft(k), right = hudRight(screenW, k);
+        float gap = 7 * k;
+        float size = Math.min(70 * k, (right - left - gap * Math.max(0, count - 1)) / Math.max(1, count));
         float total = count * size + Math.max(0, count - 1) * gap;
         float x = (left + right) / 2f - total / 2f + index * (size + gap);
         return new RectF(x, 8 * k, x + size, 8 * k + size);
@@ -109,18 +116,19 @@ public class ExploringUI extends BaseUI {
 
     private void updateButtonPositions(int w, int h) {
         final float k = uiScale(w, h);
-        float padding = 20 * k;
-        float btnSize = 100 * k;
-        float spacing = 10 * k;
+        float padding = 16 * k;
+        float btnSize = 80 * k;
+        float spacing = 8 * k;
         
-        tacticBtn.set(16 * k, h - 350 * k, 16 * k + 90 * k, h - 350 * k + 90 * k);   // fora do raio do joystick
+        tacticBtn.set(16 * k, h - 340 * k, 16 * k + 74 * k, h - 340 * k + 74 * k);   // fora do raio do joystick
         fishingBtn.set(w/2f - 60, h * 0.15f, w/2f + 60, h * 0.15f + 120);
 
         inventoryBtn.set(w - btnSize - padding, h - btnSize - padding, w - padding, h - padding);
         achBtn.set(w - (btnSize + spacing) * 2 + spacing - padding, h - btnSize - padding, w - btnSize - spacing - padding, h - padding);
         runesBtn.set(w - (btnSize + spacing) * 3 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 2 - padding, h - padding);
-        // o botão do MAPA (bússola) agora é grande e fica ao lado do minimapa, no topo; a torre ocupa o lugar dele na fileira
-        towerBtn.set(w - (btnSize + spacing) * 4 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 3 - padding, h - padding);
+        // fileira de baixo: mochila, conquistas, runas, BÚSSOLA (mapas) e torre
+        teleportBtn.set(w - (btnSize + spacing) * 4 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 3 - padding, h - padding);
+        towerBtn.set(w - (btnSize + spacing) * 5 + spacing - padding, h - btnSize - padding, w - (btnSize + spacing) * 4 - padding, h - padding);
 
         creaturesBtn.set(w - btnSize - padding, h - (btnSize + spacing) * 2 + spacing - padding, w - padding, h - btnSize - spacing - padding);
         missionsBtn.set(w - (btnSize + spacing) * 2 + spacing - padding, h - (btnSize + spacing) * 2 + spacing - padding, w - btnSize - spacing - padding, h - btnSize - spacing - padding);
@@ -138,18 +146,18 @@ public class ExploringUI extends BaseUI {
         
         trainerSkillsBtn.set(w - btnSize - padding, h - (btnSize + spacing) * 5 + spacing - padding, w - padding, h - (btnSize + spacing) * 4 - padding);
 
-        minimapRect.set(w - 220 * k - padding, 70 * k, w - padding, 70 * k + 200 * k);
-        zoomInBtn.set(minimapRect.left, minimapRect.bottom + 8 * k, minimapRect.left + 100 * k, minimapRect.bottom + 8 * k + 56 * k);
-        zoomOutBtn.set(minimapRect.right - 100 * k, minimapRect.bottom + 8 * k, minimapRect.right, minimapRect.bottom + 8 * k + 56 * k);
-        teleportBtn.set(minimapRect.left - 8 * k - 110 * k, minimapRect.top, minimapRect.left - 8 * k, minimapRect.top + 110 * k);
-        friendsBtn.set(teleportBtn.left, teleportBtn.bottom + 34 * k, teleportBtn.right, teleportBtn.bottom + 34 * k + 90 * k);
+        minimapRect.set(w - 176 * k - padding, 62 * k, w - padding, 62 * k + 150 * k);
+        zoomInBtn.set(minimapRect.left, minimapRect.bottom + 6 * k, minimapRect.left + 84 * k, minimapRect.bottom + 6 * k + 44 * k);
+        zoomOutBtn.set(minimapRect.right - 84 * k, minimapRect.bottom + 6 * k, minimapRect.right, minimapRect.bottom + 6 * k + 44 * k);
+        // AMIGOS continua ao lado do minimapa, onde já estava
+        friendsBtn.set(minimapRect.left - 8 * k - 100 * k, minimapRect.top + 150 * k, minimapRect.left - 8 * k, minimapRect.top + 150 * k + 84 * k);
         
         interactBtn.set(w/2f - 150, h - 120, w/2f + 150, h - 40);
         captureBtn.set(w/2f - 150, h - 220, w/2f + 150, h - 140);
         constructBuildingBtn.set(w/2f - 150, h - 220, w/2f + 150, h - 140);
         
         float healL = Math.max(405 * k, w / 2f - 150 * k - 80 * k - 16 * k);
-        quickHealBtn.set(healL, h - 120 * k, healL + 80 * k, h - 40 * k);   // ao lado do botão de interagir, fora do joystick
+        quickHealBtn.set(healL, h - 110 * k, healL + 70 * k, h - 40 * k);   // ao lado do botão de interagir, fora do joystick
 
         dialogueBox.set(100 * k, h * 0.62f, w - 100 * k, h * 0.86f);
     }
@@ -199,8 +207,8 @@ public class ExploringUI extends BaseUI {
         drawButton(canvas, zoomInBtn, "+");
         drawButton(canvas, zoomOutBtn, "-");
         
-        final float ks = uiScale(canvas.getWidth(), canvas.getHeight());
-        canvas.save(); canvas.scale(ks, ks);   // painel do treinador em coordenadas 1280x720
+        final float ks = uiScale(canvas.getWidth(), canvas.getHeight()) * PANEL_SCALE;
+        canvas.save(); canvas.scale(ks, ks);   // painel do treinador em coordenadas 1280x720 (já reduzido)
         RectF trainerPanel = new RectF(20, 20, 420, 285);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.argb(180, 0, 0, 0));
@@ -247,7 +255,7 @@ public class ExploringUI extends BaseUI {
             com.example.pokeworld.managers.EventCalendar.Event ev = com.example.pokeworld.managers.EventCalendar.today();
             float kk = uiScale(canvas.getWidth(), canvas.getHeight());
             paint.setColor(Color.rgb(255, 214, 120)); paint.setTextSize(15 * kk); paint.setTextAlign(Paint.Align.RIGHT);
-            canvas.drawText(ev.icon + " " + ev.name, canvas.getWidth() - 20, 70 * kk + 200 * kk + 56 * kk + 40 * kk, paint);
+            canvas.drawText(ev.icon + " " + ev.name, canvas.getWidth() - 20, Math.max(zoomInBtn.bottom, friendsBtn.bottom) + 22 * kk, paint);
         }
         if (gv.dungeon.isInDungeon()) {
             paint.setColor(Color.WHITE); paint.setTextSize(30); paint.setTextAlign(Paint.Align.CENTER);
@@ -298,8 +306,6 @@ public class ExploringUI extends BaseUI {
         drawIcon(canvas, achBtn, "🏆");
         drawIcon(canvas, runesBtn, "🔷");
         drawIcon(canvas, teleportBtn, "🧭");
-        paint.setColor(Color.WHITE); paint.setTextSize(16 * uiScale(canvas.getWidth(), canvas.getHeight())); paint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("MAPA", teleportBtn.centerX(), teleportBtn.bottom + 18 * uiScale(canvas.getWidth(), canvas.getHeight()), paint);
         drawIcon(canvas, friendsBtn, "👥");
         paint.setStyle(Paint.Style.FILL); paint.setColor(Color.WHITE); paint.setTextSize(16 * uiScale(canvas.getWidth(), canvas.getHeight())); paint.setTextAlign(Paint.Align.CENTER);
         canvas.drawText("AMIGOS", friendsBtn.centerX(), friendsBtn.bottom + 18 * uiScale(canvas.getWidth(), canvas.getHeight()), paint);
@@ -440,13 +446,38 @@ public class ExploringUI extends BaseUI {
         canvas.drawText(label, x + w/2, y + h * 0.85f, paint);
     }
 
+    /** Ícone do HUD: o emoji acompanha o tamanho do botão (antes era fixo e ficava desproporcional). */
+    @Override
+    protected void drawIcon(Canvas canvas, RectF b, String icon) {
+        float m = Math.min(b.width(), b.height()), r = Math.min(20f, m * 0.22f);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.argb(80, 255, 255, 255));
+        canvas.drawRoundRect(b, r, r, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(Math.max(2f, m * 0.03f));
+        paint.setColor(Color.argb(150, 255, 255, 255));
+        canvas.drawRoundRect(b, r, r, paint);
+        float ts = Math.min(44f, m * 0.5f);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.WHITE); paint.setTextSize(ts); paint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText(icon, b.centerX(), b.centerY() + ts * 0.37f, paint);
+    }
+
     private void drawQuestLog(Canvas canvas, Player p, GameView gv) {
         java.util.List<com.example.pokeworld.managers.MissionManager.Quest> qs = gv.missions.activeQuests();
-        if (qs.isEmpty()) return;
+        String intro = gv.tutorial != null ? gv.tutorial.questLine() : null;
+        if (qs.isEmpty() && intro == null) return;
         paint.setStyle(Paint.Style.FILL);
         paint.setTextAlign(Paint.Align.LEFT);
         paint.setTextSize(18);
         int y = 315, shown = 0;
+        if (intro != null) {   // missão guiada do começo do jogo
+            paint.setColor(Color.argb(210, 0, 0, 0));
+            canvas.drawText("🧭 " + intro, 31, y + 1, paint);
+            paint.setColor(Color.rgb(150, 255, 170));
+            canvas.drawText("🧭 " + intro, 30, y, paint);
+            y += 25; shown++;
+        }
         for (com.example.pokeworld.managers.MissionManager.Quest q : qs) {
             if (shown++ >= 3) break;
             int prog = Math.min(q.target, gv.missions.progress(q, gv));

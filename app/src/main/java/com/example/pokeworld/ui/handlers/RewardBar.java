@@ -14,9 +14,12 @@ import com.example.pokeworld.managers.RewardManager;
  * Cada ícone mostra um selo vermelho com a quantidade pronta para reivindicar.
  */
 public class RewardBar {
+    public static final int TOGGLE = 100;
     public static final int GIFT = 0, EVENT = 1, DAILY = 2, JOURNEY = 3, ACH = 4, RECHARGE = 5, PASS = 6, SHOP = 7, ALL = 8, COUNT = 9;
 
     private final RectF[] rects = new RectF[COUNT];
+    private final RectF toggleRect = new RectF();
+    private int collapsedFlag = -1;   // -1 = ainda não lido do banco
     private final Paint paint = new Paint();
 
     // valores em cache (atualizados 2x por segundo: a barra é desenhada todo quadro)
@@ -36,24 +39,38 @@ public class RewardBar {
         return "CITY".equals(m) || "HOME".equals(m);
     }
 
+    private static final float TOP = 96f;
+
+    private boolean collapsed() { return collapsedFlag == 1; }
+
     /** Altura ocupada pela barra (para o resto da HUD não ficar por cima). */
     public float bottom(float w, float h) {
         float k = ExploringUI.uiScale(w, h);
-        return 100 * k + size(w, h) + 22 * k;
+        return collapsed() ? TOP * k + 36 * k + 8 * k : TOP * k + size(w, h) + 22 * k;
     }
 
     private float size(float w, float h) {
         float k = ExploringUI.uiScale(w, h);
-        float left = 436 * k, right = w - 370 * k, gap = 6 * k;
-        return Math.max(40 * k, Math.min(76 * k, (right - left - gap * (COUNT - 1)) / COUNT));
+        float left = ExploringUI.hudLeft(k) + 44 * k, right = ExploringUI.hudRight(w, k), gap = 6 * k;
+        return Math.max(36 * k, Math.min(62 * k, (right - left - gap * (COUNT - 1)) / COUNT));
     }
 
     private void layout(float w, float h) {
         float k = ExploringUI.uiScale(w, h);
-        float left = 436 * k, right = w - 370 * k, gap = 6 * k, s = size(w, h);
+        float left = ExploringUI.hudLeft(k) + 44 * k, right = ExploringUI.hudRight(w, k), gap = 6 * k, s = size(w, h);
         float total = COUNT * s + (COUNT - 1) * gap;
-        float x = (left + right) / 2f - total / 2f, y = 100 * k;
+        float x = (left + right) / 2f - total / 2f, y = TOP * k;
         for (int i = 0; i < COUNT; i++) { rects[i].set(x, y, x + s, y + s); x += s + gap; }
+        if (collapsed()) toggleRect.set(ExploringUI.hudLeft(k), y, ExploringUI.hudLeft(k) + 56 * k, y + 36 * k);
+        else toggleRect.set(ExploringUI.hudLeft(k), y, ExploringUI.hudLeft(k) + 36 * k, y + s);
+    }
+
+    /** Recolhe ou abre a barra; o estado fica salvo. */
+    public void toggle(GameView gv) {
+        RewardManager.Store st = RewardManager.of(gv.activity.dbHelper);
+        collapsedFlag = collapsed() ? 0 : 1;
+        st.set("rb_collapsed", collapsedFlag);
+        lastRefresh = 0;
     }
 
     private void refresh(GameView gv) {
@@ -61,6 +78,7 @@ public class RewardBar {
         if (now - lastRefresh < 500) return;
         lastRefresh = now;
         RewardManager.Store st = RewardManager.of(gv.activity.dbHelper);
+        if (collapsedFlag < 0) collapsedFlag = st.get("rb_collapsed", 0);
         badge[GIFT] = RewardManager.giftReady(st) ? 1 : 0;
         badge[EVENT] = RewardManager.chestReady(st) ? 1 : 0;
         badge[DAILY] = gv.missions.readyDailyCount();
@@ -78,8 +96,10 @@ public class RewardBar {
     public void draw(Canvas canvas, GameView gv) {
         float w = canvas.getWidth(), h = canvas.getHeight();
         float k = ExploringUI.uiScale(w, h);
-        layout(w, h);
         refresh(gv);
+        layout(w, h);
+        drawToggle(canvas, k);
+        if (collapsed()) return;
         String[] icons = {"🎁", eventIcon, "📅", "📖", "🏆", "🔋", "🎟️", "💠", "✨"};
         String[] labels = {"Presente", "Evento", "Diárias", "Jornada", "Conquistas", "Recarga", "Passe", "Loja", "Coletar tudo"};
         float pulse = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 260.0);
@@ -137,8 +157,37 @@ public class RewardBar {
         }
     }
 
-    /** Qual ícone foi tocado (-1 = nenhum). */
+    /** Setinha de recolher (▲) / abrir (▼); recolhida, mostra também quantas recompensas esperam. */
+    private void drawToggle(Canvas canvas, float k) {
+        RectF r = toggleRect;
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.argb(190, 20, 24, 36));
+        canvas.drawRoundRect(r, 10 * k, 10 * k, paint);
+        paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(2 * k);
+        paint.setColor(Color.argb(200, 255, 214, 90));
+        canvas.drawRoundRect(r, 10 * k, 10 * k, paint);
+        paint.setStyle(Paint.Style.FILL); paint.setColor(Color.rgb(255, 214, 90));
+        float cx = collapsed() ? r.left + r.width() * 0.34f : r.centerX(), cy = r.centerY(), a = 9 * k;
+        android.graphics.Path p = new android.graphics.Path();
+        if (collapsed()) { p.moveTo(cx - a, cy - a * 0.5f); p.lineTo(cx + a, cy - a * 0.5f); p.lineTo(cx, cy + a * 0.7f); }
+        else { p.moveTo(cx - a, cy + a * 0.5f); p.lineTo(cx + a, cy + a * 0.5f); p.lineTo(cx, cy - a * 0.7f); }
+        p.close();
+        canvas.drawPath(p, paint);
+        if (collapsed() && pending > 0) {   // selo com o total pronto para pegar
+            float br = 11 * k, bx = r.right - br - 4 * k, by = r.centerY();
+            paint.setColor(Color.rgb(225, 45, 45));
+            canvas.drawCircle(bx, by, br, paint);
+            paint.setColor(Color.WHITE); paint.setTextAlign(Paint.Align.CENTER); paint.setFakeBoldText(true);
+            paint.setTextSize(br * 1.25f);
+            canvas.drawText(pending > 9 ? "9+" : String.valueOf(pending), bx, by + br * 0.43f, paint);
+            paint.setFakeBoldText(false);
+        }
+    }
+
+    /** Qual ícone foi tocado (-1 = nenhum; TOGGLE = a setinha). */
     public int hit(float x, float y) {
+        if (toggleRect.contains(x, y)) return TOGGLE;
+        if (collapsed()) return -1;
         for (int i = 0; i < COUNT; i++) if (rects[i].contains(x, y)) return i;
         return -1;
     }

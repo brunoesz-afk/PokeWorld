@@ -47,6 +47,14 @@ public class TileMap {
         }
     }
 
+    /** Limpa uma clareira de grama (só na floresta inicial), para o NPC guia não nascer dentro de árvores. */
+    public void carveClearing(int row, int col, int radius) {
+        if (renderer != null) return;
+        for (int r = row - radius; r <= row + radius; r++)
+            for (int c = col - radius; c <= col + radius; c++)
+                if (r > 1 && r < rows - 2 && c > 1 && c < cols - 2) mapData[r][c] = GRASS;
+    }
+
     private void generateStarterForestMap() {
         Random rand = new Random();
         for (int r = 0; r < rows; r++) {

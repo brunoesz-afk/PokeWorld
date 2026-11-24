@@ -42,6 +42,8 @@ public final class RewardActions {
 
     /** Toque num ícone da barra do topo. */
     public static void bar(GameView gv, int which) {
+        ExploringUI eui = (ExploringUI) gv.ui.getHandler(UIManager.UIState.EXPLORING);
+        if (which == RewardBar.TOGGLE) { if (eui != null) eui.rewardBar.toggle(gv); return; }
         RewardManager.Store s = store(gv);
         switch (which) {
             case RewardBar.GIFT:

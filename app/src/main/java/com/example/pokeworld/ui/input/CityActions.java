@@ -12,6 +12,7 @@ public final class CityActions {
     public static void run(GameView gv, String action) {
         UIManager ui = gv.ui;
         switch (action) {
+            case "INTRO_RANGER": gv.tutorial.onRangerTalk(); break;
             case "EVENTS": openMissions(gv, false, true); CityDistricts.markEventSeen(gv); break;
             case "JOURNEY": openMissions(gv, false, false); break;
             case "DAILY": openMissions(gv, true, false); break;
