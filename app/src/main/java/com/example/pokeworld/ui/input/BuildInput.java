@@ -103,7 +103,7 @@ public class BuildInput implements InputExtension {
 
     // ------------------------------------------------------------------ botões
     private RectF buttonAt(BuildUI ui, float x, float y) {
-        RectF[] all = {ui.raidBtn, ui.confirmBtn, ui.cancelBtn, ui.paintToggleBtn, ui.moveBtn, ui.upgradeBtn, ui.sellBtn, ui.closeBtn, ui.wallAllBtn};
+        RectF[] all = {ui.raidBtn, ui.formationBtn, ui.confirmBtn, ui.cancelBtn, ui.paintToggleBtn, ui.moveBtn, ui.upgradeBtn, ui.sellBtn, ui.closeBtn, ui.wallAllBtn};
         for (RectF r : all) if (!r.isEmpty() && r.contains(x, y)) return r;
         return null;
     }
@@ -112,6 +112,13 @@ public class BuildInput implements InputExtension {
         long now = System.currentTimeMillis();
         PlayerWallet wallet = new PlayerWallet(gv.player);
 
+        if (b == ui.formationBtn) {
+            int f = (gv.activity.dbHelper.getKv("base_formation", 0) + 1) % 3;
+            gv.activity.dbHelper.setKv("base_formation", f);
+            gv.world.refreshGuards(gv.player);
+            gv.ui.showMessage(new String[]{"🛡 Defensores espalhados pelo pátio", "🛡 Linha de frente: perto das muralhas", "🛡 Recuados: protegem o Quartel"}[f]);
+            return;
+        }
         if (b == ui.raidBtn) {
             if (gv.world.defense == null) return;
             if (gv.world.defense.isActive()) { gv.ui.showMessage("A invasão já está em andamento!"); return; }

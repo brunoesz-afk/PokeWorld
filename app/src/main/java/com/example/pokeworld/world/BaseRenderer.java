@@ -203,6 +203,10 @@ public class BaseRenderer {
                 case LABORATORIO: b = bakeLab(level); break;
                 case HORTA: b = bakeGarden(level); break;
                 case ESTUFA: b = bakeGreenhouse(level); break;
+                case FONTE: b = bakeFountain(level); break;
+                case ESTATUA: b = bakeStatue(level); break;
+                case ARMADILHA: b = bakeTrap(level); break;
+                case MERCADO_TROCAS: b = bakeTradeStall(level); break;
                 default: b = Bitmap.createBitmap(T, T, Bitmap.Config.ARGB_8888);
             }
             cache.put(key, b);
@@ -571,6 +575,71 @@ public class BaseRenderer {
         rect(c, 82, 128, 110, 178, rgb(120, 80, 48));
         rect(c, 84, 130, 108, 176, rgb(150, 104, 66));
         disc(c, 102, 154, 2.4f, rgb(246, 206, 80));
+        return b;
+    }
+
+    private Bitmap bakeFountain(int level) {
+        Bitmap b = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        int stone = level == 1 ? rgb(190, 190, 196) : level == 2 ? rgb(214, 196, 150) : rgb(240, 214, 110);
+        rect(c, 10, 112, 118, 122, 0x55000000);
+        disc(c, 64, 84, 52, shade(stone, 0.7f));
+        disc(c, 64, 80, 48, stone);
+        disc(c, 64, 80, 40, rgb(96, 170, 230));
+        disc(c, 56, 74, 14, alpha(rgb(190, 230, 255), 190));
+        rect(c, 58, 44, 70, 82, shade(stone, 0.85f));
+        disc(c, 64, 40, 12, stone);
+        for (int i = -1; i <= 1; i++) line(c, 64, 36, 64 + i * 22, 62, 3f, alpha(rgb(200, 235, 255), 220));
+        return b;
+    }
+
+    private Bitmap bakeStatue(int level) {
+        Bitmap b = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        int stone = level == 1 ? rgb(170, 172, 180) : level == 2 ? rgb(196, 160, 90) : rgb(250, 210, 70);
+        rect(c, 14, 112, 114, 122, 0x55000000);
+        rect(c, 28, 96, 100, 116, rgb(110, 112, 120));
+        rect(c, 34, 90, 94, 100, rgb(140, 142, 150));
+        rect(c, 50, 40, 78, 92, stone);                  // corpo
+        disc(c, 64, 30, 16, stone);                      // cabeça
+        rect(c, 36, 50, 52, 66, stone); rect(c, 76, 50, 92, 66, stone);   // braços
+        disc(c, 58, 28, 2.5f, rgb(40, 40, 48)); disc(c, 70, 28, 2.5f, rgb(40, 40, 48));
+        rect(c, 56, 10, 72, 18, shade(stone, 0.8f));
+        return b;
+    }
+
+    private Bitmap bakeTrap(int level) {
+        Bitmap b = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        int metal = level == 1 ? rgb(150, 150, 158) : level == 2 ? rgb(210, 160, 70) : rgb(120, 200, 240);
+        disc(c, 32, 36, 24, 0x44000000);
+        disc(c, 32, 34, 22, shade(metal, 0.6f));
+        disc(c, 32, 34, 18, metal);
+        for (int i = 0; i < 8; i++) {
+            double a = i * Math.PI / 4;
+            float x = 32 + (float) Math.cos(a) * 14, y = 34 + (float) Math.sin(a) * 14;
+            line(c, 32 + (float) Math.cos(a) * 6, 34 + (float) Math.sin(a) * 6, x, y, 4f, rgb(80, 80, 90));
+        }
+        disc(c, 32, 34, 5, rgb(220, 60, 50));
+        return b;
+    }
+
+    /** Barraca do Mercado de Trocas 4x3: toldo listrado, balcão e caixotes. */
+    private Bitmap bakeTradeStall(int level) {
+        Bitmap b = Bitmap.createBitmap(256, 192, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        int a1 = level == 1 ? rgb(220, 70, 60) : level == 2 ? rgb(70, 130, 220) : rgb(240, 190, 60);
+        rect(c, 8, 176, 248, 188, 0x55000000);
+        rect(c, 20, 70, 236, 176, rgb(150, 104, 66));
+        rect(c, 28, 78, 228, 170, rgb(110, 76, 48));
+        rect(c, 20, 130, 236, 146, rgb(190, 140, 90));                    // balcão
+        for (int i = 0; i < 8; i++) rect(c, 12 + i * 29, 30, 12 + i * 29 + 29, 74, i % 2 == 0 ? a1 : rgb(246, 244, 236));   // toldo
+        rect(c, 12, 70, 244, 78, shade(a1, 0.7f));
+        rect(c, 12, 22, 244, 32, shade(a1, 0.8f));
+        for (int i = 0; i < 3; i++) { rect(c, 44 + i * 62, 108, 84 + i * 62, 130, rgb(190, 150, 80)); disc(c, 64 + i * 62, 104, 9, i == 1 ? rgb(250, 200, 60) : rgb(96, 190, 86)); }
+        disc(c, 128, 54, 12, rgb(250, 240, 200));
+        p.setColor(rgb(60, 40, 30)); p.setTextAlign(Paint.Align.CENTER); p.setTextSize(18); p.setFakeBoldText(true);
+        c.drawText("⇄", 128, 60, p); p.setFakeBoldText(false);
         return b;
     }
 

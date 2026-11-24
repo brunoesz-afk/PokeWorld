@@ -8,6 +8,7 @@ import com.example.pokeworld.entities.TeamBonus;
 import com.example.pokeworld.entities.Equipment;
 import com.example.pokeworld.entities.PetData;
 import com.example.pokeworld.entities.Rune;
+import java.util.List;
 
 /** Troca do Pokémon ativo e sincronização com o Time/banco quando ele evolui. */
 public final class PartyManager {
@@ -64,6 +65,8 @@ public final class PartyManager {
             int boost = 0;
             for (CapturedCreature c : party) if (isActive(gv, c)) { boost = c.boost; break; }
             TeamBonus tb = TeamBonus.compute(party, comp.getSpecies());
+            tb.regen += com.example.pokeworld.world.BaseBonus.regen(gv.world.base);   // decorações da base
+            tb.xp += com.example.pokeworld.world.BaseBonus.xp(gv.world.base);
             teamBonus = tb;
             Skill.cooldownScale = 1f - Math.min(0.35f, tb.cdr);
             int oldMax = comp.getMaxHp();

@@ -27,7 +27,7 @@ public class BuildUI extends BaseUI {
 
     // zonas (preenchidas a cada frame; a BuildInput só lê)
     public final RectF panel = new RectF();
-    public final RectF raidBtn = new RectF();
+    public final RectF raidBtn = new RectF(), formationBtn = new RectF();
     public final RectF confirmBtn = new RectF(), cancelBtn = new RectF(), paintToggleBtn = new RectF();
     public final RectF moveBtn = new RectF(), upgradeBtn = new RectF(), sellBtn = new RectF(), closeBtn = new RectF(), wallAllBtn = new RectF();
     public final List<RectF> cardRects = new ArrayList<>();
@@ -72,7 +72,7 @@ public class BuildUI extends BaseUI {
 
     private void clearZones() {
         cardRects.clear(); cardKinds.clear();
-        for (RectF r : new RectF[]{raidBtn, confirmBtn, cancelBtn, paintToggleBtn, moveBtn, upgradeBtn, sellBtn, closeBtn, wallAllBtn}) r.setEmpty();
+        for (RectF r : new RectF[]{raidBtn, formationBtn, confirmBtn, cancelBtn, paintToggleBtn, moveBtn, upgradeBtn, sellBtn, closeBtn, wallAllBtn}) r.setEmpty();
     }
 
     // ------------------------------------------------------------------ topo
@@ -95,6 +95,10 @@ public class BuildUI extends BaseUI {
             String t = d.isActive() ? "⚔️ Invasão em andamento" : "⚔️ Treinar defesa (próxima em " + (next / 60) + ":" + String.format("%02d", next % 60) + ")";
             paint.setTextSize(20);
             drawButton(canvas, raidBtn, t);
+            formationBtn.set(w - 360, 158, w - 20, 214);
+            String[] fn = {"Espalhados", "Linha de frente", "Recuados"};
+            paint.setTextSize(20);
+            drawButton(canvas, formationBtn, "🛡 FORMAÇÃO: " + fn[gv.activity.dbHelper.getKv("base_formation", 0) % 3]);
         }
 
         if (base.editing && base.selected == null && base.placing == null) {
@@ -247,7 +251,7 @@ public class BuildUI extends BaseUI {
     }
 
     /** Corta o texto com "…" para caber na largura. */
-    private String fit(String t, float maxW) {
+    @Override protected String fit(String t, float maxW) {
         if (paint.measureText(t) <= maxW) return t;
         int n = t.length();
         while (n > 1 && paint.measureText(t.substring(0, n) + "…") > maxW) n--;

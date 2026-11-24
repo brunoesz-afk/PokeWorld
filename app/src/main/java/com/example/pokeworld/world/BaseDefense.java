@@ -131,6 +131,7 @@ public class BaseDefense {
         }
 
         if (quartelFell) { fail(now); return; }
+        triggerTraps(now);
         shootTowers(now);
         runGuards(now);
 
@@ -235,6 +236,25 @@ public class BaseDefense {
     }
 
     // ================================================================= torres e guardiões
+
+    private final java.util.Map<BasePiece, Long> trapReady = new java.util.HashMap<>();
+
+    /** Armadilhas: o invasor que pisa leva dano e fica paralisado; a armadilha recarrega por 25s. */
+    private void triggerTraps(long now) {
+        for (BasePiece p : base.layout.getPieces()) {
+            if (p.kind != BaseKind.ARMADILHA || !p.isUsable()) continue;
+            Long ready = trapReady.get(p);
+            if (ready != null && now < ready) continue;
+            for (Enemy e : raiders) {
+                if (!e.isAlive || dist(e.positionX, e.positionY, p.centerX(), p.centerY()) > 58) continue;
+                trapReady.put(p, now + 25000);
+                zap(e, 40 + 30 * p.level, p.centerX(), p.centerY(), Color.rgb(255, 80, 80), now);
+                e.status.apply(com.example.pokeworld.entities.Status.PARALYZE, 2500L + 500L * p.level, e.getType());
+                host.text("🪤 PEGO!", e.positionX, e.positionY - 56, Color.rgb(255, 200, 80));
+                break;
+            }
+        }
+    }
 
     private void shootTowers(long now) {
         boolean electric = host.hasElectricPokemon();

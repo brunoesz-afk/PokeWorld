@@ -18,7 +18,11 @@ public enum BaseKind {
     LABORATORIO("Laboratório",       "🧪",  4, 4, Cat.UTIL,        5,   60,   30,   15,  0,    null),
     FABRICA    ("Fábrica de Montaria","🐎", 6, 4, Cat.UTIL,        5,   60,   50,   0,   0,    "fabrica_montaria"),
     ACADEMIA   ("Academia",          "🏋️", 5, 4, Cat.UTIL,        5,   30,   20,   10,  0,    "ginasio_building"),
-    ESTUFA     ("Estufa",            "🌿", 3, 3, Cat.UTIL,        5,   40,   25,   10,  200,  null);
+    ESTUFA     ("Estufa",            "🌿", 3, 3, Cat.UTIL,        5,   40,   25,   10,  200,  null),
+    FONTE      ("Fonte",             "⛲", 2, 2, Cat.UTIL,        3,   15,   20,   0,   300,  null),
+    ESTATUA    ("Estátua",           "🗿", 2, 2, Cat.UTIL,        3,   20,   10,   15,  400,  null),
+    ARMADILHA  ("Armadilha",         "🪤", 1, 1, Cat.DEFESA,      3,   5,    8,    6,   60,   null),
+    MERCADO_TROCAS("Mercado de Trocas","🔁", 4, 3, Cat.UTIL,      3,   30,   25,   10,  500,  null);
 
     public enum Cat { NUCLEO, DEFESA, UTIL }
 
@@ -87,6 +91,8 @@ public enum BaseKind {
             case HORTA: return 2 + 2 * hq;
             case BAU: return 1 + hq;
             case ESTUFA: return 1 + hq / 3;
+            case ESTATUA: return 1 + hq / 3;
+            case ARMADILHA: return 2 + 2 * hq;
             default: return 1;
         }
     }
@@ -112,6 +118,10 @@ public enum BaseKind {
             case LABORATORIO: return "Invoca novos Pokémons.";
             case FABRICA: return "Sela e equipamentos de montaria.";
             case ACADEMIA: return "Treina Pokémon da Caixa e da Defesa (fale com o Prof. de Treino). Cada nível libera mais vagas de treino.";
+            case FONTE: return "Decoração com efeito: todos os seus Pokémon regeneram vida mais rápido (+25% por nível).";
+            case ESTATUA: return "Decoração com efeito: o companheiro ganha mais XP (+4% por nível, vale para cada estátua).";
+            case ARMADILHA: return "Defesa: quando um invasor pisa, leva dano e fica paralisado. Recarrega em 25s. Coloque no caminho do Quartel.";
+            case MERCADO_TROCAS: return "Troque Pokémon duplicados (fora do time) por itens, ouro e até Gemas de Boost. Fale com o Comerciante.";
             case ESTUFA: return "Produz Frutas, Poções e Poeira Mística sozinha, mesmo com o jogo fechado. Toque nela para coletar o estoque.";
         }
         return "";

@@ -20,6 +20,8 @@ public class TipManager {
         TEXT.put("screen_EXPEDITION", "Expedições: seus Pokémon da Caixa/Defesa viajam e voltam com recursos (mesmo com o jogo fechado). Bases rivais: 3 novas por dia, a chance depende do poder do time.");
         TEXT.put("screen_TRAINING", "Academia: Pokémon da Caixa e da Defesa treinam por 5 min e voltam com XP, mesmo com o jogo fechado. Quanto maior o nível da Academia, mais vagas e mais XP.");
         TEXT.put("screen_SHOP", "Mercado: compre Poções e bolas; venda sucata (drops de inimigos). Materiais da base ficam guardados. O ouro é raro, então compre só o que precisa.");
+        TEXT.put("screen_TRADE", "Mercado de Trocas: só Pokémon repetidos (mesma espécie, raridade e brilho) fora do time e sem boost. Sempre fica 1 de cada.");
+        TEXT.put("screen_BOOSTLAB", "Laboratório de Boost: mova o boost de um Pokémon para outro (perde 1 nível) ou recicle em Gemas de Boost.");
         TEXT.put("screen_TALENTS", "Talentos: ganhe 1 ponto por nível de treinador. Cada nó só libera quando o nó de cima chega ao nível pedido, então planeje o ramo. Dá para resetar por ouro.");
         TEXT.put("screen_RUNES", "Runas: equipe uma por Pokémon ativo. Sangue cura, Mercúrio acelera, Sorte aumenta ouro e drops. Elas caem de chefes e dos andares 5, 10, 15 e 20 da Torre.");
         TEXT.put("screen_BESTIARY", "Pokédex: chegue perto de um Pokémon para registrá-lo. A ficha mostra onde cada espécie aparece e como ela evolui.");

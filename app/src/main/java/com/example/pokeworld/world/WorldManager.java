@@ -208,11 +208,18 @@ public class WorldManager {
             if (spawned >= max) break;
             PetData d = activity.dbHelper.getPetData(c.name);
             // Procura um ponto livre dentro das muralhas (o pátio do anel inicial)
-            for (int tries = 0; tries < 40; tries++) {
+            final double hqx = TileMap.TILE_SIZE * (BaseLayout.QUARTEL_X + 2), hqy = TileMap.TILE_SIZE * (BaseLayout.QUARTEL_Y + 2);
+            final int formation = activity.dbHelper.getKv("base_formation", 0);   // 0 espalhados, 1 linha de frente, 2 recuados
+            for (int tries = 0; tries < 60; tries++) {
                 double ex = TileMap.TILE_SIZE * (BaseLayout.RING_L + 3 + random.nextInt(BaseLayout.RING_R - BaseLayout.RING_L - 5));
                 double ey = TileMap.TILE_SIZE * (BaseLayout.RING_T + 3 + random.nextInt(BaseLayout.RING_B - BaseLayout.RING_T - 5));
+                if (tries < 45) {   // formação: só relaxa nas últimas tentativas
+                    double dq = Math.hypot(ex - hqx, ey - hqy);
+                    if (formation == 1 && dq < 620) continue;      // linha de frente: perto das muralhas, onde a invasão chega
+                    if (formation == 2 && dq > 460) continue;      // recuados: protegendo o Quartel
+                }
                 // nas primeiras tentativas exige folga (NPCs ~170px, outros defensores ~140px); depois relaxa
-                double need = tries < 25 ? 170 : tries < 35 ? 100 : 0;
+                double need = tries < 40 ? 170 : tries < 52 ? 100 : 0;
                 boolean far = true;
                 for (double[] t : taken) if (Math.hypot(ex - t[0], ey - t[1]) < need) { far = false; break; }
                 if (!far) continue;
@@ -287,7 +294,8 @@ public class WorldManager {
                         {"Capitão de Expedição", "Envie Pokémon em expedições e ataque bases rivais!"}}; break;
                 case OFICINA: who = new String[][]{{"Prof. de Engenharia", "Quer fabricar Pokébolas?"}}; type = NPC.Type.BLACKSMITH; break;
                 case DAYCARE: who = new String[][]{{"Prof. Criador", "Quer cruzar seus Pokémons?"}}; break;
-                case LABORATORIO: who = new String[][]{{"Prof. Invocador", "Deseja invocar novos poderes?"}}; break;
+                case LABORATORIO: who = new String[][]{{"Prof. Invocador", "Deseja invocar novos poderes?"}, {"Prof. de Boost", "Transfira ou recicle o boost dos seus Pokémon."}}; break;
+                case MERCADO_TROCAS: who = new String[][]{{"Comerciante de Trocas", "Troco seus Pokémon repetidos por itens!"}}; break;
                 case FABRICA: who = new String[][]{{"Prof. de Montaria", "Selas e equipamentos de viagem?"}}; break;
                 case BAU: who = new String[][]{{"Prof. de Estoque", "Acesse seu baú de itens."}}; break;
                 case ACADEMIA: who = new String[][]{{"Prof. de Treino", "Treine seus Pokémons da Caixa e da Defesa!"}}; break;

@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class UIManager {
     private Paint paint = new Paint();
-    public enum UIState { EXPLORING, INVENTORY, CREATURES, SHOP, MISSIONS, FORGE, BESTIARY, TALENTS, ACHIEVEMENTS, CLAN, SUMMON, BREEDING, VICTORY, RUNES, BOUNTIES, TELEPORT, SETTINGS, CRAFTING, POKEMON_DETAILS, STORAGE, EVOLUTION, EVOLVING, PLACEMENT, MOUNT_FACTORY, GYM, AINCRAD, ITEM_STORAGE, TRAINER_SKILLS, STARTER_SELECTION, TOWER_SELECT, BUILD, EXPEDITION, TRAINING }
+    public enum UIState { EXPLORING, INVENTORY, CREATURES, SHOP, MISSIONS, FORGE, BESTIARY, TALENTS, ACHIEVEMENTS, CLAN, SUMMON, BREEDING, VICTORY, RUNES, BOUNTIES, TELEPORT, SETTINGS, CRAFTING, POKEMON_DETAILS, STORAGE, EVOLUTION, EVOLVING, PLACEMENT, MOUNT_FACTORY, GYM, AINCRAD, ITEM_STORAGE, TRAINER_SKILLS, STARTER_SELECTION, TOWER_SELECT, BUILD, EXPEDITION, TRAINING, TRADE, BOOSTLAB }
     public UIState state = UIState.EXPLORING;
 
     public String pendingBiomeName = "";
@@ -72,6 +72,8 @@ public class UIManager {
         handlers.put(UIState.BUILD, new BuildUI());
         handlers.put(UIState.EXPEDITION, new ExpeditionUI());
         handlers.put(UIState.TRAINING, new TrainingUI());
+        handlers.put(UIState.TRADE, new TradeUI());
+        handlers.put(UIState.BOOSTLAB, new BoostLabUI());
     }
     
     /** Abre a tela de pedras de evolução com a pedra escolhida na mochila. */
