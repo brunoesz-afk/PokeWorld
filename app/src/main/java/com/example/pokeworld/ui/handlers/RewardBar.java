@@ -15,7 +15,7 @@ import com.example.pokeworld.managers.RewardManager;
  */
 public class RewardBar {
     public static final int TOGGLE = 100;
-    public static final int GIFT = 0, EVENT = 1, DAILY = 2, JOURNEY = 3, ACH = 4, RECHARGE = 5, PASS = 6, SHOP = 7, ALL = 8, COUNT = 9;
+    public static final int GIFT = 0, EVENT = 1, DAILY = 2, JOURNEY = 3, ACH = 4, RECHARGE = 5, PASS = 6, SHOP = 7, ARENA = 8, ALL = 9, COUNT = 10;
 
     private final RectF[] rects = new RectF[COUNT];
     private final RectF toggleRect = new RectF();
@@ -25,7 +25,7 @@ public class RewardBar {
     // valores em cache (atualizados 2x por segundo: a barra é desenhada todo quadro)
     private long lastRefresh = 0;
     private final int[] badge = new int[COUNT];
-    private int rechargeLeft = 0, dailiesDone = 0, pending = 0;
+    private int rechargeLeft = 0, dailiesDone = 0, pending = 0, arenaTries = 0;
     private String eventIcon = "🎉";
 
     public RewardBar() {
@@ -88,6 +88,7 @@ public class RewardBar {
         badge[RECHARGE] = rechargeLeft == 0 ? 1 : 0;
         dailiesDone = gv.missions.dailiesDone();
         badge[PASS] = com.example.pokeworld.managers.PassManager.readyCount(st);
+        arenaTries = com.example.pokeworld.managers.ArenaLadder.triesLeft(st);
         pending = badge[GIFT] + badge[EVENT] + badge[DAILY] + badge[JOURNEY] + badge[ACH] + badge[RECHARGE] + badge[PASS];
         badge[ALL] = pending;
         eventIcon = EventCalendar.today().icon;
@@ -100,8 +101,8 @@ public class RewardBar {
         layout(w, h);
         drawToggle(canvas, k);
         if (collapsed()) return;
-        String[] icons = {"🎁", eventIcon, "📅", "📖", "🏆", "🔋", "🎟️", "💠", "✨"};
-        String[] labels = {"Presente", "Evento", "Diárias", "Jornada", "Conquistas", "Recarga", "Passe", "Loja", "Coletar tudo"};
+        String[] icons = {"🎁", eventIcon, "📅", "📖", "🏆", "🔋", "🎟️", "💠", "⚔️", "✨"};
+        String[] labels = {"Presente", "Evento", "Diárias", "Jornada", "Conquistas", "Recarga", "Passe", "Loja", "Arena", "Coletar tudo"};
         float pulse = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 260.0);
 
         for (int i = 0; i < COUNT; i++) {
@@ -127,6 +128,7 @@ public class RewardBar {
             String note = null;
             if (i == DAILY && !has) note = dailiesDone + "/3";
             if (i == RECHARGE && !has) note = RewardManager.countdown(rechargeLeft);
+            if (i == ARENA) note = arenaTries + "/" + com.example.pokeworld.managers.ArenaLadder.TRIES_PER_DAY;
             if (note != null) {
                 paint.setTextSize(r.width() * 0.2f);
                 paint.setColor(Color.rgb(200, 210, 230));

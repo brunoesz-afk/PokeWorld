@@ -216,6 +216,43 @@ io.on("connection", (socket) => {
         cb({ ok: true, friends });
     });
 
+    // --- ARENA: ranking global (pontos reportados pelo aparelho; o servidor só limita e ordena) ---
+    socket.on("arenaScore", (data, cb) => {
+        cb = asFn(cb);
+        const me = socket.data.code;
+        if (!me || !db.accounts[me]) return cb({ ok: false });
+        if (!allow(socket)) return cb({ ok: false, error: "Muitas requisições." });
+        const acc = db.accounts[me];
+        const rp = Math.max(0, Math.min(99999, parseInt(data && data.rp, 10) || 0));
+        // limite de plausibilidade: no máximo +60 pontos por envio em relação ao último valor aceito
+        const prev = (acc.arena && acc.arena.rp) || 0;
+        acc.arena = {
+            rp: Math.min(rp, prev + 60),
+            wins: Math.max(0, parseInt(data && data.wins, 10) || 0),
+            losses: Math.max(0, parseInt(data && data.losses, 10) || 0),
+            power: Math.max(0, Math.min(999999, parseInt(data && data.power, 10) || 0)),
+            at: Date.now()
+        };
+        save();
+        cb({ ok: true, rp: acc.arena.rp });
+    });
+
+    socket.on("arenaTop", (data, cb) => {
+        cb = asFn(cb);
+        const me = socket.data.code;
+        const rows = Object.keys(db.accounts)
+            .filter((c) => db.accounts[c].arena && db.accounts[c].arena.rp > 0)
+            .map((c) => ({ code: c, name: db.accounts[c].name, ...db.accounts[c].arena }))
+            .sort((a, b) => b.rp - a.rp || b.wins - a.wins);
+        const idx = me ? rows.findIndex((r) => r.code === me) : -1;
+        cb({
+            ok: true,
+            total: rows.length,
+            myRank: idx >= 0 ? idx + 1 : 0,
+            top: rows.slice(0, 50).map((r, i) => ({ rank: i + 1, name: r.name, rp: r.rp, wins: r.wins, losses: r.losses, power: r.power, me: r.code === me }))
+        });
+    });
+
     // --- SISTEMA DE CO-OP NA TORRE ---
     socket.on("inviteTower", (data) => {
         const targetId = data.targetId;

@@ -12,7 +12,7 @@ import com.example.pokeworld.managers.TowerManager;
 
 /** Coliseu: central dos desafios de combate. Cada cartão leva à tela do desafio e mostra o seu progresso. */
 public class ColiseumUI extends BaseUI {
-    public final RectF exitBtn = new RectF(), towerBtn = new RectF(), endlessBtn = new RectF(), gymBtn = new RectF(), rivalBtn = new RectF();
+    public final RectF exitBtn = new RectF(), towerBtn = new RectF(), endlessBtn = new RectF(), gymBtn = new RectF(), rivalBtn = new RectF(), arenaBtn = new RectF(), rankBtn = new RectF();
 
     @Override
     public void draw(Canvas canvas, GameView gv) {
@@ -29,18 +29,29 @@ public class ColiseumUI extends BaseUI {
         int cleared = gv.tower.getHighestCleared();
         boolean endlessOk = gv.tower.isEndlessUnlocked();
         float top = 212, gap = 14;
-        float cw = (w - 60 - gap) / 2f, ch = Math.min(210, (h - top - 24 - gap) / 2f);
-        RectF a = new RectF(30, top, 30 + cw, top + ch), b = new RectF(a.right + gap, top, w - 30, top + ch);
-        RectF c = new RectF(30, top + ch + gap, 30 + cw, top + 2 * ch + gap), d = new RectF(c.right + gap, top + ch + gap, w - 30, top + 2 * ch + gap);
+        float cw = (w - 60 - 2 * gap) / 3f, ch = Math.min(210, (h - top - 24 - gap) / 2f);
+        RectF[] g = new RectF[6];
+        for (int i = 0; i < 6; i++) {
+            float x = 30 + (i % 3) * (cw + gap), y = top + (i / 3) * (ch + gap);
+            g[i] = new RectF(x, y, x + cw, y + ch);
+        }
+        com.example.pokeworld.managers.RewardManager.Store ps = com.example.pokeworld.managers.PointsManager.store();
+        int rp = ps == null ? 0 : com.example.pokeworld.managers.ArenaLadder.rp(ps);
+        int tier = com.example.pokeworld.managers.ArenaLadder.tierOf(rp);
+        int tries = ps == null ? 0 : com.example.pokeworld.managers.ArenaLadder.triesLeft(ps);
 
-        card(canvas, a, towerBtn, "🗼 TORRE DE PROVAS", "Andares com hordas e chefes (5, 10, 15, 20).",
-                "Maior andar concluído: " + cleared + " / " + TowerManager.MAX_FLOOR + (ev.towerGold > 0 ? "   •   🪙 em dobro hoje!" : ""), "ENTRAR", true, C_ACCENT);
-        card(canvas, b, endlessBtn, "♾️ TORRE INFINITA", "Andares sem fim, cada vez mais difíceis.",
-                endlessOk ? "Seu recorde: andar " + gv.tower.getEndlessBest() : "🔒 Conclua o andar " + TowerManager.MAX_FLOOR + " da Torre para liberar", endlessOk ? "ENTRAR" : "BLOQUEADO", endlessOk, Color.rgb(190, 140, 255));
-        card(canvas, c, gymBtn, "🥋 GINÁSIO", "Enfrente o Líder Brock e o seu Onix.",
+        card(canvas, g[0], arenaBtn, "⚔️ ARENA", "Duelos 3x3 contra lutadores. Troque de Pokémon a cada 5 s!",
+                "Tentativas hoje: " + tries + " / " + com.example.pokeworld.managers.ArenaLadder.TRIES_PER_DAY, "LUTAR", true, Color.rgb(255, 120, 80));
+        card(canvas, g[1], rankBtn, "🏆 RANKING", "Suba de liga (Bronze → Lenda) e veja os melhores treinadores.",
+                com.example.pokeworld.managers.ArenaLadder.TIER_ICON[tier] + " Liga " + com.example.pokeworld.managers.ArenaLadder.TIER_NAME[tier] + "  •  " + rp + " PR", "VER", true, com.example.pokeworld.managers.ArenaLadder.TIER_COLOR[tier]);
+        card(canvas, g[2], towerBtn, "🗼 TORRE DE PROVAS", "Andares com hordas e chefes (5, 10, 15, 20).",
+                "Maior andar concluído: " + cleared + " / " + TowerManager.MAX_FLOOR + (ev.towerGold > 0 ? "  •  🪙 x2 hoje!" : ""), "ENTRAR", true, C_ACCENT);
+        card(canvas, g[3], endlessBtn, "♾️ TORRE INFINITA", "Andares sem fim, cada vez mais difíceis.",
+                endlessOk ? "Seu recorde: andar " + gv.tower.getEndlessBest() : "🔒 Conclua o andar " + TowerManager.MAX_FLOOR + " da Torre", endlessOk ? "ENTRAR" : "BLOQUEADO", endlessOk, Color.rgb(190, 140, 255));
+        card(canvas, g[4], gymBtn, "🥋 GINÁSIO", "Enfrente o Líder Brock e o seu Onix.",
                 "Nível do líder: " + (gv.player.getLevel() + 3), "DESAFIAR", true, Color.rgb(235, 120, 90));
-        card(canvas, d, rivalBtn, "⚔️ BASES RIVAIS", "Ataque bases rivais com seu esquadrão (3 novas por dia).",
-                "Poder do seu time: " + ExpeditionManager.partyPower(gv) + (ev.baseReward > 0 ? "   •   prêmios +60% hoje!" : ""), "ATACAR", true, C_GOOD);
+        card(canvas, g[5], rivalBtn, "🏰 BASES RIVAIS", "Ataque bases rivais com seu esquadrão (3 novas por dia).",
+                "Poder do time: " + ExpeditionManager.partyPower(gv) + (ev.baseReward > 0 ? "  •  +60% hoje!" : ""), "ATACAR", true, C_GOOD);
     }
 
     private void card(Canvas canvas, RectF r, RectF btn, String title, String desc, String status, String label, boolean enabled, int color) {

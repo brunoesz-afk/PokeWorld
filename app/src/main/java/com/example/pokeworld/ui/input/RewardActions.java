@@ -58,6 +58,12 @@ public final class RewardActions {
             case RewardBar.RECHARGE: claimRecharge(gv); break;
             case RewardBar.PASS: gv.ui.state = UIManager.UIState.PASS; break;
             case RewardBar.SHOP: gv.ui.state = UIManager.UIState.POINTS_SHOP; break;
+            case RewardBar.ARENA: {
+                com.example.pokeworld.ui.handlers.ArenaUI au = (com.example.pokeworld.ui.handlers.ArenaUI) gv.ui.getHandler(UIManager.UIState.ARENA);
+                if (au != null) au.invalidate();
+                gv.ui.state = UIManager.UIState.ARENA;
+                break;
+            }
             case RewardBar.ALL: claimAll(gv); break;
             default: break;
         }

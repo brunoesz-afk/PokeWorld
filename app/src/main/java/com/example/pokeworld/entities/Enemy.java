@@ -67,7 +67,7 @@ public class Enemy {
         calculateScale(name, r, isBoss);
         this.color = color;
         this.isBoss = isBoss; 
-        this.maxHp = (isBoss ? 5000 : 250) + (level * 55); 
+        this.maxHp = (int)(((isBoss ? 5000 : 250) + (level * 55)) * com.example.pokeworld.managers.Balance.ENEMY_HP);
         this.hp = maxHp;
         this.gender = Math.random() < 0.5 ? 0 : 1;
         setEnemyType();
@@ -401,7 +401,7 @@ public class Enemy {
     public void takeDamage(int dmg) {
         if (isPet) return; 
         status.wake();
-        hp -= dmg;
+        hp -= com.example.pokeworld.managers.Balance.dmg(dmg);
         if (hp <= 0) isAlive = false;
     }
     /** Anda em direção a um ponto (usado pela defesa da base). Retorna a distância restante. */

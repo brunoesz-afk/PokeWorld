@@ -1,0 +1,42 @@
+package com.example.pokeworld.ui.input;
+
+import com.example.pokeworld.core.GameView;
+import com.example.pokeworld.managers.ArenaDuel;
+import com.example.pokeworld.ui.UIManager;
+import com.example.pokeworld.ui.handlers.ArenaBattleUI;
+
+/** Toques do duelo: escolher time e PRONTO na preparação; trocar de Pokémon durante a luta. */
+public class ArenaBattleInput implements InputExtension {
+    @Override
+    public boolean handle(float x, float y, GameView gv) {
+        ArenaBattleUI ui = (ArenaBattleUI) gv.ui.getHandler(UIManager.UIState.ARENA_BATTLE);
+        if (ui == null || ui.duel == null) return false;
+        if (ui.exitBtn.contains(x, y)) { ui.leave(gv); return true; }
+        ArenaDuel d = ui.duel;
+        switch (d.phase) {
+            case PREP:
+                if (ui.readyBtn.contains(x, y)) {
+                    if (ui.picks.isEmpty()) { gv.ui.showMessage("Escolha ao menos 1 Pokémon."); return true; }
+                    if (!ui.ready(gv)) { gv.ui.showMessage("⛔ Acabaram as tentativas de hoje."); ui.leave(gv); }
+                    return true;
+                }
+                for (int i = 0; i < ui.cards.length && i < ui.roster.size(); i++)
+                    if (ui.cards[i].contains(x, y)) { ui.togglePick(i); return true; }
+                return true;
+            case FIGHT:
+                for (int i = 0; i < ui.cards.length && i < d.me.team.size(); i++) {
+                    if (!ui.cards[i].contains(x, y)) continue;
+                    if (i == d.me.active) return true;
+                    if (!d.me.team.get(i).alive()) { gv.ui.showMessage("Esse Pokémon desmaiou."); return true; }
+                    if (!d.swap(i)) gv.ui.showMessage("🔄 Troca em " + String.format("%.1f", d.me.swapCd / 1000f) + "s");
+                    return true;
+                }
+                return true;
+            case RESULT:
+                if (ui.continueBtn.contains(x, y)) ui.leave(gv);
+                return true;
+            default:
+                return true;
+        }
+    }
+}

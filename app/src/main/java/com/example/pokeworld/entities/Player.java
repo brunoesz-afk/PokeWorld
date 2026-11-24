@@ -142,7 +142,7 @@ public class Player {
     }
 
     public void takeDamage(int amount) {
-        hp -= amount;
+        hp -= com.example.pokeworld.managers.Balance.dmg(amount);
         if (hp < 0) hp = 0;
     }
 

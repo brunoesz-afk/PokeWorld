@@ -10,6 +10,12 @@ public class ColiseumInput implements InputExtension {
         ColiseumUI ui = (ColiseumUI) gv.ui.getHandler(UIManager.UIState.COLISEUM);
         if (ui == null) return false;
         if (ui.exitBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.EXPLORING; return true; }
+        if (ui.arenaBtn.contains(x, y)) {
+            com.example.pokeworld.ui.handlers.ArenaUI au = (com.example.pokeworld.ui.handlers.ArenaUI) gv.ui.getHandler(UIManager.UIState.ARENA);
+            if (au != null) au.invalidate();
+            gv.ui.state = UIManager.UIState.ARENA; return true;
+        }
+        if (ui.rankBtn.contains(x, y)) { ArenaInput.openRank(gv); return true; }
         if (ui.towerBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.TOWER_SELECT; return true; }
         if (ui.endlessBtn.contains(x, y)) {
             if (gv.tower.isEndlessUnlocked()) gv.ui.state = UIManager.UIState.TOWER_SELECT;

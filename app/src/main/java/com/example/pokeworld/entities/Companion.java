@@ -134,7 +134,7 @@ public class Companion {
         float resistance = 0;
         if (equippedRune != null && equippedRune.getEffect() == Rune.Effect.RESISTANCE) resistance = equippedRune.getValue();
         resistance = (float) Math.min(0.8, resistance + talent("Resistencia") + (team != null ? team.resist : 0));
-        int finalDamage = (int)(amount * (1.0f - resistance));
+        int finalDamage = com.example.pokeworld.managers.Balance.dmg((int)(amount * (1.0f - resistance)));
         if (this.hp - finalDamage <= 0 && friendship >= 100 && this.hp > 1) this.hp = 1;
         else this.hp -= finalDamage;
         if (this.hp < 0) this.hp = 0;
@@ -362,7 +362,7 @@ public class Companion {
         double hpMult = (gender == 1 ? 1.1 : 1.0) * (1.0 + talent("Vitalidade")) * boostMult * (1.0 + (team != null ? team.hp : 0));
 
         this.attackPower = (int)((baseAttackPower + forgeAttackBonus) * attackBuffMult * rarityMult * atkMult);
-        this.maxHp = (int)(this.maxHp * rarityMult * hpMult);
+        this.maxHp = (int)(this.maxHp * rarityMult * hpMult * com.example.pokeworld.managers.Balance.HP);
 
         if (weapon != null) this.attackPower += weapon.getPower();
         if (armor != null) this.maxHp += armor.getPower();
