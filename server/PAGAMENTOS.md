@@ -15,7 +15,7 @@ As tabelas (`w_accounts`, `w_wallets`, `w_ledger`, `w_payments`) são criadas so
 
 ## 2. Mercado Pago
 1. Entre em *Suas integrações* (mercadopago.com.br/developers) e crie uma aplicação.
-2. Copie o **Access Token de teste** (`TEST-...`) e, quando for cobrar de verdade, o de **produção** (`APP_USR-...`).
+2. O Access Token fica em *Suas integrações → sua aplicação → Dados da integração → Testes → Credenciais de teste* (e em *Produção → Credenciais de produção*). Os dois começam com `APP_USR`, então não dá para diferenciá-los pelo prefixo: confira em qual aba você está antes de copiar.
 3. Em *Webhooks → Configurar notificação*, informe `https://SEU-SERVIDOR.onrender.com/mp/webhook`, marque o evento
    **Pagamentos** e copie a **chave secreta** (opcional: o servidor só registra um aviso se a assinatura não bater,
    a segurança real é a consulta à API).
