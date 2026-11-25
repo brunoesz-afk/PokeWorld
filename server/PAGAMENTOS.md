@@ -32,10 +32,10 @@ Depois faça *Manual Deploy → Deploy latest commit* (o `package.json` agora in
 Nos logs devem aparecer: `[carteira] ligada (Postgres)`.
 
 ## 4. Testar
-1. Use primeiro o token `TEST-...`. No app: Loja de Pontos → DEPOSITAR → GERAR PIX.
+1. Use primeiro o token de teste. No app: Loja de Pontos → DEPOSITAR → GERAR PIX.
 2. Com credenciais de teste, o Mercado Pago permite simular o pagamento (contas de teste, no painel de desenvolvedor).
 3. Confira nos logs: `[pix] +35 pontos para XXXXXXXX (pagamento 123...)`.
-4. Só então troque para o token de produção.
+4. Só então troque para o token de produção e faça um depósito real de R$ 5 para confirmar (pague pelo app de um banco, não pela própria conta do Mercado Pago).
 
 ## Limites conhecidos
 - Estorno / chargeback **não** debitam pontos automaticamente: confira o painel do Mercado Pago.
