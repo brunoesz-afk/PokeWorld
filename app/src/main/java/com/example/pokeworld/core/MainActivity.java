@@ -401,6 +401,7 @@ public class MainActivity extends AppCompatActivity {
                 p.getLevel(), p.getExp(), "Nível " + p.getLevel() + " - Ouro: " + p.getGold(), null
         );
         com.example.pokeworld.managers.SupabaseManager.getInstance().syncParty(p.getParty(), sp -> dbHelper.getPetData(sp).level);
+        com.example.pokeworld.managers.SupabaseManager.getInstance().syncCollection(p.getCreatureCollection(), sp -> dbHelper.getPetData(sp).level);   // inclui defesa e caixa
     }
 
     @Override

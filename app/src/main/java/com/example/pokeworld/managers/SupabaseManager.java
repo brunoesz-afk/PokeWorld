@@ -196,6 +196,92 @@ public class SupabaseManager {
         }).start();
     }
 
+    // ---- backup da coleção inteira (time + defesa da base + caixa) na tabela pokemon_collection ----
+    private volatile boolean collectionSyncing = false;
+    private String lastCollectionSig = "";
+
+    /** Envia a coleção toda quando mudou. A pokemon_party só aceita 6 lugares, por isso a caixa/defesa vai para outra tabela. */
+    public void syncCollection(final List<CapturedCreature> collection, final java.util.function.Function<String, Integer> levelOf) {
+        if (!isLogged() || collection == null || collection.isEmpty() || collectionSyncing) return;
+        final JSONArray rows = new JSONArray();
+        StringBuilder sig = new StringBuilder();
+        try {
+            int slot = 1;
+            for (CapturedCreature c : new java.util.ArrayList<>(collection)) {
+                String loc = c.isInParty ? "party" : c.isGuard ? "guard" : "box";
+                int lvl = levelOf != null ? Math.max(1, levelOf.apply(c.name)) : 1;
+                JSONObject o = new JSONObject();
+                o.put("user_id", userId);
+                o.put("slot", slot++);
+                o.put("pokemon_name", c.name);
+                o.put("pokemon_level", lvl);
+                o.put("shiny", c.isShiny);
+                o.put("rarity", c.rarity != null ? c.rarity.name() : "COMMON");
+                o.put("gender", c.gender);
+                o.put("boost", c.boost);
+                o.put("location", loc);
+                rows.put(o);
+                sig.append(c.name).append('|').append(loc).append('|').append(c.isShiny).append('|').append(c.rarity).append('|').append(c.gender).append('|').append(c.boost).append('|').append(lvl).append(';');
+            }
+        } catch (Exception e) { return; }
+        final String signature = sig.toString();
+        if (signature.equals(lastCollectionSig)) return;
+        collectionSyncing = true;
+        new Thread(() -> {
+            try {
+                String auth = "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken);
+                URL url = new URL(supabaseUrl + "/rest/v1/pokemon_collection?on_conflict=user_id,slot");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("apikey", supabaseAnonKey);
+                conn.setRequestProperty("Authorization", auth);
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Prefer", "resolution=merge-duplicates,return=minimal");
+                conn.setDoOutput(true);
+                OutputStream os = conn.getOutputStream();
+                os.write(rows.toString().getBytes("UTF-8"));
+                os.close();
+                int code = conn.getResponseCode();
+                if (code < 200 || code >= 300) { Log.e("SupabaseManager", "pokemon_collection: HTTP " + code + " (tabela criada no Supabase?)"); return; }
+                // tira o que sobrou de uma coleção maior (Pokémon vendido/fundido)
+                URL del = new URL(supabaseUrl + "/rest/v1/pokemon_collection?user_id=eq." + userId + "&slot=gt." + rows.length());
+                HttpURLConnection dc = (HttpURLConnection) del.openConnection();
+                dc.setRequestMethod("DELETE");
+                dc.setRequestProperty("apikey", supabaseAnonKey);
+                dc.setRequestProperty("Authorization", auth);
+                dc.getResponseCode();
+                lastCollectionSig = signature;
+                Log.d("SupabaseManager", "pokemon_collection sincronizada: " + rows.length());
+            } catch (Exception e) {
+                Log.e("SupabaseManager", "Erro ao sincronizar pokemon_collection: " + e.getMessage());
+            } finally {
+                collectionSyncing = false;
+            }
+        }).start();
+    }
+
+    /** Baixa a coleção inteira da nuvem. Retorna null se a tabela não existe/está vazia/falhou. */
+    private JSONArray fetchCollection() {
+        try {
+            URL url = new URL(supabaseUrl + "/rest/v1/pokemon_collection?user_id=eq." + userId + "&select=*&order=slot.asc");
+            HttpURLConnection c = (HttpURLConnection) url.openConnection();
+            c.setRequestMethod("GET");
+            c.setRequestProperty("apikey", supabaseAnonKey);
+            c.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+            if (c.getResponseCode() != 200) return null;
+            BufferedReader reader = new BufferedReader(new InputStreamReader(c.getInputStream()));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+            reader.close();
+            JSONArray arr = new JSONArray(sb.toString());
+            return arr.length() > 0 ? arr : null;
+        } catch (Exception e) {
+            Log.e("SupabaseManager", "Erro ao baixar pokemon_collection: " + e.getMessage());
+            return null;
+        }
+    }
+
     public void fetchCloudSave(com.example.pokeworld.core.DatabaseHelper dbHelper, Runnable onComplete) {
         if (!isLogged()) {
             if (onComplete != null) onComplete.run();
@@ -241,7 +327,26 @@ public class SupabaseManager {
                     reader.close();
 
                     JSONArray partyArr = new JSONArray(sb.toString());
-                    if (partyArr.length() > 0 && fresh) {
+                    JSONArray full = fresh ? fetchCollection() : null;       // coleção completa (time + defesa + caixa)
+                    if (full != null) {
+                        java.util.List<CapturedCreature> restored = new java.util.ArrayList<>();
+                        java.util.Map<String, Integer> levels = new java.util.HashMap<>();
+                        for (int i = 0; i < full.length(); i++) {
+                            JSONObject o = full.getJSONObject(i);
+                            com.example.pokeworld.entities.Rarity r = com.example.pokeworld.entities.Rarity.COMMON;
+                            try { r = com.example.pokeworld.entities.Rarity.valueOf(o.optString("rarity", "COMMON")); } catch (Exception ignored) {}
+                            String loc = o.optString("location", "box");
+                            CapturedCreature c = new CapturedCreature(o.optString("pokemon_name", "Pikachu"), o.optBoolean("shiny", false), r, "party".equals(loc), o.optInt("gender", 0));
+                            c.isGuard = "guard".equals(loc);
+                            c.boost = o.optInt("boost", 0);
+                            restored.add(c);
+                            int lv = o.optInt("pokemon_level", 1);
+                            Integer prev = levels.get(c.name);
+                            if (prev == null || lv > prev) levels.put(c.name, lv);
+                        }
+                        dbHelper.replaceCollection(restored);
+                        for (java.util.Map.Entry<String, Integer> e : levels.entrySet()) dbHelper.restorePetLevel(e.getKey(), e.getValue());
+                    } else if (partyArr.length() > 0 && fresh) {
                         dbHelper.clearParty();
                         for (int i = 0; i < partyArr.length(); i++) {
                             JSONObject poke = partyArr.getJSONObject(i);

@@ -284,18 +284,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
         if (collection != null) {
-            db.delete("collection", null, null);
-            for (CapturedCreature c : collection) {
-                ContentValues cv = new ContentValues();
-                cv.put("creature_name", c.name);
-                cv.put("is_shiny", c.isShiny ? 1 : 0);
-                cv.put("rarity", c.rarity.name());
-                cv.put("is_in_party", c.isInParty ? 1 : 0);
-                cv.put("gender", c.gender);
-                cv.put("is_guard", c.isGuard ? 1 : 0);
-                cv.put("boost", c.boost);
-                db.insert("collection", null, cv);
-            }
+            // numa transação: se algo falhar no meio, a coleção antiga continua inteira (antes apagava e regravava sem proteção)
+            db.beginTransaction();
+            try {
+                db.delete("collection", null, null);
+                for (CapturedCreature c : new ArrayList<>(collection)) db.insert("collection", null, collectionValues(c));
+                db.setTransactionSuccessful();
+            } finally { db.endTransaction(); }
         }
 
         if (inventory != null) {
@@ -507,6 +502,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put("level", level);
         v.put("exp", exp);
         db.update("player_stats", v, "id=1", null);
+    }
+
+    /** Substitui a coleção inteira (restauração da nuvem): time, defesa e caixa. */
+    public void replaceCollection(List<CapturedCreature> list) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete("collection", null, null);
+            for (CapturedCreature c : list) db.insert("collection", null, collectionValues(c));
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
+    private ContentValues collectionValues(CapturedCreature c) {
+        ContentValues cv = new ContentValues();
+        cv.put("creature_name", c.name);
+        cv.put("is_shiny", c.isShiny ? 1 : 0);
+        cv.put("rarity", c.rarity.name());
+        cv.put("is_in_party", c.isInParty ? 1 : 0);
+        cv.put("gender", c.gender);
+        cv.put("is_guard", c.isGuard ? 1 : 0);
+        cv.put("boost", c.boost);
+        return cv;
     }
 
     public void clearParty() {
