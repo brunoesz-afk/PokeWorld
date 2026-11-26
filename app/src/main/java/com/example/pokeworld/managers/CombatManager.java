@@ -22,7 +22,8 @@ public class CombatManager {
             return;
         }
 
-        int pct = (int) Math.round(100 * com.example.pokeworld.entities.Progression.captureChance(
+        boolean guided = gv.tutorial != null && gv.tutorial.isGuidedCapture();
+        int pct = guided ? 100 : (int) Math.round(100 * com.example.pokeworld.entities.Progression.captureChance(
                 target.getOwnerLevel(), target.isOwnerBoss(), target.isShiny(), gv.companion.getLevel(),
                 com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Domador") * 0.8));
         gv.ui.showMessage("Tentando capturar... (chance " + pct + "%)");
@@ -41,7 +42,8 @@ public class CombatManager {
                 target.getOwnerLevel(), target.isOwnerBoss(), target.isShiny(), gv.companion.getLevel(),
                 com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Domador") * 0.8);
 
-        if (random.nextDouble() < finalChance) {
+        boolean guided = gv.tutorial != null && gv.tutorial.isGuidedCapture();
+        if (guided || random.nextDouble() < finalChance) {
             if (random.nextDouble() >= com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Coletor")) gv.player.useItem("Pokébola");
             
             Rarity rarity = Rarity.COMMON;

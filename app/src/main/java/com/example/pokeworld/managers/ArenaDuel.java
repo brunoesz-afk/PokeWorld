@@ -20,6 +20,7 @@ public final class ArenaDuel {
     public static final long HIT_MS = 1300;
     public static final long TIME_LIMIT_MS = 120000;
     public static final long PICK_MS = 2000;       // tempo para escolher o próximo quando o ativo cai
+    public static final long PREP_MS = 25000;      // tempo de preparo (escolha escondida do oponente) antes de a luta começar
 
     public enum Phase { PREP, COUNTDOWN, FIGHT, RESULT }
 
@@ -72,6 +73,9 @@ public final class ArenaDuel {
     public final Side me = new Side(), foe = new Side();
     public Phase phase = Phase.PREP;
     public long countdown = COUNTDOWN_MS;
+    public long prepLeft = PREP_MS;       // tempo que resta para o jogador ficar PRONTO
+    public boolean meReady, foeReady;     // a luta só começa quando os DOIS estão prontos
+    public long foeReadyIn = 0;           // em quanto tempo o oponente fica pronto (0 = já na hora, usado em testes)
     public long elapsed = 0;
     public boolean won = false;
     public boolean timeUp = false;
@@ -81,12 +85,29 @@ public final class ArenaDuel {
 
     public ArenaDuel(Random rnd) { this.rnd = rnd == null ? new Random() : rnd; }
 
-    /** Pronto: começa a contagem regressiva. */
+    /** PRONTO do jogador: trava o time. A contagem só começa quando o oponente também estiver pronto. */
     public void ready() {
-        if (phase != Phase.PREP || me.cur() == null || foe.team.isEmpty()) return;
-        int best = 0; double bs = -1;                  // o oponente escolhe o inicial que melhor encaixa contra o seu
-        for (int i = 0; i < foe.team.size(); i++) { double sc = score(foe.team.get(i), me.cur()); if (sc > bs) { bs = sc; best = i; } }
-        foe.active = best;
+        if (phase != Phase.PREP || meReady || me.cur() == null || foe.team.isEmpty()) return;
+        meReady = true;
+        if (foeReadyIn <= 0) foeBecomesReady();
+        tryStart();
+    }
+
+    /** O oponente escolhe o inicial sem ver o seu: o mais forte, com um pouco de acaso. */
+    private void foeBecomesReady() {
+        if (foeReady) return;
+        foeReady = true;
+        List<Integer> order = new ArrayList<>();
+        for (int i = 0; i < foe.team.size(); i++) order.add(i);
+        java.util.Collections.sort(order, (a, b) -> Integer.compare(foe.team.get(b).power(), foe.team.get(a).power()));
+        int pick = order.isEmpty() ? 0 : order.get(rnd.nextDouble() < 0.35 && order.size() > 1 ? 1 : 0);
+        foe.active = pick;
+    }
+
+    private void tryStart() {
+        if (phase != Phase.PREP || !meReady || !foeReady) return;
+        while (foe.team.size() > me.team.size() && foe.team.size() > 1) foe.team.remove(foe.team.size() - 1);   // mesmo número de Pokémon dos dois lados
+        if (foe.active >= foe.team.size()) foe.active = 0;
         phase = Phase.COUNTDOWN; countdown = COUNTDOWN_MS;
     }
 
@@ -96,7 +117,8 @@ public final class ArenaDuel {
     /** Troca o Pokémon ativo do jogador. Vale na preparação (livre) e na luta (recarga de 5 s). */
     public boolean swap(int idx) {
         if (idx < 0 || idx >= me.team.size() || !me.team.get(idx).alive()) return false;
-        if (phase == Phase.PREP || phase == Phase.COUNTDOWN) { me.active = idx; return true; }
+        if (phase == Phase.PREP) { if (meReady) return false; me.active = idx; return true; }   // PRONTO trava a escolha
+        if (phase == Phase.COUNTDOWN) return false;
         if (phase != Phase.FIGHT) return false;
         if (me.active == idx) return false;
         if (me.active == -1) { me.active = idx; me.pickIn = 0; me.hitIn = 700; return true; }   // escolha após cair: sem recarga
@@ -107,6 +129,12 @@ public final class ArenaDuel {
     }
 
     public void update(long dt) {
+        if (phase == Phase.PREP) {
+            if (prepLeft > 0) prepLeft = Math.max(0, prepLeft - dt);
+            if (!foeReady) { foeReadyIn -= dt; if (foeReadyIn <= 0) foeBecomesReady(); }
+            tryStart();
+            return;
+        }
         if (phase == Phase.COUNTDOWN) {
             countdown -= dt;
             if (countdown <= 0) { phase = Phase.FIGHT; me.hitIn = HIT_MS; foe.hitIn = HIT_MS + 250; }

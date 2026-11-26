@@ -134,6 +134,11 @@ public class TutorialManager {
         currentState = State.ATTACKING_RATTATA;
     }
 
+    /** Durante a captura guiada do primeiro Rattata a chance é sempre 100%, para o tutorial não quebrar. */
+    public boolean isGuidedCapture() {
+        return currentState == State.DRAG_POKEBALL_TUTORIAL;
+    }
+
     public void onTutorialRattataCaptured() {
         if (currentState == State.DRAG_POKEBALL_TUTORIAL) {
             currentState = State.CAPTURED_RATTATA_DIALOGUE;
