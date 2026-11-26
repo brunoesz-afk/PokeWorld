@@ -1464,7 +1464,6 @@ public final class TileRenderer {
                     t.cliffLip = 0xFF5aa83a;
                     break;
                 case "TOWER":
-                case "DUEL_ARENA":
                     t.defaultGround = FLOOR; t.cobbleRoad = true;
                     t.floor = 0xFF86838e; t.floorDark = 0xFF54525e;
                     t.wallTop = 0xFF9c98a6; t.wallFace = 0xFF6e6a7a; t.wallFaceDark = 0xFF46424f; t.mortar = 0xFF2e2b36;
@@ -1547,6 +1546,7 @@ public final class TileRenderer {
                     break;
                 case "MOLTEN_SANCTUM":
                 case "MOLTEN_SANCTUM_BEGINNER":
+                case "DUEL_ARENA":
                     t.defaultGround = BASALT_FLOOR;
                     t.cliffTop = 0xFF1a1317; t.cliffFace = 0xFF4a3040; t.cliffFaceDark = 0xFF201419; t.cliffLip = 0xFF6a3c4a; t.cliffEdge = 0xFF0c0608;
                     t.bridgeLava = 0xFF7a5a48; t.pillar = 0xFF5a4650; t.boulder = 0xFF4a4048;

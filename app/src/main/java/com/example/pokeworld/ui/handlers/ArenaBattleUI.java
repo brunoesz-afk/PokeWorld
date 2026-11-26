@@ -20,16 +20,24 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Duelo da Arena, numa SALA própria do jogo (mapa "DUEL_ARENA"): arena quadrada com a LINHA no meio, o oponente (escondido)
- * em cima e o seu retângulo de treinador embaixo. Você anda com o joystick atrás da linha (no seu retângulo e na sua metade
- * da arena) e LANÇA o Pokémon tocando em qualquer ponto da sua metade. Durante o preparo (com tempo) dá para relançar e
- * escolher até 3 Pokémon; aperte PRONTO. Quando os dois estiverem prontos, o oponente é revelado e os Pokémon lutam sozinhos;
- * na luta você troca de Pokémon a cada 5 segundos (o treinador lança outra bola).
+ * Duelo da Arena, numa SALA própria do jogo (mapa "DUEL_ARENA", em paisagem, com lava e pontes nas laterais):
+ * o oponente (escondido) em cima, a arena larga com a LINHA no meio e, embaixo, a sua faixa de treinador, separada por
+ * uma grade. Você anda para os lados e dá um passo à frente (joystick) e o seu Pokémon é lançado na sua metade da arena.
+ * Preparo (com tempo): painel "SELECIONE SEU POKÉMON INICIAL" com os cartões do time (ESCOLHER), dá para montar o time
+ * (até 3) e relançar tocando na sua metade; aperte PRONTO. Quando os dois estiverem prontos, o oponente é revelado e os
+ * Pokémon lutam sozinhos; na luta você troca de Pokémon a cada 5 segundos pelo botão Pokémon.
  * Esta classe é o HUD (telas) e também a camada do mundo (RoomOverlay) que desenha a arena e manda na câmera.
  */
 public class ArenaBattleUI extends BaseUI implements RoomOverlay {
     public final RectF exitBtn = new RectF(), readyBtn = new RectF(), continueBtn = new RectF();
-    public final RectF[] cards = new RectF[6];
+    public final RectF pokeBtn = new RectF(), fleeBtn = new RectF(), logBox = new RectF();
+    public final RectF modalRect = new RectF(), modalClose = new RectF(), modalTeamBtn = new RectF(), modalOk = new RectF();
+    public final RectF[] cards = new RectF[6];          // cartões do painel central (time, roster ou troca)
+    public final RectF[] okBtns = new RectF[6];         // botão ESCOLHER de cada cartão
+    public enum Modal { NONE, STARTER, TEAM, SWAP }
+    public Modal modal = Modal.NONE;
+    private final List<String> log = new ArrayList<>();
+    private float screenW = 1280, screenH = 720;
 
     public ArenaDuel duel;
     public ArenaLadder.Fighter fighter;
@@ -47,10 +55,11 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
     private float meX, meY, foeX, foeY;             // pés dos Pokémon (mundo)
     private long fightT0 = 0;
     private ArenaDuel.Phase lastPhase = null;
+    private boolean foeReadyLogged = false;
     private String returnMap = "CITY";
     private double returnX, returnY;
     private double camX, camY; private boolean camInit = false;
-    public static final float PK = 96;              // tamanho dos Pokémon no mundo
+    public static final float PK = 128;             // tamanho dos Pokémon no mundo
     private static final long BALL_MS = 520;
 
     private static final class Pop { String text; int color; boolean onFoe; long t0; int slot; float x, y; }
@@ -59,7 +68,9 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
     private final List<Ball> balls = new ArrayList<>();
     private long meLunge = 0, foeLunge = 0;
 
-    public ArenaBattleUI() { for (int i = 0; i < cards.length; i++) cards[i] = new RectF(); }
+    public ArenaBattleUI() { for (int i = 0; i < cards.length; i++) { cards[i] = new RectF(); okBtns[i] = new RectF(); } }
+
+    private void say(String m) { log.add(m); while (log.size() > 30) log.remove(0); }
 
     // ------------------------------------------------------------------ montagem
     /** Entra na sala da Arena para enfrentar o lutador f. */
@@ -87,8 +98,11 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         for (int i = 0; i < Math.min(ArenaDuel.MAX_TEAM, order.size()); i++) picks.add(order.get(i));
         rebuildMe();
         pops.clear(); balls.clear(); result = null; spent = false; resultApplied = false; lastT = System.currentTimeMillis();
-        thrown = false; foePlaceX = 0.3f + new Random().nextFloat() * 0.4f; fightT0 = 0; lastPhase = null; camInit = false;
+        foeReadyLogged = false; thrown = false; foePlaceX = 0.3f + new Random().nextFloat() * 0.4f; fightT0 = 0; lastPhase = null; camInit = false;
         placeX = (float) ArenaLayout.centerX(); placeY = (float) (ArenaLayout.lineY() + (ArenaLayout.bottom() - ArenaLayout.lineY()) * 0.6);
+        log.clear(); modal = Modal.STARTER;
+        say(f.name + " desafia você!");
+        say("Selecione seu Pokémon para iniciar!");
         gv.ui.state = UIManager.UIState.ARENA_BATTLE;
     }
 
@@ -98,14 +112,44 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         duel.me.active = duel.me.team.isEmpty() ? -1 : 0;
     }
 
-    /** Toque numa carta da preparação: adiciona, vira inicial ou remove. */
-    public void togglePick(int rosterIdx) {
-        if (duel != null && duel.meReady) return;       // PRONTO trava o time
+    /** Painel do time: entra/sai do time (até 3, sempre ao menos 1). */
+    public void toggleMember(int rosterIdx) {
+        if (duel == null || duel.meReady) return;       // PRONTO trava o time
         int at = picks.indexOf(rosterIdx);
-        if (at < 0) { if (picks.size() < ArenaDuel.MAX_TEAM) picks.add(rosterIdx); }
-        else if (at > 0) { picks.remove(at); picks.add(0, rosterIdx); }
-        else if (picks.size() > 1) picks.remove(0);
+        if (at >= 0) { if (picks.size() > 1) picks.remove(at); }
+        else if (picks.size() < ArenaDuel.MAX_TEAM) picks.add(rosterIdx);
         rebuildMe();
+    }
+
+    /** ESCOLHER no painel inicial: o cartão vira o Pokémon inicial e é lançado (na frente do treinador, se ainda não foi). */
+    public void chooseStarter(int pickIdx) {
+        if (duel == null || duel.meReady || pickIdx < 0 || pickIdx >= picks.size()) return;
+        picks.add(0, picks.remove(pickIdx));
+        rebuildMe();
+        modal = Modal.NONE;
+        say("Você escolheu " + duel.me.cur().species + "!");
+        if (!thrown) throwInFront(true); else launchBall(placeX, placeY - PK * 0.3f, false);
+    }
+
+    /** Lança na frente do treinador: mesmo x dele; quanto mais ele avançou na faixa, mais perto da linha. */
+    public void throwInFront(boolean animate) {
+        double px = gv != null ? gv.player.getPositionX() : ArenaLayout.centerX();
+        double py = gv != null ? gv.player.getPositionY() : ArenaLayout.spawnY();
+        float minY = (float) ArenaLayout.lineY() + PK * 0.62f + 8, maxY = (float) ArenaLayout.bottom() - 6;
+        float y = maxY - (maxY - minY) * (float) ArenaLayout.forward(py);
+        throwAt((float) px, y, animate);
+    }
+
+    /** Painel de troca (luta): ESCOLHER troca de Pokémon (recarga de 5 s) e o treinador lança outra bola. */
+    public void swapTo(int teamIdx) {
+        if (duel == null || duel.phase != ArenaDuel.Phase.FIGHT) return;
+        if (teamIdx < 0 || teamIdx >= duel.me.team.size()) return;
+        if (teamIdx == duel.me.active) { say("Esse Pokémon já está em campo."); return; }
+        if (!duel.me.team.get(teamIdx).alive()) { say("Esse Pokémon desmaiou."); return; }
+        if (!duel.swap(teamIdx)) { say("Troca disponível em " + String.format("%.1f", duel.me.swapCd / 1000f) + "s."); return; }
+        onSwap();
+        modal = Modal.NONE;
+        say("Vai, " + duel.me.cur().species + "!");
     }
 
     /** Toque no mundo durante o preparo: lança o inicial ali, só na sua metade (atrás da linha). */
@@ -143,7 +187,9 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         RewardManager.Store s = PointsManager.store();
         if (!ArenaLadder.useTry(s)) return false;
         spent = true;
-        if (!thrown) throwAt(placeX, placeY, false);          // tempo acabou sem lançar: lança no ponto padrão
+        modal = Modal.NONE;
+        say("Você está PRONTO! Esperando " + duel.foe.name + "…");
+        if (!thrown) throwInFront(false);                     // tempo acabou sem lançar: lança na frente do treinador
         duel.ready();
         lastT = System.currentTimeMillis();
         return true;
@@ -189,11 +235,14 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         if (duel.phase == ArenaDuel.Phase.PREP && !duel.meReady && duel.prepLeft <= 0) {
             if (!ready(gv)) { gv.ui.showMessage("⛔ Acabaram as tentativas de hoje."); leave(gv); return; }
         }
-        if (duel.phase == ArenaDuel.Phase.FIGHT && fightT0 == 0) fightT0 = now;
+        if (duel.phase == ArenaDuel.Phase.FIGHT && fightT0 == 0) { fightT0 = now; say("A luta começou! Pokémon, ataquem!"); }
+        if (duel.phase == ArenaDuel.Phase.FIGHT && duel.me.active == -1 && modal != Modal.SWAP) { modal = Modal.SWAP; say("Seu Pokémon caiu! Escolha o próximo."); }
+        if (duel.phase == ArenaDuel.Phase.COUNTDOWN || duel.phase == ArenaDuel.Phase.RESULT) modal = Modal.NONE;
+        if (duel.phase == ArenaDuel.Phase.PREP && duel.foeReady && !foeReadyLogged) { foeReadyLogged = true; say(duel.foe.name + " está PRONTO!"); }
         if (duel.phase == ArenaDuel.Phase.RESULT) applyResult(gv);
         computePositions(now);
         if (duel.phase != lastPhase) {
-            if (duel.phase == ArenaDuel.Phase.COUNTDOWN) launchBall(foeX, foeY - PK * 0.3f, true);   // o oponente lança o dele
+            if (duel.phase == ArenaDuel.Phase.COUNTDOWN) { launchBall(foeX, foeY - PK * 0.3f, true); say(duel.foe.name + " lançou " + (duel.foe.cur() != null ? duel.foe.cur().species : "um Pokémon") + "!"); }   // o oponente lança o dele
             lastPhase = duel.phase;
         }
         drainPops(now);
@@ -206,6 +255,8 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
             q.text = p.text; q.color = p.color; q.onFoe = p.onFoe; q.t0 = now; q.slot = (slot++) % 3;
             q.x = p.onFoe ? foeX : meX; q.y = (p.onFoe ? foeY : meY) - PK * 0.9f;
             pops.add(q);
+            if (p.text.startsWith("💀")) say((p.onFoe ? duel.foe.name : duel.me.name) + ": " + p.text.substring(2).trim() + " desmaiou!");
+            if (p.text.startsWith("🔄") && p.onFoe) say(duel.foe.name + " trocou para " + p.text.substring(2).trim() + ".");
             if (p.text.startsWith("-") || p.text.startsWith("⭐") || p.text.startsWith("💥")) { if (p.onFoe) meLunge = now; else foeLunge = now; }
         }
         duel.pops.clear();
@@ -230,16 +281,27 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
     @Override
     public double[] focus(Player p) {
         if (duel == null) return null;
-        double cy = ArenaLayout.arenaCenterY(), tx = ArenaLayout.centerX(), ty = cy;
-        if (duel.phase == ArenaDuel.Phase.PREP) ty = Math.max(cy, Math.min(cy + 260, p.getPositionY()));   // no preparo acompanha você
-        if (!camInit) { camX = tx; camY = ty; camInit = true; }
-        else { camX += (tx - camX) * 0.12; camY += (ty - camY) * 0.12; }
-        return new double[]{camX, camY, 1.0};
+        // a sala inteira cabe na tela entre a barra de cima e a de baixo
+        double zoom = Math.min(screenW / ArenaLayout.mapWidth(), (screenH - 170) / ArenaLayout.mapHeight());
+        zoom = Math.max(0.35, Math.min(1.8, zoom));
+        return new double[]{ArenaLayout.mapWidth() / 2.0, ArenaLayout.mapHeight() / 2.0 + 14 / zoom, zoom};
     }
 
     private boolean ballInFlight(boolean foe, long now) {
         for (Ball b : balls) if (b.foe == foe && now - b.t0 < BALL_MS) return true;
         return false;
+    }
+
+    private void ring(Canvas canvas, float cx, float cy, float rx, float ry, float a, int r, int g, int b) {
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.argb((int) (60 * a), r, g, b));
+        canvas.drawOval(new RectF(cx - rx * 1.25f, cy - ry * 1.25f, cx + rx * 1.25f, cy + ry * 1.25f), paint);
+        paint.setColor(Color.argb((int) (90 * a), r, g, b));
+        canvas.drawOval(new RectF(cx - rx, cy - ry, cx + rx, cy + ry), paint);
+        paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(4);
+        paint.setColor(Color.argb((int) (230 * a), 255, 230, 150));
+        canvas.drawOval(new RectF(cx - rx, cy - ry, cx + rx, cy + ry), paint);
+        paint.setStyle(Paint.Style.FILL);
     }
 
     private void shadow(Canvas canvas, float cx, float feetY) {
@@ -258,11 +320,15 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
             float pulse = 0.5f + 0.5f * (float) Math.sin(now / 280.0);
             paint.setColor(Color.argb((int) (30 + 40 * pulse), 255, 220, 90));
             canvas.drawRect(L, line + 32, R, B, paint);
-            if (!thrown) text(canvas, "👆 Toque na sua metade para LANÇAR o Pokémon", (L + R) / 2f, B - 20, 22, Color.WHITE, Paint.Align.CENTER, true);
+            if (!thrown && modal == Modal.NONE) text(canvas, "👆 Toque na sua metade para LANÇAR o Pokémon", (L + R) / 2f, B - 20, 22, Color.WHITE, Paint.Align.CENTER, true);
         }
         text(canvas, "SUA METADE", L + 12, line + 58, 18, Color.argb(220, 255, 255, 255), Paint.Align.LEFT, true);
         text(canvas, "METADE DO OPONENTE", L + 12, line - 40, 18, Color.argb(210, 255, 200, 200), Paint.Align.LEFT, true);
 
+        // anel brilhante sob o treinador (você) e sob o do oponente
+        float glow = 0.6f + 0.4f * (float) Math.sin(now / 350.0);
+        if (gv != null) ring(canvas, (float) gv.player.getPositionX(), (float) gv.player.getPositionY() + 4, 74, 26, glow, 255, 150, 50);
+        ring(canvas, (float) ArenaLayout.foeTrainerX(), (float) ArenaLayout.foeTrainerY() + 4, 74, 26, glow, 255, 70, 60);
         // treinador do oponente (parado no retângulo de cima, de frente para a arena)
         ArenaUI.sprite(canvas, paint, "personagem", false, 0, 1, (float) ArenaLayout.foeTrainerX(), (float) ArenaLayout.foeTrainerY(), 100);
         text(canvas, fit(duel.foe.name, 380), (float) ArenaLayout.foeTrainerX(), (float) ArenaLayout.foeTrainerY() - 104, 20, Color.argb(235, 255, 200, 200), Paint.Align.CENTER, true);
@@ -332,129 +398,96 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         this.gv = gv;
         if (duel == null) { gv.ui.state = UIManager.UIState.ARENA; return; }
         float w = canvas.getWidth(), h = canvas.getHeight();
+        screenW = w; screenH = h;
         long now = System.currentTimeMillis();
         drawTopBar(canvas, w, now);
-        drawFoeHud(canvas, w, h);
-        drawBottom(canvas, w, h, now);
+        drawBottomBar(canvas, w, h, now);
+        drawModal(canvas, w, h, now);
         drawOverlay(canvas, w, h, now);
     }
 
+    /** Uma plaquinha de lutador: nome, nível e barra de vida (verde = você, vermelha = oponente). */
+    private void namePlate(Canvas canvas, RectF r, String name, int level, float frac, String hpText, boolean foe) {
+        panel(canvas, r, Color.argb(235, 30, 22, 26), foe ? Color.rgb(230, 90, 70) : Color.rgb(110, 210, 120), 3);
+        text(canvas, fit(name, r.width() - 110), r.left + 14, r.top + 28, 21, Color.WHITE, Paint.Align.LEFT, true);
+        text(canvas, "Nv. " + level, r.right - 14, r.top + 28, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
+        int col = foe ? Color.rgb(224, 70, 60) : (frac > 0.5f ? Color.rgb(90, 200, 90) : frac > 0.25f ? Color.rgb(255, 200, 60) : C_BAD);
+        bar(canvas, new RectF(r.left + 14, r.top + 42, r.right - 14, r.top + 60), frac, col);
+        text(canvas, hpText, r.right - 16, r.bottom - 6, 13, Color.argb(230, 255, 255, 255), Paint.Align.RIGHT, false);
+    }
+
     private void drawTopBar(Canvas canvas, float w, long now) {
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.argb(235, 18, 26, 42));
-        canvas.drawRect(0, 0, w, 64, paint);
-        paint.setColor(C_ACCENT);
-        canvas.drawRect(0, 62, w, 66, paint);
-        text(canvas, "🏟️ ARENA  •  " + (fighter != null ? fighter.icon + " " + fighter.name : ""), 24, 42, 26, Color.WHITE, Paint.Align.LEFT, true);
+        float right = w - 196, top = 8, bot = 84, g = 10, left = 12;
+        float total = right - left - 2 * g;
+        float sw = total * 0.36f, cw = total - 2 * sw;
+        RectF mine = new RectF(left, top, left + sw, bot);
+        RectF mid = new RectF(mine.right + g, top, mine.right + g + cw, bot);
+        RectF foe = new RectF(mid.right + g, top, right, bot);
+        // você
+        ArenaDuel.Unit mu = duel.me.cur();
+        int lvl = gv != null ? gv.player.getLevel() : 1;
+        float mf = mu != null ? mu.hpFrac() : teamFrac(duel.me.team);
+        namePlate(canvas, mine, duel.me.name, lvl, mf, mu != null ? Math.max(0, mu.hp) + " / " + mu.maxHp : "", false);
+        // título e relógio
+        panel(canvas, mid, Color.argb(235, 40, 24, 22), Color.rgb(255, 150, 60), 3);
+        text(canvas, "⚔ ARENA", mid.centerX(), mid.top + 30, 24, Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
         if (duel.phase == ArenaDuel.Phase.PREP) {
-            long left = (duel.prepLeft + 999) / 1000;
-            text(canvas, (duel.meReady ? "✅ PRONTO — " : "⏱ PREPARO: ") + left + "s", w / 2f, 42, 28, duel.meReady ? C_GOOD : left <= 5 ? C_BAD : Color.WHITE, Paint.Align.CENTER, true);
-        } else if (duel.phase == ArenaDuel.Phase.FIGHT || duel.phase == ArenaDuel.Phase.RESULT) {
-            long left = duel.timeLeft() / 1000;
-            text(canvas, "⏱ " + (left / 60) + ":" + (left % 60 < 10 ? "0" : "") + (left % 60), w / 2f, 42, 28, left < 15 ? C_BAD : Color.WHITE, Paint.Align.CENTER, true);
+            long left2 = (duel.prepLeft + 999) / 1000;
+            text(canvas, (duel.meReady ? "✅ PRONTO  " : "⏱ ") + left2 + "s", mid.centerX(), mid.top + 60, 22, duel.meReady ? C_GOOD : left2 <= 5 ? C_BAD : Color.WHITE, Paint.Align.CENTER, true);
+        } else if (duel.phase == ArenaDuel.Phase.COUNTDOWN) {
+            text(canvas, "Prepare-se!", mid.centerX(), mid.top + 60, 20, Color.WHITE, Paint.Align.CENTER, true);
+        } else {
+            long l = duel.timeLeft() / 1000;
+            text(canvas, "⏱ " + (l / 60) + ":" + (l % 60 < 10 ? "0" : "") + (l % 60), mid.centerX(), mid.top + 60, 22, l < 15 ? C_BAD : Color.WHITE, Paint.Align.CENTER, true);
         }
-        exitBtn.set(w - 180, 10, w - 24, 56);
-        panel(canvas, exitBtn, Color.rgb(120, 40, 44), Color.WHITE, 2);
+        // oponente (escondido até a luta)
+        ArenaDuel.Unit fu = duel.foe.cur();
+        boolean reveal = duel.phase != ArenaDuel.Phase.PREP && fu != null;
+        namePlate(canvas, foe, duel.foe.name, fighter != null ? fighter.level : 1, reveal ? fu.hpFrac() : 1f, reveal ? Math.max(0, fu.hp) + " / " + fu.maxHp : "???", true);
+        // sair (a região do botão voltar do jogo toca aqui também)
+        exitBtn.set(w - 180, 20, w - 20, 90);
         boolean free = duel.phase == ArenaDuel.Phase.PREP && !duel.meReady || duel.phase == ArenaDuel.Phase.RESULT;
+        panel(canvas, exitBtn, Color.rgb(120, 40, 44), Color.WHITE, 2);
         text(canvas, free ? "◀ SAIR" : "🏳 DESISTIR", exitBtn.centerX(), exitBtn.centerY() + 8, 20, Color.WHITE, Paint.Align.CENTER, true);
     }
 
-    private void infoBox(Canvas canvas, RectF r, ArenaDuel.Unit u, String owner, int accent) {
-        panel(canvas, r, Color.argb(225, 16, 24, 40), accent, 3);
-        if (u == null) { text(canvas, "—", r.centerX(), r.centerY() + 8, 24, C_MUTED, Paint.Align.CENTER, false); return; }
-        text(canvas, fit(u.species + (u.shiny ? " ✨" : ""), r.width() - 100), r.left + 14, r.top + 30, 22, Color.WHITE, Paint.Align.LEFT, true);
-        text(canvas, "Nv. " + u.level, r.right - 14, r.top + 30, 20, Color.rgb(255, 214, 90), Paint.Align.RIGHT, true);
-        float frac = u.hpFrac();
-        bar(canvas, new RectF(r.left + 14, r.top + 42, r.right - 14, r.top + 60), frac, frac > 0.5f ? C_GOOD : frac > 0.25f ? Color.rgb(255, 200, 60) : C_BAD);
-        text(canvas, Math.max(0, u.hp) + " / " + u.maxHp, r.left + 14, r.top + 80, 15, C_MUTED, Paint.Align.LEFT, false);
-        text(canvas, fit(owner, r.width() * 0.5f), r.right - 14, r.top + 80, 15, C_MUTED, Paint.Align.RIGHT, false);
+    private float teamFrac(List<ArenaDuel.Unit> t) {
+        float hp = 0, mx = 0;
+        for (ArenaDuel.Unit u : t) { hp += Math.max(0, u.hp); mx += u.maxHp; }
+        return mx <= 0 ? 1f : hp / mx;
     }
 
-    /** Vida do oponente e do seu Pokémon (à esquerda, em cima) e o time do oponente (à direita, em cima). */
-    private void drawFoeHud(Canvas canvas, float w, float h) {
-        if (duel.phase == ArenaDuel.Phase.PREP) {
-            text(canvas, duel.foeReady ? "✅ " + duel.foe.name + " está PRONTO" : "⏳ " + duel.foe.name + " está escolhendo…",
-                    w / 2f, 100, 20, duel.foeReady ? C_GOOD : Color.WHITE, Paint.Align.CENTER, true);
-            return;
-        }
-        float margin = w / 2f - (float) ArenaLayout.width() / 2f;      // espaço ao lado da arena (zoom 1)
-        float iw = Math.max(170, Math.min(360, margin - 30));
-        infoBox(canvas, new RectF(20, 78, 20 + iw, 78 + 92), duel.foe.cur(), duel.foe.name, Color.rgb(230, 90, 90));
-        infoBox(canvas, new RectF(20, 178, 20 + iw, 178 + 92), duel.me.cur(), duel.me.name, C_GOOD);
-        float x = w - 30;
-        for (int i = duel.foe.team.size() - 1; i >= 0; i--) {
-            ArenaDuel.Unit t = duel.foe.team.get(i);
-            RectF r = new RectF(x - 62, 78, x, 130);
-            panel(canvas, r, i == duel.foe.active ? C_PANEL_HI : C_PANEL, t.alive() ? (i == duel.foe.active ? Color.RED : C_LINE) : Color.DKGRAY, 2);
-            if (t.alive()) ArenaUI.sprite(canvas, paint, t.species, t.shiny, 0, 0, r.centerX(), r.bottom - 8, 40);
-            else text(canvas, "💀", r.centerX(), r.centerY() + 10, 26, Color.WHITE, Paint.Align.CENTER, false);
-            bar(canvas, new RectF(r.left + 6, r.bottom - 8, r.right - 6, r.bottom - 3), t.hpFrac(), C_GOOD);
-            x -= 68;
-        }
-    }
-
-    private void drawBottom(Canvas canvas, float w, float h, long now) {
-        float top = h - 176, bottom = h - 14, x0 = w * 0.32f;      // o joystick fica à esquerda: os cartões ocupam a direita
+    private void drawBottomBar(Canvas canvas, float w, float h, long now) {
+        float top = h - 96, bot = h - 12;
+        paint.setStyle(Paint.Style.FILL); paint.setColor(Color.argb(150, 12, 8, 10));
+        canvas.drawRect(0, top - 8, w, h, paint);
         ArenaDuel.Phase ph = duel.phase;
-        for (int i = 0; i < 6; i++) cards[i].setEmpty();
-        readyBtn.setEmpty();
-        if (ph == ArenaDuel.Phase.RESULT || ph == ArenaDuel.Phase.COUNTDOWN) return;
-        if (ph == ArenaDuel.Phase.PREP) {
-            String hint = duel.meReady ? "Time travado! Esperando o oponente ficar pronto…"
-                    : thrown ? "Pode lançar de novo em outro ponto, ou aperte PRONTO. O oponente não vê." : "1) Escolha até 3 Pokémon  2) Ande e toque na sua metade para LANÇAR o inicial  3) PRONTO";
-            text(canvas, hint, x0, top - 8, 17, duel.meReady ? C_GOOD : Color.WHITE, Paint.Align.LEFT, true);
-            readyBtn.set(w - 210, top + 6, w - 20, bottom);
-            actionButton(canvas, readyBtn, duel.meReady ? "⏳ AGUARDANDO" : "✅ PRONTO!", !picks.isEmpty() && !duel.meReady && thrown, C_GOOD);
-            int n = Math.min(6, roster.size());
-            float areaW = readyBtn.left - 14 - x0, g = 8;
-            float cw = Math.min(170, (areaW - (n - 1) * g) / Math.max(1, n));
-            for (int i = 0; i < n; i++) {
-                RectF r = cards[i];
-                r.set(x0 + i * (cw + g), top + 6, x0 + i * (cw + g) + cw, bottom);
-                ArenaDuel.Unit u = roster.get(i);
-                int at = picks.indexOf(i);
-                panel(canvas, r, at >= 0 ? C_PANEL_HI : C_PANEL, at == 0 ? C_ACCENT : at > 0 ? C_GOOD : C_LINE, at >= 0 ? 4 : 2);
-                float sz = Math.min(r.height() - 62, cw - 20);
-                ArenaUI.sprite(canvas, paint, u.species, u.shiny, 0, (int) ((now / 320) % 3), r.centerX(), r.top + 8 + sz, sz);
-                text(canvas, fit(u.species, cw - 10), r.centerX(), r.bottom - 38, 15, Color.WHITE, Paint.Align.CENTER, true);
-                text(canvas, "Nv." + u.level + "  ⚡" + u.power(), r.centerX(), r.bottom - 20, 14, Color.rgb(255, 214, 90), Paint.Align.CENTER, false);
-                text(canvas, typeLabel(u), r.centerX(), r.bottom - 5, 12, C_MUTED, Paint.Align.CENTER, false);
-                if (at >= 0) {
-                    paint.setColor(at == 0 ? C_ACCENT : C_GOOD); paint.setStyle(Paint.Style.FILL);
-                    canvas.drawCircle(r.left + 18, r.top + 18, 14, paint);
-                    text(canvas, at == 0 ? "★" : String.valueOf(at + 1), r.left + 18, r.top + 25, 20, Color.BLACK, Paint.Align.CENTER, true);
-                }
-            }
-        } else {   // FIGHT: seu time para trocar
-            int n = duel.me.team.size();
-            float g = 10, cw = Math.min(260, (w - x0 - 20 - (n - 1) * g) / Math.max(1, n));
-            boolean pick = duel.me.active == -1, cd = duel.me.swapCd > 0;
-            String hint = pick ? "⚠ ESCOLHA O PRÓXIMO POKÉMON!" : cd ? "Troca disponível em " + String.format("%.1f", duel.me.swapCd / 1000f) + "s" : "🔄 Toque em um Pokémon para TROCAR";
-            text(canvas, hint, x0, top - 8, 20, pick ? C_BAD : cd ? C_MUTED : C_GOOD, Paint.Align.LEFT, true);
-            if (cd && !pick) bar(canvas, new RectF(x0, top - 2, x0 + 320, top + 4), 1f - duel.me.swapCd / (float) ArenaDuel.SWAP_CD_MS, C_ACCENT);
-            for (int i = 0; i < n; i++) {
-                RectF r = cards[i];
-                r.set(x0 + i * (cw + g), top + 8, x0 + i * (cw + g) + cw, bottom);
-                ArenaDuel.Unit u = duel.me.team.get(i);
-                boolean act = i == duel.me.active;
-                panel(canvas, r, act ? C_PANEL_HI : C_PANEL, !u.alive() ? Color.DKGRAY : act ? C_ACCENT : C_LINE, act ? 4 : 2);
-                float sz = r.height() - 20;
-                if (u.alive()) ArenaUI.sprite(canvas, paint, u.species, u.shiny, 0, (int) ((now / 320) % 3), r.left + sz * 0.5f + 8, r.bottom - 8, sz * 0.8f);
-                else text(canvas, "💀", r.left + 50, r.centerY() + 14, 44, Color.WHITE, Paint.Align.CENTER, false);
-                float tx = r.left + sz * 0.8f + 18;
-                text(canvas, fit(u.species, r.right - tx - 8), tx, r.top + 30, 18, Color.WHITE, Paint.Align.LEFT, true);
-                text(canvas, "Nv." + u.level, tx, r.top + 52, 15, Color.rgb(255, 214, 90), Paint.Align.LEFT, false);
-                bar(canvas, new RectF(tx, r.top + 62, r.right - 12, r.top + 76), u.hpFrac(), u.hpFrac() > 0.5f ? C_GOOD : u.hpFrac() > 0.25f ? Color.rgb(255, 200, 60) : C_BAD);
-                text(canvas, Math.max(0, u.hp) + "/" + u.maxHp, tx, r.top + 96, 13, C_MUTED, Paint.Align.LEFT, false);
-                if (u.alive() && !act && !pick && cd) {
-                    float f = duel.me.swapCd / (float) ArenaDuel.SWAP_CD_MS;
-                    paint.setStyle(Paint.Style.FILL); paint.setColor(Color.argb(150, 0, 0, 0));
-                    canvas.drawRoundRect(new RectF(r.left, r.top, r.right, r.top + r.height() * f), 14, 14, paint);
-                    text(canvas, String.format("%.1f", duel.me.swapCd / 1000f) + "s", r.centerX(), r.centerY() + 8, 24, Color.WHITE, Paint.Align.CENTER, true);
-                }
-                if (act) text(canvas, "EM CAMPO", r.right - 10, r.bottom - 8, 13, C_ACCENT, Paint.Align.RIGHT, true);
-            }
+        readyBtn.setEmpty(); pokeBtn.setEmpty(); fleeBtn.setEmpty();
+        boolean busy = ph == ArenaDuel.Phase.RESULT;
+        float bw = 136, g = 10, x = w - 14;
+        fleeBtn.set(x - bw, top, x, bot); x -= bw + g;
+        if (ph == ArenaDuel.Phase.PREP) { readyBtn.set(x - bw - 20, top, x, bot); x -= bw + 20 + g; }
+        pokeBtn.set(x - bw, top, x, bot); x -= bw + g;
+        float lx = w * 0.30f;
+        logBox.set(lx, top, Math.max(lx + 120, x), bot);
+        // log
+        panel(canvas, logBox, Color.argb(235, 24, 18, 20), Color.rgb(120, 90, 70), 2);
+        int n = Math.min(3, log.size());
+        for (int i = 0; i < n; i++) {
+            String line = log.get(log.size() - n + i);
+            boolean last = i == n - 1;
+            text(canvas, fit("[Sistema] " + line, logBox.width() - 24), logBox.left + 14, logBox.top + 28 + i * 25, 17,
+                    last ? Color.WHITE : Color.argb(170, 255, 255, 255), Paint.Align.LEFT, last);
         }
+        // botões
+        boolean fight = ph == ArenaDuel.Phase.FIGHT;
+        boolean canTeam = (ph == ArenaDuel.Phase.PREP && !duel.meReady) || fight;
+        boolean cd = fight && duel.me.swapCd > 0 && duel.me.active != -1;
+        String pl = fight ? (cd ? String.format("%.1fs", duel.me.swapCd / 1000f) : "Pokémon") : "Pokémon";
+        actionButton(canvas, pokeBtn, pl, canTeam && !cd, Color.rgb(70, 120, 200));
+        if (ph == ArenaDuel.Phase.PREP) actionButton(canvas, readyBtn, duel.meReady ? "AGUARDE…" : "PRONTO!", !picks.isEmpty() && !duel.meReady && thrown, C_GOOD);
+        actionButton(canvas, fleeBtn, "Fugir", !busy, Color.rgb(170, 60, 60));
+        if (fight && cd) bar(canvas, new RectF(pokeBtn.left + 8, pokeBtn.bottom - 12, pokeBtn.right - 8, pokeBtn.bottom - 6), 1f - duel.me.swapCd / (float) ArenaDuel.SWAP_CD_MS, C_ACCENT);
     }
 
     private String typeLabel(ArenaDuel.Unit u) {
@@ -462,11 +495,79 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         return u.t2 != null ? a + "/" + u.t2.name() : a;
     }
 
+    /** Pode fechar o painel? (a escolha forçada depois de um desmaio não fecha) */
+    public boolean modalClosable() { return !(modal == Modal.SWAP && duel != null && duel.me.active == -1); }
+
+    private void drawModal(Canvas canvas, float w, float h, long now) {
+        for (int i = 0; i < cards.length; i++) { cards[i].setEmpty(); okBtns[i].setEmpty(); }
+        modalClose.setEmpty(); modalTeamBtn.setEmpty(); modalOk.setEmpty(); modalRect.setEmpty();
+        if (modal == Modal.NONE || duel == null) return;
+        List<ArenaDuel.Unit> list = new ArrayList<>();
+        List<Integer> idx = new ArrayList<>();
+        String title;
+        if (modal == Modal.STARTER) { title = "SELECIONE SEU POKÉMON INICIAL!"; for (int i = 0; i < picks.size(); i++) { list.add(roster.get(picks.get(i))); idx.add(i); } }
+        else if (modal == Modal.TEAM) { title = "MONTE SEU TIME (ATÉ " + ArenaDuel.MAX_TEAM + ")"; for (int i = 0; i < Math.min(6, roster.size()); i++) { list.add(roster.get(i)); idx.add(i); } }
+        else { title = duel.me.active == -1 ? "ESCOLHA O PRÓXIMO POKÉMON!" : "TROCAR POKÉMON"; for (int i = 0; i < duel.me.team.size(); i++) { list.add(duel.me.team.get(i)); idx.add(i); } }
+        int n = Math.min(list.size(), 6);
+        int cols = Math.min(3, Math.max(1, n)), rows = (n + cols - 1) / cols;
+        float mw = Math.min(w - 40, 820), mh = Math.min(h - 200, rows == 1 ? 420 : 470);
+        float mx = w / 2f - mw / 2f, my = 96 + (h - 96 - 100 - mh) / 2f;
+        paint.setStyle(Paint.Style.FILL); paint.setColor(Color.argb(120, 0, 0, 0));
+        canvas.drawRect(0, 0, w, h, paint);
+        modalRect.set(mx, my, mx + mw, my + mh);
+        panel(canvas, modalRect, Color.argb(248, 28, 20, 22), Color.rgb(255, 150, 60), 4);
+        text(canvas, title, modalRect.centerX(), my + 44, 28, Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
+        if (modalClosable()) {
+            modalClose.set(modalRect.right - 58, my + 10, modalRect.right - 12, my + 56);
+            panel(canvas, modalClose, Color.rgb(120, 40, 44), Color.WHITE, 2);
+            text(canvas, "✕", modalClose.centerX(), modalClose.centerY() + 9, 24, Color.WHITE, Paint.Align.CENTER, true);
+        }
+        float areaTop = my + 66, areaBot = my + mh - (modal == Modal.SWAP ? 18 : 70);
+        float gap = 14, cw = Math.min(236, (mw - 40 - (cols - 1) * gap) / cols), ch = Math.min(300, (areaBot - areaTop - (rows - 1) * gap) / rows);
+        float gx = modalRect.centerX() - (cols * cw + (cols - 1) * gap) / 2f;
+        boolean fightPick = modal == Modal.SWAP;
+        boolean cd = fightPick && duel.me.swapCd > 0 && duel.me.active != -1;
+        for (int i = 0; i < n; i++) {
+            ArenaDuel.Unit u = list.get(i);
+            int c = i % cols, r = i / cols;
+            RectF rc = cards[i];
+            rc.set(gx + c * (cw + gap), areaTop + r * (ch + gap), gx + c * (cw + gap) + cw, areaTop + r * (ch + gap) + ch);
+            boolean inTeam = modal == Modal.TEAM && picks.contains(idx.get(i));
+            boolean act = fightPick && idx.get(i) == duel.me.active;
+            boolean dead = fightPick && !u.alive();
+            int edge = dead ? Color.DKGRAY : act ? C_ACCENT : inTeam ? C_GOOD : Color.rgb(150, 110, 80);
+            panel(canvas, rc, Color.argb(240, 46, 32, 30), edge, inTeam || act ? 4 : 2);
+            float btnH = ch < 200 ? 34 : 42;
+            text(canvas, fit(u.species + (u.shiny ? " ✨" : ""), cw - 16), rc.centerX(), rc.top + 26, 19, Color.WHITE, Paint.Align.CENTER, true);
+            float sz = Math.max(48, Math.min(cw - 40, ch - btnH - 84));
+            if (dead) text(canvas, "💀", rc.centerX(), rc.top + 26 + sz * 0.7f, 44, Color.WHITE, Paint.Align.CENTER, false);
+            else ArenaUI.sprite(canvas, paint, u.species, u.shiny, 0, (int) ((now / 320) % 3), rc.centerX(), rc.top + 32 + sz, sz);
+            float ty = rc.top + 32 + sz + 20;
+            text(canvas, "Nv. " + u.level + (fightPick ? "  " + Math.max(0, u.hp) + "/" + u.maxHp : "  ⚡" + u.power()), rc.centerX(), ty, 16, Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
+            if (ch >= 190) text(canvas, typeLabel(u), rc.centerX(), ty + 20, 14, C_MUTED, Paint.Align.CENTER, false);
+            RectF ok = okBtns[i];
+            ok.set(rc.left + 12, rc.bottom - btnH - 10, rc.right - 12, rc.bottom - 10);
+            String lab; boolean en; int col = Color.rgb(70, 170, 90);
+            if (modal == Modal.TEAM) { lab = inTeam ? "NO TIME ✔" : "ENTRAR"; en = !duel.meReady; col = inTeam ? Color.rgb(70, 170, 90) : Color.rgb(70, 120, 200); }
+            else if (fightPick) { lab = act ? "EM CAMPO" : dead ? "DESMAIOU" : cd ? String.format("%.1fs", duel.me.swapCd / 1000f) : "ESCOLHER"; en = !act && !dead && !cd; }
+            else { lab = "ESCOLHER"; en = !duel.meReady; }
+            actionButton(canvas, ok, lab, en, col);
+        }
+        if (modal == Modal.STARTER) {
+            modalTeamBtn.set(modalRect.left + 24, my + mh - 56, modalRect.left + 24 + 220, my + mh - 14);
+            actionButton(canvas, modalTeamBtn, "🎒 Montar time", true, Color.rgb(70, 120, 200));
+            text(canvas, "Depois de escolher, toque na sua metade para relançar.", modalRect.right - 20, my + mh - 28, 14, C_MUTED, Paint.Align.RIGHT, false);
+        } else if (modal == Modal.TEAM) {
+            modalOk.set(modalRect.centerX() - 110, my + mh - 56, modalRect.centerX() + 110, my + mh - 14);
+            actionButton(canvas, modalOk, "OK", true, C_ACCENT);
+        }
+    }
+
     private void drawOverlay(Canvas canvas, float w, float h, long now) {
         if (duel.phase == ArenaDuel.Phase.COUNTDOWN) {
             int n = (int) Math.ceil(duel.countdown / 1000.0);
-            text(canvas, n > 0 ? String.valueOf(n) : "LUTAR!", w / 2f, h * 0.42f, 150, C_ACCENT, Paint.Align.CENTER, true);
-            text(canvas, "Os Pokémon lutam sozinhos. Você troca de Pokémon a cada 5 s.", w / 2f, h * 0.42f + 50, 24, Color.WHITE, Paint.Align.CENTER, true);
+            text(canvas, n > 0 ? String.valueOf(n) : "LUTAR!", w / 2f, h * 0.45f, 150, C_ACCENT, Paint.Align.CENTER, true);
+            text(canvas, "Os Pokémon lutam sozinhos. Você troca de Pokémon a cada 5 s.", w / 2f, h * 0.45f + 50, 24, Color.WHITE, Paint.Align.CENTER, true);
             continueBtn.setEmpty();
         } else if (duel.phase == ArenaDuel.Phase.RESULT && result != null) {
             paint.setStyle(Paint.Style.FILL); paint.setColor(Color.argb(170, 0, 0, 0));

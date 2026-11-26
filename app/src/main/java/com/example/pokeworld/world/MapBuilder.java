@@ -455,20 +455,18 @@ public final class MapBuilder {
     // ARENA DE DUELOS: arena quadrada com a linha no meio; retângulo do oponente em cima e o seu embaixo
     // ------------------------------------------------------------------
     private static int[][] duelArena(int rows, int cols) {
-        final int AR0 = ArenaLayout.AR0, AR1 = ArenaLayout.AR1, AC0 = ArenaLayout.AC0, AC1 = ArenaLayout.AC1;
+        final int AC0 = ArenaLayout.AC0, AC1 = ArenaLayout.AC1;
         MapBuilder b = new MapBuilder(rows, cols, 4001);
-        b.fill(FLOOR);
+        b.fill(BASALT_FLOOR);
         b.frame(0, 0, rows - 1, cols - 1, 1, BRICK);
-        b.rect(ArenaLayout.FOE_R0, AC0, ArenaLayout.FOE_R1, AC1, STONE_PAVEMENT);      // retângulo do oponente
-        b.rect(ArenaLayout.ME_R0, AC0, ArenaLayout.ME_R1, AC1, STONE_PAVEMENT);        // o seu retângulo
-        b.rect(AR0, AC0, AR1, AC1, GRASS);                                             // arena
-        b.rect(ArenaLayout.LINE_ROW, AC0, ArenaLayout.LINE_ROW, AC1, CARPET);          // a linha do meio
-        for (int c = AC0; c <= AC1; c++) {
-            b.set(ArenaLayout.RAIL_FOE_ROW, c, PILLAR);
-            if (c < ArenaLayout.GATE_C0 || c > ArenaLayout.GATE_C1) b.set(ArenaLayout.RAIL_ME_ROW, c, PILLAR);   // portão no meio
-        }
-        b.set(AR0, AC0 - 1, BRAZIER); b.set(AR0, AC1 + 1, BRAZIER);
-        b.set(AR1, AC0 - 1, BRAZIER); b.set(AR1, AC1 + 1, BRAZIER);
+        // rios de lava nas laterais, com pontes (só decoração: ficam fora da área de jogo)
+        int[] lavaCols = {2, 3, cols - 4, cols - 3};
+        for (int r = 2; r <= 9; r++) for (int c : lavaCols) b.set(r, c, LAVA);
+        for (int r = 5; r <= 6; r++) for (int c : lavaCols) b.set(r, c, MAGMA_BRIDGE);
+        b.rect(ArenaLayout.FOE_R0, AC0, ArenaLayout.FOE_R1, AC1, STONE_PAVEMENT);      // faixa do oponente
+        b.rect(ArenaLayout.ME_R0, AC0, ArenaLayout.ME_R1, AC1, STONE_PAVEMENT);        // a sua faixa
+        for (int c = AC0; c <= AC1; c++) b.set(ArenaLayout.RAIL_ROW, c, PILLAR);        // grade entre a arena e a sua faixa
+        b.set(ArenaLayout.RAIL_ROW, AC0, BRAZIER); b.set(ArenaLayout.RAIL_ROW, AC1, BRAZIER);
         return b.g;
     }
 
