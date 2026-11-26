@@ -56,10 +56,14 @@ public class ArenaUI extends BaseUI {
     }
 
     /** Desenha o sprite de uma espécie com o pé em (cx, bottom). */
+    // tinta própria e opaca: reaproveitar a "paint" da tela (com a cor/alfa da sombra) deixava o Pokémon apagado, só uma sombra
+    private static final Paint SPRITE_PAINT = new Paint();
+    static { SPRITE_PAINT.setAlpha(255); SPRITE_PAINT.setFilterBitmap(false); }
+
     public static void sprite(Canvas canvas, Paint p, String species, boolean shiny, int dir, int frame, float cx, float bottom, float size) {
         Bitmap bmp = SpriteManager.getInstance().getUnitSprite(species, dir, frame, shiny);
         if (bmp == null) return;
-        canvas.drawBitmap(bmp, null, new Rect((int) (cx - size / 2), (int) (bottom - size), (int) (cx + size / 2), (int) bottom), p);
+        canvas.drawBitmap(bmp, null, new Rect((int) (cx - size / 2), (int) (bottom - size), (int) (cx + size / 2), (int) bottom), SPRITE_PAINT);
     }
 
     @Override

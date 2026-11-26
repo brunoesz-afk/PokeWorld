@@ -53,6 +53,10 @@ public class Enemy {
     /** Queimadura, veneno, sono, paralisia e gelo que os golpes do jogador causam. */
     public final StatusSet status = new StatusSet();
     private int paraTick = 0;
+    private long atkAnimStart = -100000, aggroUntil = 0;     // animação de ataque / perseguição depois de perder a mira
+    private double atkDirX = 0, atkDirY = 1;
+    private static final int ATTACK_ANIM_MS = 600;
+    private static final long AGGRO_MS = 12000;
 
     public Enemy(String name, double x, double y, double r, int color, boolean isBoss) {
         this(name, x, y, r, color, isBoss, 1);
@@ -74,12 +78,8 @@ public class Enemy {
     }
 
     private void calculateScale(String name, double baseR, boolean boss) {
-        String n = name.toUpperCase();
-        double scale;
-        if (n.contains("CHARIZARD") || n.contains("BLASTOISE") || n.contains("VENUSAUR") || n.contains("RAICHU") || n.contains("RAIQUAZA")) scale = 1.6;
-        else if (n.contains("CHARMELEON") || n.contains("WARTORTLE") || n.contains("IVYSAUR")) scale = 1.25;
-        else scale = 0.9;
-        this.radius = boss ? baseR * 2.5 : baseR * scale;
+        // tamanho pela altura da espécie (Bulbasaur = mínimo); chefes continuam grandes
+        this.radius = boss ? baseR * 2.5 : baseR * SpeciesSize.scale(name);
     }
 
     private void setEnemyType() {
@@ -120,16 +120,22 @@ public class Enemy {
             return;
         }
 
-        if (System.currentTimeMillis() < skillCastEndTime) { frameIndex = 1; return; }
-
         double dx = companion.getPositionX() - positionX;
         double dy = companion.getPositionY() - positionY;
         double dist = Math.sqrt(dx * dx + dy * dy);
 
+        if (System.currentTimeMillis() < skillCastEndTime) { updateDirection(dx, dy); updateAnimation(); return; }   // lançando a habilidade: encara o alvo
+
+        long now = System.currentTimeMillis();
+        boolean aggro = isSelected || now < aggroUntil;
+        if (aggro && dist > 1100 && !isSelected) aggroUntil = 0;           // alvo longe demais: desiste
+
         if (dist < radius + 60) {
+            updateDirection(dx, dy);                                       // encara quem está atacando
             handleAttack(companion, effects, isNight);
-        } else if (isSelected) {
-            handleChaseOrFlee(companion);
+            if (aggro) aggroUntil = Math.max(aggroUntil, now + AGGRO_MS);
+        } else if (aggro) {
+            handleChaseOrFlee(companion);                                  // perdeu a mira? continua vindo atrás de você
         } else {
             handleWandering(tileMap);
         }
@@ -221,6 +227,9 @@ public class Enemy {
             }
             
             lastAttackTime = now;
+            atkAnimStart = now;                                   // anima o ataque
+            double ad = Math.max(1, Math.hypot(comp.getPositionX() - positionX, comp.getPositionY() - positionY));
+            atkDirX = (comp.getPositionX() - positionX) / ad; atkDirY = (comp.getPositionY() - positionY) / ad;
         }
     }
 
@@ -281,7 +290,7 @@ public class Enemy {
         double vy = comp.getPositionY() - positionY;
         double d = Math.sqrt(vx * vx + vy * vy);
         
-        double factor = (hp < maxHp * 0.2 && !isBoss) ? -4.5 : 3.5; 
+        double factor = (hp < maxHp * 0.2 && !isBoss && isSelected) ? -4.5 : 3.5;   // só foge ferido enquanto é o alvo; solto, segue atacando
         positionX += (vx / d) * factor;
         positionY += (vy / d) * factor;
         isMoving = true;
@@ -318,6 +327,8 @@ public class Enemy {
     }
 
     private void updateAnimation() {
+        long nowA = System.currentTimeMillis();
+        if (nowA - atkAnimStart < ATTACK_ANIM_MS) { frameIndex = (int) ((nowA / 110) % 3); return; }   // ataque: frames girando rápido
         if (isMoving) {
             if (System.currentTimeMillis() - lastFrameTime > ANIMATION_SPEED) {
                 frameIndex = (frameIndex + 1) % 3;
@@ -362,8 +373,11 @@ public class Enemy {
                 p.setColor(Color.YELLOW); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(5);
                 canvas.drawCircle((float)positionX, (float)positionY, (float)radius * 1.5f + 10, p);
             }
-            Rect box = isBoss ? new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r) : SpeciesSize.box(positionX, positionY, r, name);
-            canvas.drawBitmap(sprite, null, box, null);
+            // ao atacar, avança na direção do alvo (ida e volta) enquanto os frames giram
+            long since = System.currentTimeMillis() - atkAnimStart;
+            float lunge = since >= 0 && since < ATTACK_ANIM_MS ? (float) Math.sin(Math.PI * since / ATTACK_ANIM_MS) * Math.min(26f, r * 0.35f) : 0f;
+            int ox = (int) (atkDirX * lunge), oy = (int) (atkDirY * lunge);
+            canvas.drawBitmap(sprite, null, new Rect((int)positionX - r + ox, (int)positionY - r + oy, (int)positionX + r + ox, (int)positionY + r + oy), null);
             drawName(canvas);
             drawHealthBar(canvas);
         }
@@ -402,6 +416,7 @@ public class Enemy {
     public void takeDamage(int dmg) {
         if (isPet) return; 
         status.wake();
+        aggroUntil = System.currentTimeMillis() + AGGRO_MS;   // levou dano: passa a perseguir e atacar
         hp -= com.example.pokeworld.managers.Balance.dmg(dmg);
         if (hp <= 0) isAlive = false;
     }
@@ -422,7 +437,7 @@ public class Enemy {
     public void faceTowards(double tx, double ty) { updateDirection(tx - positionX, ty - positionY); }
 
     public boolean isSelected() { return isSelected; }
-    public void setSelected(boolean s) { isSelected = s; }
+    public void setSelected(boolean s) { if (isSelected && !s) aggroUntil = System.currentTimeMillis() + AGGRO_MS; isSelected = s; }
     public boolean isAlive() { return isAlive; }
     public double getRadius() { return radius; }
     public double getPositionX() { return positionX; }
@@ -430,6 +445,6 @@ public class Enemy {
     public String getName() { return name; }
     public ElementalType getType() { return type; }
     public int getMaxHp() { return maxHp; }
-    public boolean isTouched(float tx, float ty) { return Math.sqrt(Math.pow(positionX - tx, 2) + Math.pow(positionY - ty, 2)) < radius * 3; }
+    public boolean isTouched(float tx, float ty) { return Math.sqrt(Math.pow(positionX - tx, 2) + Math.pow(positionY - ty, 2)) < Math.min(radius * 3, radius + 110); }
     private void updateDirection(double dx, double dy) { if (Math.abs(dx) > Math.abs(dy)) direction = (dx > 0) ? 3 : 1; else direction = (dy > 0) ? 0 : 2; }
 }

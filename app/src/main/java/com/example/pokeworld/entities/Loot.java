@@ -24,7 +24,7 @@ public class Loot {
     private boolean ownerBoss = false;
     private boolean visible = true;
     private long spawnTime;
-    private static final long DEFEATED_LIFETIME = 60000; // 60 segundos
+    private static final long DEFEATED_LIFETIME = 180000; // 3 minutos para dar tempo de capturar
 
     public Loot(String name, double x, double y) {
         this(name, x, y, Type.GOLD);
@@ -71,6 +71,8 @@ public class Loot {
     public void draw(Canvas canvas) {
         if (!visible) return;
         if (type == Type.DEFEATED) {
+            long left = DEFEATED_LIFETIME - (System.currentTimeMillis() - spawnTime);
+            if (left < 10000 && (System.currentTimeMillis() / 300) % 2 == 0) return;   // pisca nos últimos 10 s antes de sumir
             // Desenha o corpo do Pokémon derrotado
             String suffix = isShiny ? "_shiny_death" : "_death";
             String deathSpriteName = ownerSpecies + suffix;
@@ -83,7 +85,7 @@ public class Loot {
             
             if (deathSprite != null) {
                 int r = (int)radius;
-                canvas.drawBitmap(deathSprite, null, ownerBoss ? new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r) : SpeciesSize.box(positionX, positionY, r, ownerSpecies), null);
+                canvas.drawBitmap(deathSprite, null, new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r), null);
             }
             
             // Brilho Shiny se for o caso

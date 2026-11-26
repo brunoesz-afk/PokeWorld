@@ -133,6 +133,7 @@ public class GameView {
             world.loadMap("CITY", player, companion, "CENTER");
         }
         com.example.pokeworld.managers.PartyManager.restoreActiveHp(this);
+        time.setCycleEnabled(activity.dbHelper.getKv("set_night", 0) == 1);                                 // dia/noite: desligado por padrão
         vibration.setEnabled(activity.dbHelper.getKv("set_vib", 1) == 1);                                   // preferências de som/vibração salvas
         com.example.pokeworld.managers.SoundManager.getInstance(activity).setEnabled(activity.dbHelper.getKv("set_sound", 1) == 1);
     }

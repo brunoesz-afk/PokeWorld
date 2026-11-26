@@ -46,16 +46,18 @@ public class ArenaBattleInput implements InputExtension {
 
     private boolean handleModal(ArenaBattleUI ui, ArenaDuel d, float x, float y, GameView gv) {
         if (ui.modalClose.contains(x, y) && ui.modalClosable()) { ui.modal = ArenaBattleUI.Modal.NONE; return true; }
-        if (ui.modal == ArenaBattleUI.Modal.STARTER && ui.modalTeamBtn.contains(x, y)) { ui.modal = ArenaBattleUI.Modal.TEAM; return true; }
-        if (ui.modal == ArenaBattleUI.Modal.TEAM && ui.modalOk.contains(x, y)) { ui.modal = ui.thrown ? ArenaBattleUI.Modal.NONE : ArenaBattleUI.Modal.STARTER; return true; }
+        boolean picker = ui.modal == ArenaBattleUI.Modal.STARTER || ui.modal == ArenaBattleUI.Modal.TEAM;
+        if (picker && ui.modalOk.contains(x, y)) { ui.confirmTeam(); return true; }
         for (int i = 0; i < ui.cards.length; i++) {
-            if (!ui.cards[i].contains(x, y) && !ui.okBtns[i].contains(x, y)) continue;
-            switch (ui.modal) {
-                case STARTER: ui.chooseStarter(i); break;
-                case TEAM: if (i < ui.roster.size()) ui.toggleMember(i); break;
-                case SWAP: ui.swapTo(i); break;
-                default: break;
+            if (picker) {
+                if (i >= ui.roster.size()) continue;
+                if (ui.leftBtns[i].contains(x, y)) { ui.movePick(i, -1); return true; }
+                if (ui.rightBtns[i].contains(x, y)) { ui.movePick(i, +1); return true; }
+                if (ui.okBtns[i].contains(x, y) || ui.cards[i].contains(x, y)) { ui.toggleMember(i); return true; }
+                continue;
             }
+            if (!ui.cards[i].contains(x, y) && !ui.okBtns[i].contains(x, y)) continue;
+            if (ui.modal == ArenaBattleUI.Modal.SWAP) ui.swapTo(i);
             return true;
         }
         return true;      // o painel come os toques

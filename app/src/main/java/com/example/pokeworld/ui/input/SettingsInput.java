@@ -20,6 +20,11 @@ public class SettingsInput implements InputExtension {
             gv.activity.dbHelper.setKv("set_sound", sm.isEnabled() ? 1 : 0);
             gv.ui.showMessage("SONS: " + (sm.isEnabled() ? "ON" : "OFF"));
             return true;
+        } else if (ui.toggleNightBtn.contains(x, y)) {
+            gv.time.setCycleEnabled(!gv.time.isCycleEnabled());
+            gv.activity.dbHelper.setKv("set_night", gv.time.isCycleEnabled() ? 1 : 0);
+            gv.ui.showMessage("DIA/NOITE: " + (gv.time.isCycleEnabled() ? "ON (escurece e inimigos mais fortes à noite)" : "OFF"));
+            return true;
         } else if (ui.saveExitBtn.contains(x, y)) {
             gv.activity.saveCurrentGame();
             gv.activity.finish(); 

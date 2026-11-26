@@ -7,15 +7,16 @@ import java.util.Map;
 
 /**
  * Tamanho de cada espécie no mundo, pela altura real da Pokédex (em metros; fonte: pokemondb.net / Bulbapedia).
- * Os desenhos têm todos o mesmo quadro, então o que muda é o tamanho em que o quadro é desenhado:
- * um Caterpie (0,3 m) sai bem menor que um Arcanine (1,9 m). A escala é comprimida (potência 0,55) e limitada,
- * para o Onix ou o Gyarados não ocuparem a tela. Espécie desconhecida usa 0,9 m (tamanho padrão, escala 1).
+ * Os desenhos têm todos o mesmo quadro, então o que muda é o tamanho em que o quadro é desenhado: quem tem até a altura
+ * do Bulbasaur (0,7 m) fica do tamanho dele; os maiores crescem, e os gigantes (Onix, Gyarados) ganham bastante destaque.
+ * Espécie desconhecida usa 0,7 m (escala 1).
  */
 public final class SpeciesSize {
     private SpeciesSize() {}
 
-    public static final double REF_M = 0.9;
-    private static final double EXP = 0.55, MIN = 0.5, MAX = 1.8;
+    /** Altura do Bulbasaur (0,7 m): tamanho mínimo. Quem é menor ou igual fica do tamanho dele. */
+    public static final double REF_M = 0.7;
+    private static final double MID_M = 2.0, MAX = 4.5;
     private static final Map<String, Double> H = new HashMap<>();
 
     private static void put(double m, String... names) { for (String n : names) H.put(key(n), m); }
@@ -59,21 +60,27 @@ public final class SpeciesSize {
         return k;
     }
 
-    /** Altura em metros da espécie (0,9 se não conhecida). */
+    /** Altura em metros da espécie (0,7 se não conhecida). */
     public static double meters(String species) {
         Double h = H.get(key(species));
         return h != null ? h : REF_M;
     }
 
-    /** Multiplicador do tamanho de desenho (1,0 = tamanho padrão de 0,9 m). */
+    /**
+     * Multiplicador do tamanho de desenho (1,0 = Bulbasaur). Até 2 m cresce devagar (raiz quadrada da razão; Charizard ~1,6x),
+     * depois cresce mais (Gyarados ~3,6x, Onix ~4,5x) para os gigantes terem destaque de verdade.
+     */
     public static double scale(String species) {
-        double s = Math.pow(meters(species) / REF_M, EXP);
-        return Math.max(MIN, Math.min(MAX, s));
+        double h = meters(species);
+        if (h <= REF_M) return 1.0;
+        double s = Math.sqrt(Math.min(h, MID_M) / REF_M);
+        if (h > MID_M) s *= Math.pow(h / MID_M, 0.65);
+        return Math.min(MAX, s);
     }
 
-    /** Versão mais suave (arena e telas), para os maiores não estourarem o quadro. */
+    /** Versão mais suave para a Arena (o quadro lá é fixo): 1,0 a 1,8. */
     public static double softScale(String species) {
-        return Math.max(0.7, Math.min(1.35, scale(species)));
+        return Math.min(1.8, scale(species));
     }
 
     /** Quadro de desenho do sprite: largura/altura 2*r*escala, ancorado nos pés (a base do quadro padrão) para o pequeno não flutuar. */

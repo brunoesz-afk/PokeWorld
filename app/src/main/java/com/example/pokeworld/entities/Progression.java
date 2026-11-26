@@ -24,10 +24,22 @@ public final class Progression {
     public static int capturedLevel(int wildLevel) { return Math.max(1, wildLevel / 2); }
 
     public static double captureChance(int targetLevel, boolean boss, boolean shiny, int myLevel, double domadorBonus) {
-        double c = 0.60 - 0.01 * targetLevel + 0.004 * myLevel + domadorBonus + com.example.pokeworld.managers.EventCalendar.captureBonus();
-        if (boss) c -= 0.30;
+        return captureChance(null, targetLevel, boss, shiny, myLevel, domadorBonus);
+    }
+
+    /**
+     * Chance de captura (mais difícil que antes). Evoluídos são bem mais difíceis: segunda evolução (Charizard, Alakazam...)
+     * só ~40% da chance base, primeira evolução ~70% — para valer a pena subir de nível os Pokémon do começo.
+     */
+    public static double captureChance(String species, int targetLevel, boolean boss, boolean shiny, int myLevel, double domadorBonus) {
+        double c = 0.50 - 0.010 * targetLevel + 0.004 * myLevel + domadorBonus + com.example.pokeworld.managers.EventCalendar.captureBonus();
+        if (species != null) {
+            int st = EvolutionTable.stage(species);
+            if (st >= 2) c *= 0.40; else if (st == 1) c *= 0.70;
+        }
+        if (boss) c -= 0.25;
         if (shiny) c -= 0.15;
-        if (targetLevel <= 1) c = Math.max(c, 0.90);   // Pokémon de nível 1 (tutorial) é fácil
-        return Math.max(0.05, Math.min(0.90, c));
+        if (targetLevel <= 1) return Math.min(0.95, Math.max(c, 0.90));   // Pokémon de nível 1 (tutorial) é fácil
+        return Math.max(0.03, Math.min(0.80, c));
     }
 }

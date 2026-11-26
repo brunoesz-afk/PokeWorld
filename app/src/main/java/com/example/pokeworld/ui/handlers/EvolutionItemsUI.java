@@ -118,7 +118,7 @@ public class EvolutionItemsUI extends BaseUI {
 
     private List<String> fromStone() {
         List<String> out = new ArrayList<>();
-        for (String sp : new String[]{"Eevee", "Pikachu", "Growlithe", "Vulpix", "Poliwhirl", "Staryu", "Magneton", "Gloom", "Exeggcute"}) {
+        for (String sp : new String[]{"Eevee", "Pikachu", "Growlithe", "Vulpix", "Gloom", "Weepinbell", "Slowpoke"}) {
             if (EvolutionTable.canUseStone(sp, stone)) out.add(sp);
         }
         return out;

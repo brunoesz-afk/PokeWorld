@@ -383,6 +383,9 @@ public class Companion {
     }
 
     private long skillCastEndTime = 0;
+    private long atkAnimStart = -100000, seenSkillEnd = 0;     // animação de ataque (frames girando + avanço no alvo)
+    private double atkDirX = 0, atkDirY = 1;
+    private static final int ATTACK_ANIM_MS = 600;
     private String currentCastingSpecies = null;
 
     public void update(Player player, List<Enemy> enemies, EffectManager effects, ParticleManager particles, WorldManager world, String weather) {
@@ -466,9 +469,14 @@ public class Companion {
             followPlayer(player, world);
         } else if (currentCommand == Command.AGGRESSIVE) {
             if (targetEnemy == null || !targetEnemy.isAlive()) {
-                // Procura o inimigo mais próximo automaticamente
+                // Procura o inimigo mais próximo automaticamente e o SELECIONA (como se você tivesse tocado nele):
+                // assim as habilidades já miram nele e ele continua sendo o alvo até cair
                 targetEnemy = findNearestEnemy(enemies);
-            }
+                if (targetEnemy != null) {
+                    for (Enemy o : enemies) if (o != targetEnemy && o.isSelected() && !o.isPet) o.setSelected(false);
+                    targetEnemy.setSelected(true);
+                }
+            } else if (!targetEnemy.isSelected()) targetEnemy.setSelected(true);
             if (targetEnemy != null) handleCombat(particles, effects, world);
             else followPlayer(player, world);
         } else { // DEFENSIVE (Comportamento padrão atual)
@@ -535,25 +543,42 @@ public class Companion {
 
         String drawSpecies = species;
         int drawFrame = frameIndex;
+        long nowD = System.currentTimeMillis();
 
-        if (System.currentTimeMillis() < skillCastEndTime && currentCastingSpecies != null) {
-            drawSpecies = currentCastingSpecies;
-            // Durante o ataque, usamos o frame 2 (geralmente uma pose de ação/ataque em folhas 3x3)
-            drawFrame = 2; 
+        // Habilidade nova lançada: começa a animação de ataque
+        if (skillCastEndTime != seenSkillEnd) { seenSkillEnd = skillCastEndTime; if (skillCastEndTime > nowD) atkAnimStart = nowD; }
+        boolean attacking = nowD - atkAnimStart < ATTACK_ANIM_MS;
+        float lungeX = 0, lungeY = 0;
+        if (attacking) {
+            Enemy t = targetEnemy;
+            if (t != null) {
+                double ad = Math.max(1, Math.hypot(t.getPositionX() - positionX, t.getPositionY() - positionY));
+                atkDirX = (t.getPositionX() - positionX) / ad; atkDirY = (t.getPositionY() - positionY) / ad;
+            }
+            updateDirection(atkDirX, atkDirY);                                  // vira para o lado em que ataca
+            drawFrame = (int) ((nowD / 110) % 3);                                // os frames giram rápido durante o ataque
+            double p01 = (nowD - atkAnimStart) / (double) ATTACK_ANIM_MS;
+            float amp = (float) (30 * Math.sin(Math.PI * Math.min(1.0, p01)));   // avança e volta
+            lungeX = (float) (atkDirX * amp); lungeY = (float) (atkDirY * amp);
         }
+
+        if (nowD < skillCastEndTime && currentCastingSpecies != null) drawSpecies = currentCastingSpecies;
 
         Bitmap frame = SpriteManager.getInstance().getUnitSprite(drawSpecies, direction, drawFrame, isShiny);
         
         Paint p = new Paint();
         p.setColor(Color.argb(80, 0, 0, 0));
-        canvas.drawOval((float)positionX - 25, (float)positionY + 10, (float)positionX + 25, (float)positionY + 25, p);
+        float shw = 25f * (float) SpeciesSize.scale(species);
+        canvas.drawOval((float)positionX - shw, (float)positionY + 10, (float)positionX + shw, (float)positionY + 25, p);
 
         if (frame != null) {
             int r = 56; // Proporcional ao player (maior que antes)
             com.example.pokeworld.managers.SkinManager.Skin skin = com.example.pokeworld.ui.handlers.SkinFx.equipped(com.example.pokeworld.managers.SkinManager.Kind.POKEMON);
             Paint sp = null;
             if (skin != null) { sp = new Paint(); com.example.pokeworld.ui.handlers.SkinFx.apply(sp, skin); com.example.pokeworld.ui.handlers.SkinFx.aura(canvas, (float)positionX, (float)positionY + 8, 80, skin); }
-            canvas.drawBitmap(frame, null, SpeciesSize.box(positionX, positionY, r, species), sp);   // tamanho pela altura real da espécie
+            android.graphics.Rect box = SpeciesSize.box(positionX, positionY, r, species);   // tamanho pela altura real da espécie
+            box.offset((int) lungeX, (int) lungeY);
+            canvas.drawBitmap(frame, null, box, sp);
             
             // Desenha Nome com cor do Gênero
             drawName(canvas);
@@ -571,6 +596,9 @@ public class Companion {
         }
     }
 
+    /** Altura (negativa) do nome e da barra de vida em relação aos pés: acompanha o tamanho do Pokémon. */
+    private double labelOff() { return Math.min(-80, 56 - 112 * SpeciesSize.scale(species) - 24); }
+
     private void drawName(Canvas canvas) {
         Paint p = new Paint();
         p.setTextSize(22);
@@ -582,13 +610,13 @@ public class Companion {
         p.setColor(nameColor);
         
         String genderIcon = gender == 0 ? "♂" : "♀";
-        canvas.drawText(species + " " + genderIcon + " [Nv." + level + "]", (float)positionX, (float)positionY - 80, p);
+        canvas.drawText(species + " " + genderIcon + " [Nv." + level + "]", (float)positionX, (float)(positionY + labelOff()), p);
     }
 
     private void drawHealthBar(Canvas canvas) {
         Paint p = new Paint();
         float bw = 80f, bh = 8f;
-        float bx = (float)positionX - bw/2, by = (float)positionY - 75f;
+        float bx = (float)positionX - bw/2, by = (float)(positionY + labelOff() + 5);
         
         // Fundo
         p.setColor(Color.BLACK); 
@@ -698,6 +726,7 @@ public class Companion {
             }
         } else {
             isMoving = false;
+            updateDirection(dx, dy);                                  // encara o alvo
             long now = System.currentTimeMillis();
             if (now - lastAttackTime > ATTACK_COOLDOWN) {
                 int damage = attackPower;
@@ -705,7 +734,7 @@ public class Companion {
                 int finalDamage = (int)(damage * multiplier);
                 targetEnemy.takeDamage(finalDamage); addRage(5); applyVampirism(finalDamage);
                 com.example.pokeworld.managers.SoundManager.play("hit");
-                lastDamageDealt = finalDamage; lastTargetHit = targetEnemy; lastAttackTime = now;
+                lastDamageDealt = finalDamage; lastTargetHit = targetEnemy; lastAttackTime = now; atkAnimStart = now;
                 if (effects != null) {
                     effects.addText("-" + finalDamage, targetEnemy.getPositionX(), targetEnemy.getPositionY() - 20, Color.WHITE);
                     if (multiplier > 1.0) effects.addText("🔥 SUPER EFETIVO!", (float)targetEnemy.getPositionX(), (float)targetEnemy.getPositionY() - 50, Color.YELLOW);

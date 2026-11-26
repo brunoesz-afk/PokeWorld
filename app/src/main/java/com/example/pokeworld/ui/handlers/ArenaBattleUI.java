@@ -33,9 +33,11 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
     public final RectF pokeBtn = new RectF(), fleeBtn = new RectF(), logBox = new RectF();
     public final RectF modalRect = new RectF(), modalClose = new RectF(), modalTeamBtn = new RectF(), modalOk = new RectF();
     public final RectF[] cards = new RectF[6];          // cartões do painel central (time, roster ou troca)
-    public final RectF[] okBtns = new RectF[6];         // botão ESCOLHER de cada cartão
+    public final RectF[] okBtns = new RectF[6];         // botão ENTRAR/TIRAR (ou ESCOLHER) de cada cartão
+    public final RectF[] leftBtns = new RectF[6], rightBtns = new RectF[6];   // ◀ ▶: muda a ordem de combate
     public enum Modal { NONE, STARTER, TEAM, SWAP }
     public Modal modal = Modal.NONE;
+    private int thrownIdx = -1;                       // índice do roster do Pokémon lançado por último
     private final List<String> log = new ArrayList<>();
     private float screenW = 1280, screenH = 720;
 
@@ -68,7 +70,7 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
     private final List<Ball> balls = new ArrayList<>();
     private long meLunge = 0, foeLunge = 0;
 
-    public ArenaBattleUI() { for (int i = 0; i < cards.length; i++) { cards[i] = new RectF(); okBtns[i] = new RectF(); } }
+    public ArenaBattleUI() { for (int i = 0; i < cards.length; i++) { cards[i] = new RectF(); okBtns[i] = new RectF(); leftBtns[i] = new RectF(); rightBtns[i] = new RectF(); } }
 
     private void say(String m) { log.add(m); while (log.size() > 30) log.remove(0); }
 
@@ -98,7 +100,7 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         for (int i = 0; i < Math.min(ArenaDuel.MAX_TEAM, order.size()); i++) picks.add(order.get(i));
         rebuildMe();
         pops.clear(); balls.clear(); result = null; spent = false; resultApplied = false; lastT = System.currentTimeMillis();
-        foeReadyLogged = false; thrown = false; foePlaceX = 0.3f + new Random().nextFloat() * 0.4f; fightT0 = 0; lastPhase = null; camInit = false;
+        foeReadyLogged = false; thrown = false; thrownIdx = -1; foePlaceX = 0.3f + new Random().nextFloat() * 0.4f; fightT0 = 0; lastPhase = null; camInit = false;
         placeX = (float) ArenaLayout.centerX(); placeY = (float) (ArenaLayout.lineY() + (ArenaLayout.bottom() - ArenaLayout.lineY()) * 0.6);
         log.clear(); modal = Modal.STARTER;
         say(f.name + " desafia você!");
@@ -121,11 +123,29 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         rebuildMe();
     }
 
+    /** ◀ ▶ no cartão: troca a posição do Pokémon na ordem de combate (o 1º é o inicial). */
+    public void movePick(int rosterIdx, int delta) {
+        if (duel == null || duel.meReady) return;
+        int at = picks.indexOf(rosterIdx), to = at + delta;
+        if (at < 0 || to < 0 || to >= picks.size()) return;
+        java.util.Collections.swap(picks, at, to);
+        rebuildMe();
+    }
+
+    /** OK do painel do time: o 1º da ordem é o inicial; só relança se ele mudou (ou se ainda não foi lançado). */
+    public void confirmTeam() {
+        if (duel == null) return;
+        if (picks.isEmpty()) return;
+        if (thrown && thrownIdx == picks.get(0)) { modal = Modal.NONE; return; }
+        chooseStarter(0);
+    }
+
     /** ESCOLHER no painel inicial: o cartão vira o Pokémon inicial e é lançado (na frente do treinador, se ainda não foi). */
     public void chooseStarter(int pickIdx) {
         if (duel == null || duel.meReady || pickIdx < 0 || pickIdx >= picks.size()) return;
         picks.add(0, picks.remove(pickIdx));
         rebuildMe();
+        thrownIdx = picks.get(0);
         modal = Modal.NONE;
         say("Você escolheu " + duel.me.cur().species + "!");
         if (!thrown) throwInFront(true); else launchBall(placeX, placeY - PK * 0.3f, false);
@@ -167,6 +187,7 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         placeY = Math.max(minY, Math.min(maxY, y));
         placeX = Math.max((float) ArenaLayout.left() + PK * 0.5f, Math.min((float) ArenaLayout.right() - PK * 0.5f, x));
         thrown = true;
+        thrownIdx = picks.isEmpty() ? -1 : picks.get(0);
         if (animate) launchBall(placeX, placeY - PK * 0.3f, false);
     }
 
@@ -501,67 +522,91 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
     public boolean modalClosable() { return !(modal == Modal.SWAP && duel != null && duel.me.active == -1); }
 
     private void drawModal(Canvas canvas, float w, float h, long now) {
-        for (int i = 0; i < cards.length; i++) { cards[i].setEmpty(); okBtns[i].setEmpty(); }
+        for (int i = 0; i < cards.length; i++) { cards[i].setEmpty(); okBtns[i].setEmpty(); leftBtns[i].setEmpty(); rightBtns[i].setEmpty(); }
         modalClose.setEmpty(); modalTeamBtn.setEmpty(); modalOk.setEmpty(); modalRect.setEmpty();
         if (modal == Modal.NONE || duel == null) return;
+        boolean picker = modal == Modal.STARTER || modal == Modal.TEAM;      // escolha do time + ordem de combate
         List<ArenaDuel.Unit> list = new ArrayList<>();
-        List<Integer> idx = new ArrayList<>();
         String title;
-        if (modal == Modal.STARTER) { title = "SELECIONE SEU POKÉMON INICIAL!"; for (int i = 0; i < picks.size(); i++) { list.add(roster.get(picks.get(i))); idx.add(i); } }
-        else if (modal == Modal.TEAM) { title = "MONTE SEU TIME (ATÉ " + ArenaDuel.MAX_TEAM + ")"; for (int i = 0; i < Math.min(6, roster.size()); i++) { list.add(roster.get(i)); idx.add(i); } }
-        else { title = duel.me.active == -1 ? "ESCOLHA O PRÓXIMO POKÉMON!" : "TROCAR POKÉMON"; for (int i = 0; i < duel.me.team.size(); i++) { list.add(duel.me.team.get(i)); idx.add(i); } }
-        int n = Math.min(list.size(), 6);
-        int cols = Math.min(3, Math.max(1, n)), rows = (n + cols - 1) / cols;
-        float mw = Math.min(w - 40, 820), mh = Math.min(h - 200, rows == 1 ? 420 : 470);
-        float mx = w / 2f - mw / 2f, my = 96 + (h - 96 - 100 - mh) / 2f;
-        paint.setStyle(Paint.Style.FILL); paint.setColor(Color.argb(120, 0, 0, 0));
+        if (picker) { title = modal == Modal.STARTER ? "MONTE SEU TIME E A ORDEM DE COMBATE" : "TIME E ORDEM DE COMBATE"; for (int i = 0; i < Math.min(6, roster.size()); i++) list.add(roster.get(i)); }
+        else { title = duel.me.active == -1 ? "ESCOLHA O PRÓXIMO POKÉMON!" : "TROCAR POKÉMON"; for (int i = 0; i < duel.me.team.size(); i++) list.add(duel.me.team.get(i)); }
+        int n = list.size();
+        int slots = picker ? 6 : Math.max(1, n);                      // no picker os 6 lugares aparecem sempre (vazios = tracejado)
+        int cols = picker ? 3 : Math.min(3, Math.max(1, n)), rows = (slots + cols - 1) / cols;
+        float mw = Math.min(w - 24, picker ? 900 : 820), mh = Math.min(h - 24, picker ? 660 : (rows == 1 ? 420 : 470));
+        float mx = w / 2f - mw / 2f, my = (h - mh) / 2f;
+        paint.setStyle(Paint.Style.FILL); paint.setColor(Color.argb(90, 0, 0, 0));
         canvas.drawRect(0, 0, w, h, paint);
         modalRect.set(mx, my, mx + mw, my + mh);
         panel(canvas, modalRect, Color.argb(248, 28, 20, 22), Color.rgb(255, 150, 60), 4);
-        text(canvas, title, modalRect.centerX(), my + 44, 28, Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
+        text(canvas, title, modalRect.centerX(), my + 44, picker ? 24 : 28, Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
         if (modalClosable()) {
             modalClose.set(modalRect.right - 58, my + 10, modalRect.right - 12, my + 56);
             panel(canvas, modalClose, Color.rgb(120, 40, 44), Color.WHITE, 2);
             text(canvas, "✕", modalClose.centerX(), modalClose.centerY() + 9, 24, Color.WHITE, Paint.Align.CENTER, true);
         }
-        float areaTop = my + 66, areaBot = my + mh - (modal == Modal.SWAP ? 18 : 70);
-        float gap = 14, cw = Math.min(236, (mw - 40 - (cols - 1) * gap) / cols), ch = Math.min(300, (areaBot - areaTop - (rows - 1) * gap) / rows);
+        if (picker) text(canvas, "Escolha até " + ArenaDuel.MAX_TEAM + ". Use ◀ ▶ para definir a ordem: o 1º entra primeiro.", modalRect.centerX(), my + 68, 15, C_MUTED, Paint.Align.CENTER, false);
+        float areaTop = my + (picker ? 82 : 66), areaBot = my + mh - (modal == Modal.SWAP ? 18 : 70);
+        float gap = picker ? 12 : 14, cw = Math.min(picker ? 270 : 236, (mw - 40 - (cols - 1) * gap) / cols), ch = Math.min(picker ? 250 : 300, (areaBot - areaTop - (rows - 1) * gap) / rows);
         float gx = modalRect.centerX() - (cols * cw + (cols - 1) * gap) / 2f;
         boolean fightPick = modal == Modal.SWAP;
         boolean cd = fightPick && duel.me.swapCd > 0 && duel.me.active != -1;
-        for (int i = 0; i < n; i++) {
-            ArenaDuel.Unit u = list.get(i);
+        for (int i = 0; i < slots; i++) {
             int c = i % cols, r = i / cols;
+            float l = gx + c * (cw + gap), t = areaTop + r * (ch + gap);
+            if (i >= n) {                                                   // lugar vazio (menos de 6 na mão)
+                RectF e = new RectF(l, t, l + cw, t + ch);
+                panel(canvas, e, Color.argb(120, 40, 30, 30), Color.rgb(90, 70, 60), 2);
+                text(canvas, "vazio", e.centerX(), e.centerY() + 6, 18, Color.argb(140, 255, 255, 255), Paint.Align.CENTER, false);
+                continue;
+            }
+            ArenaDuel.Unit u = list.get(i);
             RectF rc = cards[i];
-            rc.set(gx + c * (cw + gap), areaTop + r * (ch + gap), gx + c * (cw + gap) + cw, areaTop + r * (ch + gap) + ch);
-            boolean inTeam = modal == Modal.TEAM && picks.contains(idx.get(i));
-            boolean act = fightPick && idx.get(i) == duel.me.active;
+            rc.set(l, t, l + cw, t + ch);
+            int order = picker ? picks.indexOf(i) : -1;
+            boolean inTeam = picker && order >= 0;
+            boolean act = fightPick && i == duel.me.active;
             boolean dead = fightPick && !u.alive();
             int edge = dead ? Color.DKGRAY : act ? C_ACCENT : inTeam ? C_GOOD : Color.rgb(150, 110, 80);
-            panel(canvas, rc, Color.argb(240, 46, 32, 30), edge, inTeam || act ? 4 : 2);
-            float btnH = ch < 200 ? 34 : 42;
-            text(canvas, fit(u.species + (u.shiny ? " ✨" : ""), cw - 16), rc.centerX(), rc.top + 26, 19, Color.WHITE, Paint.Align.CENTER, true);
+            panel(canvas, rc, inTeam ? Color.argb(245, 36, 54, 40) : Color.argb(240, 46, 32, 30), edge, inTeam || act ? 4 : 2);
+            float btnH = ch < 200 ? 34 : 40;
+            text(canvas, fit(u.species + (u.shiny ? " ✨" : ""), cw - (inTeam ? 64 : 16)), rc.centerX() + (inTeam ? 16 : 0), rc.top + 26, 19, Color.WHITE, Paint.Align.CENTER, true);
+            if (inTeam) {                                                   // selo da ordem de combate
+                paint.setStyle(Paint.Style.FILL); paint.setColor(order == 0 ? C_ACCENT : C_GOOD);
+                canvas.drawCircle(rc.left + 24, rc.top + 22, 16, paint);
+                text(canvas, String.valueOf(order + 1), rc.left + 24, rc.top + 29, 20, Color.BLACK, Paint.Align.CENTER, true);
+            }
             float sz = Math.max(48, Math.min(cw - 40, ch - btnH - 84));
+            float spriteBox = (float) com.example.pokeworld.entities.SpeciesSize.softScale(u.species);
             if (dead) text(canvas, "💀", rc.centerX(), rc.top + 26 + sz * 0.7f, 44, Color.WHITE, Paint.Align.CENTER, false);
-            else ArenaUI.sprite(canvas, paint, u.species, u.shiny, 0, (int) ((now / 320) % 3), rc.centerX(), rc.top + 32 + sz, sz);
+            else ArenaUI.sprite(canvas, paint, u.species, u.shiny, 0, (int) ((now / 320) % 3), rc.centerX(), rc.top + 32 + sz, sz * Math.min(1f, 0.62f + 0.38f * spriteBox / 1.8f));
             float ty = rc.top + 32 + sz + 20;
             text(canvas, "Nv. " + u.level + (fightPick ? "  " + Math.max(0, u.hp) + "/" + u.maxHp : "  ⚡" + u.power()), rc.centerX(), ty, 16, Color.rgb(255, 214, 90), Paint.Align.CENTER, true);
             if (ch >= 190) text(canvas, typeLabel(u), rc.centerX(), ty + 20, 14, C_MUTED, Paint.Align.CENTER, false);
             RectF ok = okBtns[i];
+            if (picker) {
+                float by = rc.bottom - btnH - 8, aw = 44;
+                if (inTeam) {                                               // ◀ [TIRAR] ▶
+                    leftBtns[i].set(rc.left + 8, by, rc.left + 8 + aw, by + btnH);
+                    rightBtns[i].set(rc.right - 8 - aw, by, rc.right - 8, by + btnH);
+                    ok.set(leftBtns[i].right + 6, by, rightBtns[i].left - 6, by + btnH);
+                    actionButton(canvas, leftBtns[i], "◀", !duel.meReady && order > 0, Color.rgb(90, 90, 120));
+                    actionButton(canvas, rightBtns[i], "▶", !duel.meReady && order < picks.size() - 1, Color.rgb(90, 90, 120));
+                    actionButton(canvas, ok, "TIRAR", !duel.meReady && picks.size() > 1, Color.rgb(170, 70, 70));
+                } else {
+                    ok.set(rc.left + 8, by, rc.right - 8, by + btnH);
+                    boolean full = picks.size() >= ArenaDuel.MAX_TEAM;
+                    actionButton(canvas, ok, full ? "TIME CHEIO" : "ENTRAR", !duel.meReady && !full, Color.rgb(70, 120, 200));
+                }
+                continue;
+            }
             ok.set(rc.left + 12, rc.bottom - btnH - 10, rc.right - 12, rc.bottom - 10);
-            String lab; boolean en; int col = Color.rgb(70, 170, 90);
-            if (modal == Modal.TEAM) { lab = inTeam ? "NO TIME ✔" : "ENTRAR"; en = !duel.meReady; col = inTeam ? Color.rgb(70, 170, 90) : Color.rgb(70, 120, 200); }
-            else if (fightPick) { lab = act ? "EM CAMPO" : dead ? "DESMAIOU" : cd ? String.format("%.1fs", duel.me.swapCd / 1000f) : "ESCOLHER"; en = !act && !dead && !cd; }
-            else { lab = "ESCOLHER"; en = !duel.meReady; }
-            actionButton(canvas, ok, lab, en, col);
+            String lab = act ? "EM CAMPO" : dead ? "DESMAIOU" : cd ? String.format("%.1fs", duel.me.swapCd / 1000f) : "ESCOLHER";
+            actionButton(canvas, ok, lab, !act && !dead && !cd, Color.rgb(70, 170, 90));
         }
-        if (modal == Modal.STARTER) {
-            modalTeamBtn.set(modalRect.left + 24, my + mh - 56, modalRect.left + 24 + 220, my + mh - 14);
-            actionButton(canvas, modalTeamBtn, "🎒 Montar time", true, Color.rgb(70, 120, 200));
-            text(canvas, "Depois de escolher, toque na sua metade para relançar.", modalRect.right - 20, my + mh - 28, 14, C_MUTED, Paint.Align.RIGHT, false);
-        } else if (modal == Modal.TEAM) {
-            modalOk.set(modalRect.centerX() - 110, my + mh - 56, modalRect.centerX() + 110, my + mh - 14);
-            actionButton(canvas, modalOk, "OK", true, C_ACCENT);
+        if (picker) {
+            modalOk.set(modalRect.centerX() - 130, my + mh - 56, modalRect.centerX() + 130, my + mh - 14);
+            actionButton(canvas, modalOk, modal == Modal.STARTER || !thrown ? "COMEÇAR COM O 1º" : "OK", !picks.isEmpty(), C_ACCENT);
         }
     }
 

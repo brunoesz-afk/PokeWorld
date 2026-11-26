@@ -24,24 +24,48 @@ public final class EvolutionTable {
     private static void stone(String from, String to, String stone) { ALL.add(new Evo(from, to, 0, stone)); }
 
     static {
+        // Só entram evoluções cujo desenho existe no jogo (sem desenho, a espécie aparecia como Charmander)
         lvl("Charmander", "Charmeleon", 16); lvl("Charmeleon", "Charizard", 36);
         lvl("Squirtle", "Wartortle", 16);    lvl("Wartortle", "Blastoise", 36);
         lvl("Bulbasaur", "Ivysaur", 16);     lvl("Ivysaur", "Venusaur", 32);
         lvl("Caterpie", "Metapod", 7);       lvl("Metapod", "Butterfree", 10);
-        lvl("Weedle", "Kakuna", 7);          lvl("Kakuna", "Beedrill", 10);
+        lvl("Weedle", "Kakuna", 7);          lvl("Kakuna", "Beedril", 10);
         lvl("Pidgey", "Pidgeotto", 18);      lvl("Pidgeotto", "Pidgeot", 36);
+        lvl("Rattata", "Raticate", 20);
+        lvl("Spearow", "Fearow", 20);
+        lvl("Ekans", "Arbok", 22);
+        lvl("Sandshrew", "Sandslash", 22);
+        lvl("Nidoranf", "Nidorina", 16);     lvl("Nidorina", "Nidoqueen", 36);
+        lvl("Nidoranm", "Nidorino", 16);     lvl("Nidorino", "Nidoking", 36);
+        lvl("Clefairy", "Clefable", 32);     lvl("Clefary", "Clefable", 32);
+        lvl("Jigglypuff", "Wigglytuff", 32);
+        lvl("Zubat", "Golbat", 22);
+        lvl("Oddish", "Gloom", 21);
+        lvl("Paras", "Parasect", 24);
+        lvl("Venonat", "Venomoth", 31);
+        lvl("Diglett", "Dugtrio", 26);
+        lvl("Meowth", "Persian", 28);
+        lvl("Psyduck", "Golduck", 33);
+        lvl("Mankey", "Primeape", 28);
+        lvl("Poliwag", "Poliwhirl", 25);
+        lvl("Bellsprout", "Weepinbell", 21);
         lvl("Abra", "Kadabra", 16);          lvl("Kadabra", "Alakazam", 36);
         lvl("Machop", "Machoke", 16);        lvl("Machoke", "Machamp", 36);
+        lvl("Tentacool", "Tentacruel", 30);
+        lvl("Ponyta", "Rapidash", 40);
+        lvl("Slowpoke", "Slowking", 37);
+        lvl("Grimer", "Muk", 38);
+        lvl("Koffing", "Weezing", 35);
         lvl("Gastly", "Haunter", 25);        lvl("Haunter", "Gengar", 38);
+        lvl("Magikarp", "Gyarados", 20);
+        lvl("Pichu", "Pikachu", 12);
         lvl("Pikachu", "Raichu", 30);
 
         stone("Pikachu", "Raichu", THUNDER);
-        stone("Eevee", "Flareon", FIRE);   stone("Eevee", "Vaporeon", WATER);
-        stone("Eevee", "Jolteon", THUNDER); stone("Eevee", "Leafeon", LEAF);
+        stone("Eevee", "Flareon", FIRE);   stone("Eevee", "Vaporeon", WATER);   stone("Eevee", "Jolteon", THUNDER);
         stone("Growlithe", "Arcanine", FIRE); stone("Vulpix", "Ninetales", FIRE);
-        stone("Poliwhirl", "Poliwrath", WATER); stone("Staryu", "Starmie", WATER);
-        stone("Magneton", "Magnezone", THUNDER);
-        stone("Gloom", "Vileplume", LEAF);   stone("Exeggcute", "Exeggutor", LEAF);
+        stone("Gloom", "Vileplume", LEAF);   stone("Weepinbell", "Victreebel", LEAF);
+        stone("Slowpoke", "Slowking", WATER);
     }
 
     private static boolean same(String a, String b) { return a != null && b != null && a.equalsIgnoreCase(b); }
@@ -69,6 +93,18 @@ public final class EvolutionTable {
     public static String preEvolution(String species) {
         for (Evo e : ALL) if (same(e.to, species)) return e.from;
         return null;
+    }
+
+    /** Estágio na linha evolutiva: 0 = básico, 1 = primeira evolução, 2 = segunda evolução (Pichu não conta como estágio). */
+    public static int stage(String species) {
+        int n = 0; String cur = species;
+        while (n < 3) {
+            String pre = preEvolution(cur);
+            if (pre == null) break;
+            if (!pre.equalsIgnoreCase("Pichu")) n++;
+            cur = pre;
+        }
+        return n;
     }
 
     public static boolean canUseStone(String species, String stone) { return byStone(species, stone) != null; }

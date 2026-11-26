@@ -8,6 +8,7 @@ public class TimeManager {
     private long startTime;
     private static final long CYCLE_DURATION = 120000; // 2 minutos por ciclo (Dia + Noite)
     private boolean isNight = false;
+    private boolean cycleEnabled = false;      // ciclo dia/noite (escurecer + inimigos mais fortes): desligado, ativa nas Configurações
     private Paint filterPaint = new Paint();
     
     private int totalCycles = 0;
@@ -21,7 +22,7 @@ public class TimeManager {
         long elapsedTotal = System.currentTimeMillis() - startTime;
         long elapsedInCycle = elapsedTotal % CYCLE_DURATION;
         
-        isNight = elapsedInCycle > (CYCLE_DURATION / 2);
+        isNight = cycleEnabled && elapsedInCycle > (CYCLE_DURATION / 2);
         
         // Conta ciclos globais
         int currentTotalCycles = (int)(elapsedTotal / CYCLE_DURATION);
@@ -36,6 +37,9 @@ public class TimeManager {
             canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), filterPaint);
         }
     }
+
+    public void setCycleEnabled(boolean on) { cycleEnabled = on; if (!on) isNight = false; }
+    public boolean isCycleEnabled() { return cycleEnabled; }
 
     public boolean isNight() {
         return isNight;

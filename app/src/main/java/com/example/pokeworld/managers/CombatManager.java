@@ -24,7 +24,7 @@ public class CombatManager {
 
         boolean guided = gv.tutorial != null && gv.tutorial.isGuidedCapture();
         int pct = guided ? 100 : (int) Math.round(100 * com.example.pokeworld.entities.Progression.captureChance(
-                target.getOwnerLevel(), target.isOwnerBoss(), target.isShiny(), gv.companion.getLevel(),
+                target.getName(), target.getOwnerLevel(), target.isOwnerBoss(), target.isShiny(), gv.companion.getLevel(),
                 com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Domador") * 0.8));
         gv.ui.showMessage("Tentando capturar... (chance " + pct + "%)");
         
@@ -39,7 +39,7 @@ public class CombatManager {
 
         // Quanto mais forte o alvo (nível, chefe, shiny), mais difícil; seu nível e o talento Domador ajudam
         double finalChance = com.example.pokeworld.entities.Progression.captureChance(
-                target.getOwnerLevel(), target.isOwnerBoss(), target.isShiny(), gv.companion.getLevel(),
+                target.getName(), target.getOwnerLevel(), target.isOwnerBoss(), target.isShiny(), gv.companion.getLevel(),
                 com.example.pokeworld.entities.TalentTree.bonus(gv.player, "Domador") * 0.8);
 
         boolean guided = gv.tutorial != null && gv.tutorial.isGuidedCapture();
