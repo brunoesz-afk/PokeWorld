@@ -57,6 +57,13 @@ public final class CityDistricts {
     public static final District MESTRES = new District("mestres", "⚒️", "Distrito dos Mestres", "Forja, Clãs e Ginásio", Color.rgb(190, 140, 255), 29, 14, 41, 47);
     public static final District[] ALL = {PRACA, COLISEU, GUILDA, CURA, MERCADO, MESTRES};
 
+    /** Retângulos dos distritos em tiles {r0, c0, r1, c1} (para os treinadores simulados passearem). */
+    public static int[][] areas() {
+        int[][] a = new int[ALL.length][];
+        for (int i = 0; i < ALL.length; i++) a[i] = new int[]{ALL[i].r0, ALL[i].c0, ALL[i].r1, ALL[i].c1};
+        return a;
+    }
+
     /** Onde o Mercador Viajante aparece (Quarteirão da Cura). */
     public static final double MERCHANT_TX = 24.5, MERCHANT_TY = 16.5;
 

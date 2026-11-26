@@ -35,6 +35,8 @@ public class WorldManager {
     public List<Enemy> enemies = new ArrayList<>();
     public List<Loot> loots = new ArrayList<>();
     public List<NPC> npcs = new ArrayList<>();
+    public final CityCrowd crowd = new CityCrowd();          // treinadores simulados que passeiam pela cidade
+    private final java.util.Random crowdRnd = new java.util.Random();
     public List<Building> buildings = new ArrayList<>();
 
     // ---- Base do jogador (mapa HOME) ----
@@ -119,7 +121,7 @@ public class WorldManager {
 
     public void loadMap(String name, Player p, Companion c, String side) {
         roomOverlay = null;
-        enemies.clear(); npcs.clear(); loots.clear(); buildings.clear(); zones = null;
+        enemies.clear(); npcs.clear(); loots.clear(); buildings.clear(); zones = null; crowd.clear();
         int r = 50, col = 100;
         if (name.equals("HOME")) { r = BaseLayout.MAP_ROWS; col = BaseLayout.MAP_COLS; }
         else if (name.equals("TOWER")) { r = 25; col = 25; }
@@ -179,9 +181,20 @@ public class WorldManager {
         }
     }
 
+    private CityCrowd.Ground crowdGround() {
+        return new CityCrowd.Ground() { @Override public boolean walkable(double x, double y) { return tileMap.isWalkable(x, y, false, false, false, false) && !tileMap.isPortal(x, y); } };
+    }
+
+    private double[][] npcPoints() {
+        double[][] a = new double[npcs.size()][2];
+        for (int i = 0; i < a.length; i++) { a[i][0] = npcs.get(i).getPositionX(); a[i][1] = npcs.get(i).getPositionY(); }
+        return a;
+    }
+
     private void spawnCityEntities() {
         double midX = (tileMap.getCols() * TileMap.TILE_SIZE) / 2.0, midY = (tileMap.getRows() * TileMap.TILE_SIZE) / 2.0;
         CityDistricts.spawn(npcs);   // NPCs de cada distrito (Praça, Cura, Mercado, Coliseu, Guilda, Mestres)
+        crowd.spawn(CityDistricts.areas(), crowdGround(), npcPoints(), crowdRnd);   // jogadores simulados passeando
         // Prédios da cidade em "quadras" fixas (cada prédio tem 10x10 tiles): longe das avenidas, da praça central e uns dos outros.
         // (Antes as linhas eram espaçadas por 225px e os prédios de 640px se sobrepunham.)
         final String[] slotName = {"Centro de Cura", "Loja", "Castelo", "Ginásio", "Mural de Caça"};
@@ -391,7 +404,7 @@ public class WorldManager {
     public void update(Player p, Companion c, GameView gv) {
         if (tileMap.isPortal(p.getPositionX(), p.getPositionY())) handlePortal(p, c, gv);
         currentZoom += (targetZoom - currentZoom) * 0.05f;
-        if ("CITY".equals(tileMap.getMapName())) CityDistricts.update(p, gv);
+        if ("CITY".equals(tileMap.getMapName())) { CityDistricts.update(p, gv); crowd.update(crowdGround(), npcPoints(), crowdRnd, System.currentTimeMillis()); }
 
         // Pontos de spawn: nasce/some conforme a distância do jogador (2x por segundo)
         long nowZ = System.currentTimeMillis();
@@ -661,6 +674,7 @@ public class WorldManager {
             }
         }
 
+        if (inCity) crowd.draw(canvas, vl, vt, vr, vb);
         p.draw(canvas, c); if (!p.isMounted() && roomOverlay == null) c.draw(canvas);
         if (base != null) {
             base.drawOverlay(canvas, nowMs, vl, vt, vr, vb);
