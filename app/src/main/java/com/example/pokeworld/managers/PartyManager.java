@@ -168,6 +168,28 @@ public final class PartyManager {
             c.getRarity(), c.getGender());
     }
 
+    /** Nível ao capturar: metade do nível do selvagem (mín. 1). 42 -> 21, 41 -> 20. */
+    public static int capturedLevel(int wildLevel) { return com.example.pokeworld.entities.Progression.capturedLevel(wildLevel); }
+
+    /**
+     * Registra o nível de um Pokémon recém-capturado. O nível fica por espécie: espécie nova entra com a metade do nível
+     * do selvagem; se já existe, só sobe quando a metade for maior (nunca rebaixa). O companheiro ativo não é mexido.
+     */
+    public static void onCaptured(GameView gv, String species, int wildLevel, boolean shiny, com.example.pokeworld.entities.Rarity rarity, int gender) {
+        int half = capturedLevel(wildLevel);
+        if (isActiveSpecies(gv, species)) return;
+        com.example.pokeworld.core.DatabaseHelper db = gv.activity.dbHelper;
+        boolean has = db.hasPet(species);
+        PetData d = db.getPetData(species);
+        if (has && d.level >= half) return;
+        db.savePet(species, half, 0, has ? d.forgeBonus : 0, has ? d.weapon : "Nenhum", has ? d.armor : "Nenhum", has ? d.isShiny : shiny,
+                has ? d.personality : "Normal", has ? d.rune : "Nenhum", has ? d.friendship : 0, has ? d.type2 : "Nenhum", has ? d.rarity : rarity, has ? d.gender : gender);
+    }
+
+    private static boolean isActiveSpecies(GameView gv, String species) {
+        return gv.companion != null && gv.companion.getSpecies() != null && gv.companion.getSpecies().equalsIgnoreCase(species);
+    }
+
     public static boolean isActive(GameView gv, CapturedCreature c) {
         return c.name.equalsIgnoreCase(gv.companion.getSpecies());
     }

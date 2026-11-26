@@ -125,6 +125,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     @Override
+    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) { /* APK mais antigo por cima: mantém os dados (o padrão seria travar) */ }
+
+    @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // 36 -> 41: migrações em sequência (NÃO apagam o progresso do jogador)
         if (oldVersion >= 36 && oldVersion < 41) {
@@ -470,7 +473,35 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.update("player_stats", v, "id=1", null);
     }
 
+    /** Instalação nova? (nível 1 sem exp e no máximo o Pokémon inicial) — só aí a nuvem pode repor o progresso. */
+    public boolean isFreshInstall() {
+        int[] st = getPlayerStats();
+        if (st[1] > 1 || st[2] > 0) return false;
+        Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM collection", null);
+        int n = c.moveToFirst() ? c.getInt(0) : 0;
+        c.close();
+        return n <= 1;
+    }
+
+    public boolean hasPet(String species) {
+        Cursor c = getReadableDatabase().rawQuery("SELECT 1 FROM pets WHERE species=?", new String[]{species});
+        boolean has = c.moveToFirst();
+        c.close();
+        return has;
+    }
+
+    /** Repõe o nível de um Pokémon vindo da nuvem, sem nunca rebaixar o que já existe aqui. */
+    public void restorePetLevel(String species, int level) {
+        if (level <= 1) return;
+        PetData d = getPetData(species);
+        if (hasPet(species) && d.level >= level) return;
+        savePet(species, level, hasPet(species) ? d.exp : 0, d.forgeBonus, d.weapon, d.armor, d.isShiny, d.personality, d.rune, d.friendship, d.type2, d.rarity, d.gender);
+    }
+
+    /** Nuvem -> local: só sobe o nível/exp do jogador, nunca desfaz progresso local mais novo. */
     public void updatePlayerStatsFromCloud(int level, int exp) {
+        int[] st = getPlayerStats();
+        if (level < st[1] || (level == st[1] && exp <= st[2])) return;
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues v = new ContentValues();
         v.put("level", level);

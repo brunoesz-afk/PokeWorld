@@ -150,7 +150,10 @@ public class SupabaseManager {
         }).start();
     }
 
-    public void syncParty(List<CapturedCreature> party) {
+    public void syncParty(List<CapturedCreature> party) { syncParty(party, null); }
+
+    /** levelOf: nível real de cada espécie (guardado na nuvem para repor depois de reinstalar). */
+    public void syncParty(List<CapturedCreature> party, java.util.function.Function<String, Integer> levelOf) {
         if (!isLogged()) return;
         new Thread(() -> {
             try {
@@ -177,7 +180,7 @@ public class SupabaseManager {
                     json.put("user_id", userId);
                     json.put("slot", slot);
                     json.put("pokemon_name", c.name);
-                    json.put("pokemon_level", 10);
+                    json.put("pokemon_level", levelOf != null ? Math.max(1, levelOf.apply(c.name)) : 10);
                     json.put("species_id", c.name.toLowerCase());
                     json.put("nickname", c.isShiny ? c.name + " (Shiny)" : c.name);
 
@@ -201,6 +204,7 @@ public class SupabaseManager {
 
         new Thread(() -> {
             try {
+                final boolean fresh = dbHelper.isFreshInstall();   // só repõe o time/pets da nuvem numa instalação nova
                 URL profileUrl = new URL(supabaseUrl + "/rest/v1/player_profiles?user_id=eq." + userId + "&select=*");
                 HttpURLConnection conn = (HttpURLConnection) profileUrl.openConnection();
                 conn.setRequestMethod("GET");
@@ -237,12 +241,14 @@ public class SupabaseManager {
                     reader.close();
 
                     JSONArray partyArr = new JSONArray(sb.toString());
-                    if (partyArr.length() > 0) {
+                    if (partyArr.length() > 0 && fresh) {
                         dbHelper.clearParty();
                         for (int i = 0; i < partyArr.length(); i++) {
                             JSONObject poke = partyArr.getJSONObject(i);
                             String pName = poke.optString("pokemon_name", "Pikachu");
-                            dbHelper.addCreatureToCollectionDb(pName, false, com.example.pokeworld.entities.Rarity.COMMON, true, 0);
+                            boolean shiny = poke.optString("nickname", "").contains("(Shiny)");
+                            dbHelper.addCreatureToCollectionDb(pName, shiny, com.example.pokeworld.entities.Rarity.COMMON, true, 0);
+                            dbHelper.restorePetLevel(pName, poke.optInt("pokemon_level", 1));
                         }
                     }
                 }

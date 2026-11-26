@@ -553,7 +553,7 @@ public class Companion {
             com.example.pokeworld.managers.SkinManager.Skin skin = com.example.pokeworld.ui.handlers.SkinFx.equipped(com.example.pokeworld.managers.SkinManager.Kind.POKEMON);
             Paint sp = null;
             if (skin != null) { sp = new Paint(); com.example.pokeworld.ui.handlers.SkinFx.apply(sp, skin); com.example.pokeworld.ui.handlers.SkinFx.aura(canvas, (float)positionX, (float)positionY + 8, 80, skin); }
-            canvas.drawBitmap(frame, null, new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r), sp);
+            canvas.drawBitmap(frame, null, SpeciesSize.box(positionX, positionY, r, species), sp);   // tamanho pela altura real da espécie
             
             // Desenha Nome com cor do Gênero
             drawName(canvas);

@@ -374,12 +374,6 @@ public class MainActivity extends AppCompatActivity {
                 p.getClan(), p.getNgPlusLevel(), p.getSkinColor(), p.getTalents(), p.getCreatureCollection(), p.getInventory(),
                 p.getFishingLevel(), p.getFishingExp(), gameView.aincrad.getMaxFloorReached(), p.hasSeenDaycareIntro() ? 1 : 0);
         
-        // Sincroniza com Supabase (`player_profiles` e `pokemon_party`) mantendo intactos nome, gênero e região definidos no site
-        com.example.pokeworld.managers.SupabaseManager.getInstance().syncPlayerProfile(
-                p.getLevel(), p.getExp(), "Nível " + p.getLevel() + " - Ouro: " + p.getGold(), null
-        );
-        com.example.pokeworld.managers.SupabaseManager.getInstance().syncParty(p.getParty());
-        
         if (c != null) {
             // Salva os dados específicos do pet ativo
             com.example.pokeworld.managers.PartyManager.storeHp(gameView, c.getSpecies(), c.getHp());
@@ -400,6 +394,13 @@ public class MainActivity extends AppCompatActivity {
             );
             dbHelper.updateActiveSpecies(c.getSpecies());
         }
+
+        // Sincroniza com Supabase (`player_profiles` e `pokemon_party`) mantendo intactos nome, gênero e região definidos no site.
+        // (Depois de gravar o pet ativo, para a nuvem levar o nível de verdade de cada Pokémon do time.)
+        com.example.pokeworld.managers.SupabaseManager.getInstance().syncPlayerProfile(
+                p.getLevel(), p.getExp(), "Nível " + p.getLevel() + " - Ouro: " + p.getGold(), null
+        );
+        com.example.pokeworld.managers.SupabaseManager.getInstance().syncParty(p.getParty(), sp -> dbHelper.getPetData(sp).level);
     }
 
     @Override

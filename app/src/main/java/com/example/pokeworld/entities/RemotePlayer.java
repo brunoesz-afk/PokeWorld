@@ -124,7 +124,7 @@ public class RemotePlayer {
             if (petSprite != null) {
                 int r = 56;
                 canvas.drawOval((float) petX - 25, (float) petY + 10, (float) petX + 25, (float) petY + 25, shadowPaint);
-                canvas.drawBitmap(petSprite, null, new Rect((int) petX - r, (int) petY - r, (int) petX + r, (int) petY + r), null);
+                canvas.drawBitmap(petSprite, null, SpeciesSize.box(petX, petY, r, petSpecies), null);
                 drawNameTag(canvas, petSpecies, (float) petX, (float) petY - r - 15, false);
             }
         }

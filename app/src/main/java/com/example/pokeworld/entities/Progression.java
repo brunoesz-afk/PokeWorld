@@ -20,6 +20,9 @@ public final class Progression {
      * Chance de capturar um Pokémon derrotado. Nível alto do alvo, chefes e shiny dificultam;
      * o nível do seu companheiro e o talento Domador ajudam.
      */
+    /** Nível com que um Pokémon capturado entra na conta: metade do nível do selvagem (mín. 1). 42 -> 21, 41 -> 20. */
+    public static int capturedLevel(int wildLevel) { return Math.max(1, wildLevel / 2); }
+
     public static double captureChance(int targetLevel, boolean boss, boolean shiny, int myLevel, double domadorBonus) {
         double c = 0.60 - 0.01 * targetLevel + 0.004 * myLevel + domadorBonus + com.example.pokeworld.managers.EventCalendar.captureBonus();
         if (boss) c -= 0.30;

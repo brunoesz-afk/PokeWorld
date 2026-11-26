@@ -304,9 +304,9 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         paint.setStyle(Paint.Style.FILL);
     }
 
-    private void shadow(Canvas canvas, float cx, float feetY) {
+    private void shadow(Canvas canvas, float cx, float feetY, float size) {
         paint.setStyle(Paint.Style.FILL); paint.setColor(Color.argb(90, 0, 0, 0));
-        canvas.drawOval(new RectF(cx - PK * 0.38f, feetY - PK * 0.07f, cx + PK * 0.38f, feetY + PK * 0.07f), paint);
+        canvas.drawOval(new RectF(cx - size * 0.38f, feetY - size * 0.07f, cx + size * 0.38f, feetY + size * 0.07f), paint);
     }
 
     @Override
@@ -350,8 +350,9 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
             if (u != null && u.alive() && !ballInFlight(true, now)) {
                 float lunge = Math.max(0, 1 - (now - foeLunge) / 220f) * 30;
                 float shake = duel.foe.hurtFlash > 0 ? (float) Math.sin(now / 22.0) * 7 : 0;
-                shadow(canvas, foeX + shake, foeY + lunge);
-                ArenaUI.sprite(canvas, paint, u.species, u.shiny, 0, frame, foeX + shake, foeY + lunge, PK);
+                float fs = PK * (float) com.example.pokeworld.entities.SpeciesSize.softScale(u.species);   // tamanho pela altura da espécie
+                shadow(canvas, foeX + shake, foeY + lunge, fs);
+                ArenaUI.sprite(canvas, paint, u.species, u.shiny, 0, frame, foeX + shake, foeY + lunge, fs);
             }
         }
         // o seu Pokémon (aparece quando a bola chega)
@@ -360,8 +361,9 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         if (mu != null && mu.alive() && visible && !ballInFlight(false, now)) {
             float lunge = Math.max(0, 1 - (now - meLunge) / 220f) * 30;
             float shake = duel.me.hurtFlash > 0 ? (float) Math.sin(now / 22.0) * 7 : 0;
-            shadow(canvas, meX + shake, meY - lunge);
-            ArenaUI.sprite(canvas, paint, mu.species, mu.shiny, 2, frame, meX + shake, meY - lunge, PK);
+            float ms = PK * (float) com.example.pokeworld.entities.SpeciesSize.softScale(mu.species);
+            shadow(canvas, meX + shake, meY - lunge, ms);
+            ArenaUI.sprite(canvas, paint, mu.species, mu.shiny, 2, frame, meX + shake, meY - lunge, ms);
         }
         drawBalls(canvas, now);
         // textos flutuantes (dano, crítico, efetividade)

@@ -362,7 +362,8 @@ public class Enemy {
                 p.setColor(Color.YELLOW); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(5);
                 canvas.drawCircle((float)positionX, (float)positionY, (float)radius * 1.5f + 10, p);
             }
-            canvas.drawBitmap(sprite, null, new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r), null);
+            Rect box = isBoss ? new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r) : SpeciesSize.box(positionX, positionY, r, name);
+            canvas.drawBitmap(sprite, null, box, null);
             drawName(canvas);
             drawHealthBar(canvas);
         }

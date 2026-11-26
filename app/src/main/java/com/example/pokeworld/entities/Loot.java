@@ -83,7 +83,7 @@ public class Loot {
             
             if (deathSprite != null) {
                 int r = (int)radius;
-                canvas.drawBitmap(deathSprite, null, new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r), null);
+                canvas.drawBitmap(deathSprite, null, ownerBoss ? new Rect((int)positionX - r, (int)positionY - r, (int)positionX + r, (int)positionY + r) : SpeciesSize.box(positionX, positionY, r, ownerSpecies), null);
             }
             
             // Brilho Shiny se for o caso

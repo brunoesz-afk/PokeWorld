@@ -56,10 +56,11 @@ public class CombatManager {
             int gender = random.nextDouble() < 0.5 ? 0 : 1;
             // Mantém o estado Shiny do corpo original
             gv.player.addCreatureToCollection(target.getName(), target.isShiny(), rarity, gender); 
+            PartyManager.onCaptured(gv, target.getName(), target.getOwnerLevel(), target.isShiny(), rarity, gender);   // vem com metade do nível
             gv.bestiary.markAsCaptured(target.getName());
             gv.world.loots.remove(target);
             SoundManager.play("capture");
-            gv.ui.showMessage("✨ " + target.getName() + " CAPTURADO!");
+            gv.ui.showMessage("✨ " + target.getName() + " CAPTURADO! (Nv. " + target.getOwnerLevel() + " → Nv. " + PartyManager.capturedLevel(target.getOwnerLevel()) + ")");
             gv.missions.count(com.example.pokeworld.managers.MissionManager.Metric.CAPTURES);
             if (gv.tutorial != null) gv.tutorial.onTutorialRattataCaptured();
             gv.particles.addExplosion(target.getPositionX(), target.getPositionY(), android.graphics.Color.GREEN, 40);
