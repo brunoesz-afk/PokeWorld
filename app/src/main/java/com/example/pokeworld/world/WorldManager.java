@@ -113,17 +113,26 @@ public class WorldManager {
 
     public void loadMap(String name, Player p, Companion c) { loadMap(name, p, c, "CENTER"); }
 
+    /** Sala especial ativa (a Arena de duelos): desenha no mundo e manda na câmera. Some ao trocar de mapa. */
+    public RoomOverlay roomOverlay = null;
+    public String getMapName() { return tileMap != null ? tileMap.getMapName() : ""; }
+
     public void loadMap(String name, Player p, Companion c, String side) {
+        roomOverlay = null;
         enemies.clear(); npcs.clear(); loots.clear(); buildings.clear(); zones = null;
         int r = 50, col = 100;
         if (name.equals("HOME")) { r = BaseLayout.MAP_ROWS; col = BaseLayout.MAP_COLS; }
         else if (name.equals("TOWER")) { r = 25; col = 25; }
+        else if (name.equals(ArenaLayout.MAP)) { r = ArenaLayout.ROWS; col = ArenaLayout.COLS; }
         if (defense != null) defense.abort();
         tileMap = new TileMap(name, r, col);
         base = null; defense = null; defenseHost = null; baseNpcs.clear(); wasBuilding = false;
         if (name.equals("HOME")) setupBase(r, col);
-        targetZoom = 1.3f; 
-        currentZoom = 1.3f;
+        targetZoom = name.equals(ArenaLayout.MAP) ? 1.0f : 1.3f;
+        currentZoom = targetZoom;
+        if (name.equals(ArenaLayout.MAP)) tileMap.setBlocker(new MovementBlocker() {
+            @Override public boolean blocks(double x, double y) { return ArenaLayout.playerBlocked(x, y); }
+        });
         setMapDark(name.contains("CAVE") || name.contains("MINE") || name.equals("SEWERS") || name.equals("DUNGEON"));
         setupPlayerSpawn(p, c, side);
         spawnEntitiesForMap(name, p);
@@ -136,6 +145,7 @@ public class WorldManager {
         double sx = TileMap.TILE_SIZE * (cols/2.0), sy = TileMap.TILE_SIZE * (rows/2.0);
         if (tileMap.getMapName().equals("HOME")) { sx = TileMap.TILE_SIZE * (BaseLayout.GATE_X0 + BaseLayout.GATE_X1 + 1) / 2.0; sy = TileMap.TILE_SIZE * (BaseLayout.RING_B + 0.5); }
         else if (tileMap.getMapName().equals("TOWER")) { sx = TileMap.TILE_SIZE * (cols / 2.0); sy = TileMap.TILE_SIZE * (rows - 4.0); }
+        else if (tileMap.getMapName().equals(ArenaLayout.MAP)) { sx = ArenaLayout.spawnX(); sy = ArenaLayout.spawnY(); }
         else if (side.equals("TOP")) sy = TileMap.TILE_SIZE * 1.5;
         else if (side.equals("BOTTOM")) sy = TileMap.TILE_SIZE * (rows - 1.5);
         else if (side.equals("LEFT")) sx = TileMap.TILE_SIZE * 1.5;
@@ -617,6 +627,10 @@ public class WorldManager {
             if (base != null) base.setEditing(building);
         }
         double focusX = building ? buildCamX : p.getPositionX(), focusY = building ? buildCamY : p.getPositionY();
+        if (roomOverlay != null) {                       // sala especial (Arena): a câmera mostra a arena inteira
+            double[] f = roomOverlay.focus(p);
+            if (f != null) { focusX = f[0]; focusY = f[1]; targetZoom = (float) f[2]; currentZoom = targetZoom; }
+        }
 
         cameraX = (float) focusX - (sw / 2f) / currentZoom;
         cameraY = (float) focusY - (sh / 2f) / currentZoom;
@@ -632,6 +646,7 @@ public class WorldManager {
         boolean inCity = tileMap != null && "CITY".equals(tileMap.getMapName());
         if (inCity) CityDistricts.drawGround(canvas, vl, vt, vr, vb);
         if (base != null) base.drawWorld(canvas, nowMs, vl, vt, vr, vb);
+        if (roomOverlay != null) roomOverlay.drawWorld(canvas, nowMs);
         for (Building b : buildings) b.draw(canvas, p);
         for (NPC n : npcs) n.draw(canvas);
         if (inCity) CityDistricts.drawLabels(canvas, vl, vt, vr, vb);
@@ -646,7 +661,7 @@ public class WorldManager {
             }
         }
 
-        p.draw(canvas, c); if (!p.isMounted()) c.draw(canvas);
+        p.draw(canvas, c); if (!p.isMounted() && roomOverlay == null) c.draw(canvas);
         if (base != null) {
             base.drawOverlay(canvas, nowMs, vl, vt, vr, vb);
             if (defense != null) defense.draw(canvas, nowMs);

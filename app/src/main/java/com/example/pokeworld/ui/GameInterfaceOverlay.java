@@ -46,6 +46,9 @@ public class GameInterfaceOverlay extends View {
                 !gameView.fishing.isFishing) {
                 gameView.input.joystick.draw(canvas);
             }
+            else if (gameView.ui.state == UIManager.UIState.ARENA_BATTLE) {
+                gameView.input.joystick.draw(canvas);   // sala da Arena: você anda pelo mapa
+            }
             
             // Força o redesenho sincronizado com VSYNC para máximo desempenho sem travar a CPU
             postInvalidateOnAnimation();

@@ -111,8 +111,8 @@ public final class ArenaDuel {
         phase = Phase.COUNTDOWN; countdown = COUNTDOWN_MS;
     }
 
-    /** Desistir no meio da luta conta como derrota. */
-    public void forfeit() { if (phase == Phase.FIGHT || phase == Phase.COUNTDOWN) finish(false); }
+    /** Desistir depois do PRONTO (esperando, na contagem ou no meio da luta) conta como derrota. */
+    public void forfeit() { if (phase == Phase.FIGHT || phase == Phase.COUNTDOWN || (phase == Phase.PREP && meReady)) finish(false); }
 
     /** Troca o Pokémon ativo do jogador. Vale na preparação (livre) e na luta (recarga de 5 s). */
     public boolean swap(int idx) {

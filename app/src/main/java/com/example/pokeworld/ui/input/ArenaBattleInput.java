@@ -5,31 +5,11 @@ import com.example.pokeworld.managers.ArenaDuel;
 import com.example.pokeworld.ui.UIManager;
 import com.example.pokeworld.ui.handlers.ArenaBattleUI;
 
-/** Toques do duelo: escolher time, posicionar no mapa e PRONTO na preparação; trocar de Pokémon durante a luta. */
+/**
+ * Toques da sala da Arena (o joystick é tratado pelo InputHandler): cartões e PRONTO no preparo, lançar o Pokémon
+ * tocando na sua metade da arena, trocar de Pokémon na luta e CONTINUAR no resultado.
+ */
 public class ArenaBattleInput implements InputExtension {
-    private boolean walking = false;
-
-    /** Arrastar o dedo dentro do retângulo do treinador faz o seu personagem andar (livre, sempre dentro do limite). */
-    @Override
-    public boolean handleEvent(android.view.MotionEvent e, GameView gv) {
-        ArenaBattleUI ui = (ArenaBattleUI) gv.ui.getHandler(UIManager.UIState.ARENA_BATTLE);
-        if (ui == null || ui.duel == null) return false;
-        int a = e.getActionMasked();
-        float x = e.getX(e.getActionIndex()), y = e.getY(e.getActionIndex());
-        if (a == android.view.MotionEvent.ACTION_DOWN || a == android.view.MotionEvent.ACTION_POINTER_DOWN) {
-            if (ui.meBox.contains(x, y)) { walking = true; ui.walkTo(x, y); return true; }
-            walking = false;
-            return false;
-        }
-        if (a == android.view.MotionEvent.ACTION_MOVE && walking) {
-            int i = e.getActionIndex();
-            ui.walkTo(e.getX(i), e.getY(i));
-            return true;
-        }
-        if ((a == android.view.MotionEvent.ACTION_UP || a == android.view.MotionEvent.ACTION_POINTER_UP) && walking) { walking = false; return true; }
-        return false;
-    }
-
     @Override
     public boolean handle(float x, float y, GameView gv) {
         ArenaBattleUI ui = (ArenaBattleUI) gv.ui.getHandler(UIManager.UIState.ARENA_BATTLE);
@@ -47,7 +27,7 @@ public class ArenaBattleInput implements InputExtension {
                 }
                 for (int i = 0; i < ui.cards.length && i < ui.roster.size(); i++)
                     if (ui.cards[i].contains(x, y)) { if (d.meReady) gv.ui.showMessage("Você já está PRONTO."); else ui.togglePick(i); return true; }
-                ui.tapField(x, y, gv);      // posicionar o inicial atrás da sua linha
+                if (gv.world != null) ui.tapWorld((float) gv.world.screenToWorldX(x), (float) gv.world.screenToWorldY(y));   // lançar o Pokémon
                 return true;
             case FIGHT:
                 for (int i = 0; i < ui.cards.length && i < d.me.team.size(); i++) {

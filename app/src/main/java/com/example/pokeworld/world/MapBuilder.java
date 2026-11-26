@@ -33,6 +33,7 @@ public final class MapBuilder {
             case "CITY": return city(rows, cols);
             case "HOME": return home(rows, cols);
             case "TOWER": return tower(rows, cols);
+            case "DUEL_ARENA": return duelArena(rows, cols);
             case "DUNGEON": return dungeonRoom(rows, cols);
             case "SMALL_LAKE": return smallLake(rows, cols);
             case "ROCKY_PATH": return rockyPath(rows, cols);
@@ -447,6 +448,27 @@ public final class MapBuilder {
         for (int r = 3; r < rows - 3; r += 4) { b.set(r, 1, PILLAR); b.set(r, cols - 2, PILLAR); }
         b.set(1, 2, BRAZIER); b.set(1, cols - 3, BRAZIER);
         b.set(rows - 1, cols / 2, PORTAL);
+        return b.g;
+    }
+
+    // ------------------------------------------------------------------
+    // ARENA DE DUELOS: arena quadrada com a linha no meio; retângulo do oponente em cima e o seu embaixo
+    // ------------------------------------------------------------------
+    private static int[][] duelArena(int rows, int cols) {
+        final int AR0 = ArenaLayout.AR0, AR1 = ArenaLayout.AR1, AC0 = ArenaLayout.AC0, AC1 = ArenaLayout.AC1;
+        MapBuilder b = new MapBuilder(rows, cols, 4001);
+        b.fill(FLOOR);
+        b.frame(0, 0, rows - 1, cols - 1, 1, BRICK);
+        b.rect(ArenaLayout.FOE_R0, AC0, ArenaLayout.FOE_R1, AC1, STONE_PAVEMENT);      // retângulo do oponente
+        b.rect(ArenaLayout.ME_R0, AC0, ArenaLayout.ME_R1, AC1, STONE_PAVEMENT);        // o seu retângulo
+        b.rect(AR0, AC0, AR1, AC1, GRASS);                                             // arena
+        b.rect(ArenaLayout.LINE_ROW, AC0, ArenaLayout.LINE_ROW, AC1, CARPET);          // a linha do meio
+        for (int c = AC0; c <= AC1; c++) {
+            b.set(ArenaLayout.RAIL_FOE_ROW, c, PILLAR);
+            if (c < ArenaLayout.GATE_C0 || c > ArenaLayout.GATE_C1) b.set(ArenaLayout.RAIL_ME_ROW, c, PILLAR);   // portão no meio
+        }
+        b.set(AR0, AC0 - 1, BRAZIER); b.set(AR0, AC1 + 1, BRAZIER);
+        b.set(AR1, AC0 - 1, BRAZIER); b.set(AR1, AC1 + 1, BRAZIER);
         return b.g;
     }
 

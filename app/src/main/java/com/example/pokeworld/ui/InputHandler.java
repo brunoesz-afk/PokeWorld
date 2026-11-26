@@ -117,7 +117,7 @@ public class InputHandler {
                     return true;
                 }
 
-                if (gv.ui.state == UIManager.UIState.EXPLORING) {
+                if (gv.ui.state == UIManager.UIState.EXPLORING || gv.ui.state == UIManager.UIState.ARENA_BATTLE) {
                     if (joystick.isPressed(x, y) && !gv.fishing.isSelectingFishingSpot && joystickPointerId == -1) {
                         joystickPointerId = event.getPointerId(pointerIndex);
                         joystick.setIsPressed(true);

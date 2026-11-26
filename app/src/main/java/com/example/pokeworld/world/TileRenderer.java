@@ -1464,6 +1464,7 @@ public final class TileRenderer {
                     t.cliffLip = 0xFF5aa83a;
                     break;
                 case "TOWER":
+                case "DUEL_ARENA":
                     t.defaultGround = FLOOR; t.cobbleRoad = true;
                     t.floor = 0xFF86838e; t.floorDark = 0xFF54525e;
                     t.wallTop = 0xFF9c98a6; t.wallFace = 0xFF6e6a7a; t.wallFaceDark = 0xFF46424f; t.mortar = 0xFF2e2b36;

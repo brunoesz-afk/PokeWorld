@@ -175,6 +175,16 @@ public class GameView {
             lastAutoSaveTime = System.currentTimeMillis();
         }
 
+        if (ui.state == UIManager.UIState.ARENA_BATTLE) {
+            // Sala da Arena: você anda com o joystick (atrás da linha) enquanto o duelo roda sozinho
+            input.joystick.update();
+            player.update(input.joystick, world, false, false, false, particles, companion.getSpecies(), companion.getPlayerSpeedMultiplier());
+            com.example.pokeworld.ui.handlers.ArenaBattleUI arenaRoom = (com.example.pokeworld.ui.handlers.ArenaBattleUI) ui.getHandler(UIManager.UIState.ARENA_BATTLE);
+            if (arenaRoom != null) arenaRoom.update(this);
+            effects.update();
+            particles.update();
+        }
+
         if (ui.state == UIManager.UIState.EXPLORING && !ui.isDialogueActive) {
             input.joystick.update();
             
