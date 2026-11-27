@@ -71,6 +71,7 @@ public class WorldManager {
     public int getCaptureChain() { return captureChain; }
 
     public static int getBiomeBaseLevel(String biome) {
+        if (MapVariants.isVariant(biome)) return getBiomeBaseLevel(MapVariants.base(biome)) + 1;   // a cópia é um pouco mais forte
         switch (biome) {
             case "FOREST": return 1;
             case "SEWERS": return 2;
@@ -135,7 +136,8 @@ public class WorldManager {
         if (name.equals(ArenaLayout.MAP)) tileMap.setBlocker(new MovementBlocker() {
             @Override public boolean blocks(double x, double y) { return ArenaLayout.playerBlocked(x, y); }
         });
-        setMapDark(name.contains("CAVE") || name.contains("MINE") || name.equals("SEWERS") || name.equals("DUNGEON"));
+        final String baseName = MapVariants.base(name);
+        setMapDark(baseName.contains("CAVE") || baseName.contains("MINE") || baseName.equals("SEWERS") || baseName.equals("DUNGEON"));
         setupPlayerSpawn(p, c, side);
         spawnEntitiesForMap(name, p);
         c.setPosition(p.getPositionX() - 50, p.getPositionY());
@@ -157,7 +159,7 @@ public class WorldManager {
 
     private void spawnEntitiesForMap(String name, Player p) {
         zones = null;
-        switch (name) {
+        switch (MapVariants.base(name)) {
             case "CITY": spawnCityEntities(); break;
             case "HOME": spawnHome(p); break;
             case "FOREST": case "JUNGLE": case "SMALL_LAKE": case "RIO": case "OCEAN": case "ROCKY_PATH": case "MINE":
@@ -433,7 +435,8 @@ public class WorldManager {
     }
 
     /** Mapas selvagens (para a Pokédex mostrar onde cada espécie aparece). */
-    public static final String[] WILD_MAPS = {"FOREST", "JUNGLE", "SMALL_LAKE", "RIO", "OCEAN", "ROCKY_PATH", "MINE", "VALE_ROCHOSO", "FIRE_CAVE", "MAGMA_CAVE", "VOLCANO", "SEWERS", "SWAMP", "SNOW_MOUNTAIN", "DESERT", "FEAR_ISLAND", "MOLTEN_SANCTUM_BEGINNER", "MOLTEN_SANCTUM"};
+    public static final String[] WILD_MAPS = {"FOREST", "JUNGLE", "SMALL_LAKE", "RIO", "OCEAN", "ROCKY_PATH", "MINE", "VALE_ROCHOSO", "FIRE_CAVE", "MAGMA_CAVE", "VOLCANO", "SEWERS", "SWAMP", "SNOW_MOUNTAIN", "DESERT", "FEAR_ISLAND", "MOLTEN_SANCTUM_BEGINNER", "MOLTEN_SANCTUM",
+            "FOREST#2", "SEWERS#2", "ROCKY_PATH#2", "SMALL_LAKE#2", "FIRE_CAVE#2", "JUNGLE#2", "MINE#2", "RIO#2", "MAGMA_CAVE#2", "SWAMP#2", "OCEAN#2", "DESERT#2", "VOLCANO#2", "SNOW_MOUNTAIN#2"};
 
     public static String mapLabel(String map) {
         switch (map) {
@@ -443,36 +446,56 @@ public class WorldManager {
             case "MAGMA_CAVE": return "Caverna de Magma"; case "VOLCANO": return "Vulcão"; case "SEWERS": return "Esgoto";
             case "SWAMP": return "Pântano"; case "SNOW_MOUNTAIN": return "Montanha Nevada"; case "DESERT": return "Deserto";
             case "FEAR_ISLAND": return "Ilha do Medo"; case "MOLTEN_SANCTUM_BEGINNER": return "Santuário (Iniciante)";
-            case "MOLTEN_SANCTUM": return "Santuário de Magma"; default: return map;
+            case "MOLTEN_SANCTUM": return "Santuário de Magma";
+            case "FOREST#2": return "Bosque Encantado"; case "SEWERS#2": return "Esgoto Profundo"; case "ROCKY_PATH#2": return "Trilha dos Mineiros";
+            case "SMALL_LAKE#2": return "Riacho Cristalino"; case "FIRE_CAVE#2": return "Gruta Ardente"; case "JUNGLE#2": return "Selva Profunda";
+            case "MINE#2": return "Minas Abandonadas"; case "RIO#2": return "Delta do Rio"; case "MAGMA_CAVE#2": return "Câmara de Magma";
+            case "SWAMP#2": return "Brejo Maldito"; case "OCEAN#2": return "Mar Aberto"; case "DESERT#2": return "Dunas Ardentes";
+            case "VOLCANO#2": return "Cratera Vulcânica"; case "SNOW_MOUNTAIN#2": return "Geleira";
+            default: return map;
         }
     }
 
     public static String[] getSpeciesForMap(String name) {
         switch (name) {
-            case "FOREST": return new String[]{"Bulbasaur", "Caterpie", "Metapod", "Butterfree", "Weedle", "Kakuna", "Pidgey", "Pidgeotto", "Oddish", "Bellsprout", "Rattata", "Meowth", "Spearow"};
+            case "FOREST": return new String[]{"Bulbasaur", "Caterpie", "Metapod", "Butterfree", "Weedle", "Kakuna", "Pidgey", "Pidgeotto", "Oddish", "Bellsprout", "Rattata", "Meowth", "Spearow", "Pichu", "Pikachu", "Nidoranf", "Nidoranm", "Paras", "Venonat", "Mankey", "Ekans"};
             case "JUNGLE": return new String[]{"Ivysaur", "Venusaur", "Gloom", "Vileplume", "Weepinbell", "Victreebel", "Pinsir", "Scyther", "Beedril", "Paras", "Parasect", "Tangela", "Venonat", "Venomoth"};
-            case "SMALL_LAKE": return new String[]{"Squirtle", "Poliwag", "Poliwhirl", "Psyduck", "Slowpoke", "Magikarp"};
+            case "SMALL_LAKE": return new String[]{"Squirtle", "Poliwag", "Poliwhirl", "Psyduck", "Slowpoke", "Magikarp", "Tentacool", "Oddish"};
             case "RIO": return new String[]{"Wartortle", "Golduck", "Slowpoke", "Slowking", "Poliwhirl", "Tentacool", "Magikarp"};
             case "OCEAN": return new String[]{"Blastoise", "Vaporeon", "Lapras", "Gyarados", "Tentacruel", "Poliwrath"};
-            case "ROCKY_PATH": return new String[]{"Sandshrew", "Sandslash", "Diglett", "Dugtrio", "Mankey", "Primeape", "Nidoranf", "Nidoranm", "Nidorina", "Nidorino"};
+            case "ROCKY_PATH": return new String[]{"Sandshrew", "Sandslash", "Diglett", "Dugtrio", "Mankey", "Primeape", "Nidoranf", "Nidoranm", "Nidorina", "Nidorino", "Machop", "Abra", "Meowth"};
             case "MINE": return new String[]{"Onix", "Machop", "Rhydon", "Diglett", "Dugtrio", "Zubat", "Golbat"};
             case "VALE_ROCHOSO": return new String[]{"Abra", "Kadabra", "Alakazam", "Spearow", "Fearow", "Pidgeot", "Clefairy", "Clefable", "Jigglypuff", "Wigglytuff"};
-            case "FIRE_CAVE": return new String[]{"Charmander", "Vulpix", "Ponyta", "Growlithe", "Flareon", "Houndour"};
+            case "FIRE_CAVE": return new String[]{"Charmander", "Vulpix", "Ponyta", "Growlithe", "Flareon", "Houndour", "Zubat", "Machop"};
             case "MAGMA_CAVE": return new String[]{"Charmeleon", "Magmar", "Rapidash", "Arcanine", "Ninetales"};
             case "VOLCANO": return new String[]{"Charizard", "Magmar", "Rapidash", "Arcanine", "Flareon", "Aerodactyl"};
-            case "SEWERS": return new String[]{"Rattata", "Raticate", "Ekans", "Arbok", "Grimer", "Muk", "Koffing", "Weezing", "Zubat"};
+            case "SEWERS": return new String[]{"Rattata", "Raticate", "Ekans", "Arbok", "Grimer", "Muk", "Koffing", "Weezing", "Zubat", "Meowth", "Gastly"};
             case "SWAMP": return new String[]{"Arbok", "Weezing", "Muk", "Nidoking", "Nidoqueen", "Gloom", "Victreebel"};
             case "SNOW_MOUNTAIN": return new String[]{"Piloswine", "Cloyster", "Lapras", "Jynx"};
             case "DESERT": return new String[]{"Sandshrew", "Sandslash", "Vulpix", "Ninetales", "Ponyta"};
             case "FEAR_ISLAND": return new String[]{"Gastly", "Haunter", "Gengar", "Golbat", "Arbok", "Muk"};
             case "MOLTEN_SANCTUM_BEGINNER": return new String[]{"Charmander", "Vulpix", "Ponyta", "Growlithe", "Houndour"};
             case "MOLTEN_SANCTUM": return new String[]{"Magmar", "Rapidash", "Arcanine", "Flareon", "Houndoom", "Charizard"};
+            case "FOREST#2": return new String[]{"Pichu", "Pikachu", "Nidoranf", "Nidoranm", "Jigglypuff", "Oddish", "Bellsprout", "Paras", "Venonat", "Mankey", "Metapod", "Kakuna"};
+            case "SEWERS#2": return new String[]{"Grimer", "Koffing", "Zubat", "Ekans", "Rattata", "Raticate", "Meowth", "Gastly"};
+            case "ROCKY_PATH#2": return new String[]{"Machop", "Diglett", "Abra", "Mankey", "Sandslash", "Meowth", "Zubat", "Nidorino", "Nidorina"};
+            case "SMALL_LAKE#2": return new String[]{"Poliwag", "Psyduck", "Magikarp", "Tentacool", "Slowpoke", "Squirtle", "Poliwhirl"};
+            case "FIRE_CAVE#2": return new String[]{"Charmander", "Growlithe", "Vulpix", "Houndour", "Ponyta", "Zubat", "Machop"};
+            case "JUNGLE#2": return new String[]{"Scyther", "Pinsir", "Venonat", "Venomoth", "Paras", "Parasect", "Gloom", "Oddish", "Beedril", "Kakuna", "Tauros"};
+            case "MINE#2": return new String[]{"Onix", "Machop", "Rhydon", "Golbat", "Zubat", "Diglett", "Dugtrio", "Mankey", "Primeape"};
+            case "RIO#2": return new String[]{"Golduck", "Psyduck", "Wartortle", "Poliwhirl", "Slowpoke", "Slowking", "Tentacool", "Tentacruel", "Magikarp"};
+            case "MAGMA_CAVE#2": return new String[]{"Magmar", "Rapidash", "Ponyta", "Arcanine", "Growlithe", "Ninetales", "Charmeleon", "Houndour"};
+            case "SWAMP#2": return new String[]{"Muk", "Weezing", "Arbok", "Nidoking", "Nidoqueen", "Gloom", "Gastly", "Haunter", "Venomoth"};
+            case "OCEAN#2": return new String[]{"Gyarados", "Tentacruel", "Vaporeon", "Blastoise", "Golduck", "Slowking", "Poliwhirl", "Magikarp"};
+            case "DESERT#2": return new String[]{"Sandslash", "Diglett", "Dugtrio", "Ninetales", "Rapidash", "Persian", "Primeape", "Tauros"};
+            case "VOLCANO#2": return new String[]{"Charizard", "Magmar", "Rapidash", "Arcanine", "Ninetales", "Aerodactyl", "Houndour"};
+            case "SNOW_MOUNTAIN#2": return new String[]{"Wigglytuff", "Alakazam", "Kadabra", "Persian", "Primeape", "Golbat", "Rhydon"};
             default: return new String[]{"Pikachu", "Rattata", "Pidgey"};
         }
     }
 
     private int getBiomeColor(String biome) {
-        switch (biome) {
+        switch (MapVariants.base(biome)) {
             case "FOREST": case "JUNGLE": return Color.GREEN;
             case "SMALL_LAKE": case "RIO": case "OCEAN": return Color.BLUE;
             case "ROCKY_PATH": case "MINE": return Color.GRAY;

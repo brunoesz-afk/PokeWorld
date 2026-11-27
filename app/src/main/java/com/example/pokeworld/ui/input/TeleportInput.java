@@ -14,7 +14,7 @@ public class TeleportInput implements InputExtension {
             return true;
         }
 
-        if (ui.nextBtn.contains(x, y) && ui.currentPage < 3) {
+        if (ui.nextBtn.contains(x, y) && ui.currentPage < TeleportUI.PAGE_COUNT - 1) {
             ui.currentPage++;
             return true;
         }

@@ -206,7 +206,7 @@ public class GameView {
             } else if (weatherType.equals("RAIN")) {
                 // Diminui velocidade na chuva
                 player.applySpeedDebuff(0.8f); 
-            } else if (weatherType.equals("SNOW") && world.tileMap.getMapName().equals("SNOW_MOUNTAIN")) {
+            } else if (weatherType.equals("SNOW") && com.example.pokeworld.world.MapVariants.base(world.tileMap.getMapName()).equals("SNOW_MOUNTAIN")) {
                 if (!player.getInventory().containsKey("Capa Térmica")) {
                     if (System.currentTimeMillis() % 1000 < 50) {
                         player.takeDamage(5);
@@ -239,7 +239,7 @@ public class GameView {
             particles.update();
             
             // Efeitos de Bioma
-            String map = world.tileMap.getMapName();
+            String map = com.example.pokeworld.world.MapVariants.base(world.tileMap.getMapName());
             if (map.equals("FOREST")) particles.addBiomeEffect("LEAVES", getWidth(), getHeight());
             else if (map.equals("VOLCANO")) particles.addBiomeEffect("EMBER", getWidth(), getHeight());
 

@@ -155,7 +155,7 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
     public void throwInFront(boolean animate) {
         double px = gv != null ? gv.player.getPositionX() : ArenaLayout.centerX();
         double py = gv != null ? gv.player.getPositionY() : ArenaLayout.spawnY();
-        float minY = (float) ArenaLayout.lineY() + PK * 0.62f + 8, maxY = (float) ArenaLayout.bottom() - 6;
+        float minY = (float) ArenaLayout.lineY() + PK * 0.86f + 8, maxY = (float) ArenaLayout.bottom() - 6;
         float y = maxY - (maxY - minY) * (float) ArenaLayout.forward(py);
         throwAt((float) px, y, animate);
     }
@@ -183,7 +183,7 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
 
     /** Guarda o ponto do lançamento (limitado à sua metade) e solta uma bola do treinador até lá. */
     public void throwAt(float x, float y, boolean animate) {
-        float minY = (float) ArenaLayout.lineY() + PK * 0.62f + 8, maxY = (float) ArenaLayout.bottom() - 6;
+        float minY = (float) ArenaLayout.lineY() + PK * 0.86f + 8, maxY = (float) ArenaLayout.bottom() - 6;
         placeY = Math.max(minY, Math.min(maxY, y));
         placeX = Math.max((float) ArenaLayout.left() + PK * 0.5f, Math.min((float) ArenaLayout.right() - PK * 0.5f, x));
         thrown = true;
@@ -288,8 +288,9 @@ public class ArenaBattleUI extends BaseUI implements RoomOverlay {
         float L = (float) ArenaLayout.left(), W = (float) ArenaLayout.width(), T = (float) ArenaLayout.top(), line = (float) ArenaLayout.lineY();
         float cx = (float) ArenaLayout.centerX();
         float foeStartX = L + W * foePlaceX, foeStartY = T + (line - T) * 0.80f;
-        float fx = cx + W * 0.06f, fy = line - PK * 0.05f;
-        float mx = cx - W * 0.06f, my = line + PK * 0.62f;
+        // um espaço entre os dois: o oponente fica mais para cima/lado e o seu mais para baixo, sem um pisar no outro
+        float fx = cx + W * 0.11f, fy = line - PK * 0.40f;
+        float mx = cx - W * 0.11f, my = line + PK * 0.86f;
         float p = 0;
         if (duel.phase == ArenaDuel.Phase.FIGHT || duel.phase == ArenaDuel.Phase.RESULT)
             p = fightT0 == 0 ? 0 : Math.min(1f, (now - fightT0) / 1200f);

@@ -190,6 +190,9 @@ public class ExploringInput implements InputExtension {
                 gv.tutorial.onCompassClicked();
                 return true;
             }
+            // abre a página dos mapas do seu nível (dá para voltar às páginas dos níveis menores)
+            ((com.example.pokeworld.ui.handlers.TeleportUI) gv.ui.getHandler(UIManager.UIState.TELEPORT)).currentPage =
+                    com.example.pokeworld.ui.handlers.TeleportUI.pageForLevel(gv.player.getLevel());
             gv.ui.state = UIManager.UIState.TELEPORT;
             return true;
         }

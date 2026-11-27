@@ -40,8 +40,10 @@ public class TileMap {
         } else {
             // Todos os outros mapas são desenhados com composição fixa (MapBuilder)
             // e renderizados com tiles que se conectam (TileRenderer).
-            this.mapData = MapBuilder.build(type, rows, cols);
-            this.renderer = new TileRenderer(type, mapData, new TileRenderer.Sprites() {
+            final String base = MapVariants.base(type);          // "FOREST#2" desenha como FOREST, só que espelhado
+            this.mapData = MapBuilder.build(base, rows, cols);
+            if (MapVariants.isVariant(type)) MapVariants.mirror(this.mapData);
+            this.renderer = new TileRenderer(base, mapData, new TileRenderer.Sprites() {
                 @Override public Bitmap get(int key) { return SpriteManager.getInstance().getTileSprite(key); }
             });
         }

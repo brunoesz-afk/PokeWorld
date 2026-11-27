@@ -47,7 +47,7 @@ public class SpriteManager {
                 "squirtle_shiny", "wartortle_shiny", "butterfree", "squirtle_jatodeagua", "squirtle_shiny_jatodeagua", "pokebola",
                 "pidgeot_voar", "blastoise_nadar", "lapras_nadar", "charizard_voar", "raiquaza_voar",
                 "arcanine", "flareon", "vaporeon", "jolteon", "growlithe","growlithe_shiny", "houndour", "rattata", "rattata_shiny","raticate", "pichu", "zapdos",
-                "mega_charizard_x", "mega_charizard_y", "enfermeira", "mega_venusaur", "tauros", "pinsir", "slowpoke","slowking", "golduck", "vulpix", "ninetales", "rapidash", "gyarados", "muk", "weezing", "scyther",
+                "mega_charizard_x", "mega_charizard_y", "enfermeira", "mega_venusaur", "tauros", "pinsir", "slowpoke","slowking", "golduck", "vulpix", "ninetales", "rapidash", "gyardos", "gyardos_shiny", "clefary", "psiduck", "metapod", "muk", "weezing", "scyther",
                 "prof_oficina", "prof_daycare", "prof_laboratorio", "prof_montaria", "prof_bau", "prof_ginasio", "prof_mural", "prof_academia","beedril",
                 "treinador_laboratorio", "treinador_montaria", "treinador_daycare", "treinador_pokebola", "treinador_academia"
             };
@@ -260,6 +260,8 @@ public class SpriteManager {
                 .replace(" ", "_");
         if (normalized.equals("mega_venusaur")) return "mega_venusaur";
         if (normalized.contains("venusaur")) normalized = normalized.replace("venusaur", "venosaur");
+        // os arquivos de imagem têm o nome escrito diferente do da espécie
+        normalized = normalized.replace("gyarados", "gyardos").replace("clefairy", "clefary").replace("psyduck", "psiduck");
         return normalized;
     }
 
