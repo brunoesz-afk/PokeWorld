@@ -110,6 +110,7 @@ public class ExploringInput implements InputExtension {
 
     private boolean handleButtons(float x, float y, GameView gv) {
         ExploringUI ui = (ExploringUI) gv.ui.getHandler(UIManager.UIState.EXPLORING);
+        if (ui.social.handle(x, y, gv)) return true;      // convite, menu de jogador e painel do grupo
         if (ui.rewardBar.visible(gv)) {
             int hit = ui.rewardBar.hit(x, y);
             if (hit >= 0) { RewardActions.bar(gv, hit); return true; }
@@ -294,6 +295,7 @@ public class ExploringInput implements InputExtension {
 
         float worldX = getWorldX(x, gv);
         float worldY = getWorldY(y, gv);
+        if (ui.social.tapWorld(worldX, worldY, gv)) return true;     // tocou em outro jogador
         int tile = gv.world.tileMap.getTileType(worldX, worldY);
 
         // Hortas da base: toque para plantar / colher

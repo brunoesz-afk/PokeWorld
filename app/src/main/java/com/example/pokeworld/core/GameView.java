@@ -167,6 +167,14 @@ public class GameView {
 
     public void update() {
         ui.updateFade();
+
+        // XP compartilhado: colegas do grupo derrotaram um Pokémon perto de você
+        int sharedXp = com.example.pokeworld.managers.GroupManager.getInstance().pollSharedXp();
+        if (sharedXp > 0 && companion != null && player != null) {
+            companion.gainExp(sharedXp);
+            boolean up = player.gainExp(sharedXp / 2);
+            ui.showMessage("👥 +" + sharedXp + " XP (grupo)" + (up ? "  🎊 NÍVEL UP!" : ""));
+        }
         
         if (shakeDuration > 0) shakeDuration--;
         

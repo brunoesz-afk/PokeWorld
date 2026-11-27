@@ -546,6 +546,7 @@ public class WorldManager {
             if (!e.isAlive()) {
                 int xp = (int) (((e.level * 20) + (e.isBoss ? 200 : 0)) * com.example.pokeworld.entities.Progression.expFactor(c.getLevel(), e.level));
                 c.gainExp(xp); if (gv.player.gainExp(xp/2)) gv.ui.showMessage("🎊 NÍVEL UP!");
+                com.example.pokeworld.managers.GroupManager.getInstance().shareKillXp(xp);   // grupo: colegas próximos recebem parte do XP
                 Loot d = new Loot(e.name, e.positionX, e.positionY, Loot.Type.DEFEATED); d.setOwnerSpecies(e.name); d.setShiny(e.isShiny); d.setOwnerInfo(e.level, e.isBoss); d.setRadius(Math.max(65, e.radius * 1.5)); loots.add(d);
                 dropLoot(e, gv);
                 

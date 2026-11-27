@@ -72,6 +72,15 @@ public class MultiplayerManager {
                     }
                 });
 
+                // grupo de caça (ver GroupManager)
+                socket.on("partyUpdate", args -> { if (args.length > 0 && args[0] instanceof JSONObject) GroupManager.getInstance().onUpdate((JSONObject) args[0]); });
+                socket.on("partyInvite", args -> { if (args.length > 0 && args[0] instanceof JSONObject) GroupManager.getInstance().onInvite((JSONObject) args[0]); });
+                socket.on("partyXp", args -> { if (args.length > 0 && args[0] instanceof JSONObject) GroupManager.getInstance().onXp((JSONObject) args[0]); });
+                socket.on("partyDeclined", args -> {
+                    String n = args.length > 0 && args[0] instanceof JSONObject ? ((JSONObject) args[0]).optString("name", "O jogador") : "O jogador";
+                    FriendManager.getInstance().notice("👥 " + n + " recusou o convite para o grupo.");
+                });
+
                 socket.on("identityRejected", args ->
                         FriendManager.getInstance().notice("⚠ O servidor recusou o seu código de amigo (em uso por outro aparelho)."));
 
@@ -159,6 +168,13 @@ public class MultiplayerManager {
         if (!isConnected || s == null) return false;
         s.emit(event, data, ack);
         return true;
+    }
+
+    /** Envia um evento sem esperar resposta. */
+    public void emit(String event, JSONObject data) {
+        Socket s = socket;
+        if (!isConnected || s == null) return;
+        s.emit(event, data);
     }
 
     public void rename(String name) {

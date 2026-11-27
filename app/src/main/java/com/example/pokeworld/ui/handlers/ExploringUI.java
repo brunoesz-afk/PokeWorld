@@ -28,6 +28,7 @@ public class ExploringUI extends BaseUI {
     public RectF teleportBtn = new RectF();
     public RectF friendsBtn = new RectF();
     public final RewardBar rewardBar = new RewardBar();
+    public final SocialHud social = new SocialHud();   // menu de jogadores, grupo e convites
     public RectF towerBtn = new RectF();
     public RectF settingsBtn = new RectF();
     public RectF homeBtn = new RectF();
@@ -108,6 +109,7 @@ public class ExploringUI extends BaseUI {
         if (isFishingBarVisible) drawFishingBar(canvas, gv.player);
         if (gv.ui.isDialogueActive) drawDialogueBox(canvas, gv.ui.currentSpeaker, gv.ui.currentDialogue);
         drawMessageLog(canvas, gv.ui.getMessageLog());
+        social.draw(canvas, gv);
         
         if (isDraggingBall) {
             drawDraggingBall(canvas);

@@ -85,6 +85,46 @@ function deliver(code) {
     });
 }
 
+// ---------------------------------------------------------------------------
+// GRUPOS (party): até 4 jogadores caçam juntos e dividem o XP. Só em memória (somem se o servidor reiniciar).
+// Quem cai da conexão continua no grupo por 10 min (queda de sinal); passado isso é removido.
+// ---------------------------------------------------------------------------
+const MAX_PARTY = 4, INVITE_TTL = 60000, PARTY_OFFLINE_MS = 10 * 60000;
+const parties = {};      // id -> { id, leader, members: [código] }
+const partyOf = {};      // código -> id do grupo
+const pInvites = {};     // código do convidado -> { from, at }
+const partyOff = {};     // código -> quando caiu (ms)
+let partySeq = 1;
+
+const partyPayload = (p) => p ? { id: p.id, leader: p.leader, members: p.members.map((c) => ({ code: c, name: (db.accounts[c] || {}).name || "Treinador" })) } : null;
+function partyBroadcast(p) {
+    for (const c of p.members) { const sid = online[c]; if (sid) io.to(sid).emit("partyUpdate", { party: partyPayload(p) }); }
+}
+function partyRemove(code) {
+    const id = partyOf[code];
+    delete partyOf[code];
+    const p = id && parties[id];
+    if (!p) return;
+    p.members = p.members.filter((c) => c !== code);
+    const sid = online[code];
+    if (sid) io.to(sid).emit("partyUpdate", { party: null });
+    if (p.members.length < 2) {                       // sozinho não é grupo
+        for (const c of p.members) { delete partyOf[c]; const s2 = online[c]; if (s2) io.to(s2).emit("partyUpdate", { party: null }); }
+        delete parties[id];
+        return;
+    }
+    if (p.leader === code) p.leader = p.members[0];
+    partyBroadcast(p);
+}
+setInterval(() => {
+    const now = Date.now();
+    for (const c of Object.keys(partyOff)) {
+        if (online[c]) { delete partyOff[c]; continue; }
+        if (now - partyOff[c] > PARTY_OFFLINE_MS) { delete partyOff[c]; if (partyOf[c]) partyRemove(c); }
+    }
+    for (const c of Object.keys(pInvites)) if (now - pInvites[c].at > INVITE_TTL) delete pInvites[c];
+}, 30000);
+
 const noop = () => {};
 const asFn = (cb) => (typeof cb === "function" ? cb : noop);
 
@@ -208,7 +248,11 @@ io.on("connection", (socket) => {
         }
         socket.data.code = identified ? code : null;
         socket.data.walletAuth = identified ? { code, hash: hash(secret) } : null;
-        if (identified) { online[code] = socket.id; save(); }
+        if (identified) {
+            online[code] = socket.id; save();
+            delete partyOff[code];
+            if (partyOf[code] && parties[partyOf[code]]) socket.emit("partyUpdate", { party: partyPayload(parties[partyOf[code]]) });   // voltou: reabre o grupo
+        }
 
         players[socket.id] = {
             id: socket.id,
@@ -309,6 +353,77 @@ io.on("connection", (socket) => {
         cb({ ok: true, friends });
     });
 
+    // --- GRUPO ---
+    const needCode = (cb) => {
+        const me = socket.data.code;
+        if (!me || !db.accounts[me]) { cb({ ok: false, error: "Entre com um código de amigo (online) para usar grupos." }); return null; }
+        if (!allow(socket)) { cb({ ok: false, error: "Muitas ações seguidas. Aguarde um instante." }); return null; }
+        return me;
+    };
+    socket.on("partyInvite", (data, cb) => {
+        cb = asFn(cb);
+        const me = needCode(cb); if (!me) return;
+        const target = normCode(data && data.code);
+        if (!CODE_RE.test(target) || target === me || !db.accounts[target]) return cb({ ok: false, error: "Jogador inválido." });
+        if (!online[target]) return cb({ ok: false, error: "Esse jogador está offline." });
+        if (partyOf[target]) return cb({ ok: false, error: partyOf[target] === partyOf[me] ? "Ele já está no seu grupo." : "Esse jogador já está em outro grupo." });
+        const mine = partyOf[me] && parties[partyOf[me]];
+        if (mine && mine.leader !== me) return cb({ ok: false, error: "Só o líder do grupo pode convidar." });
+        if (mine && mine.members.length >= MAX_PARTY) return cb({ ok: false, error: "Grupo cheio (máx. " + MAX_PARTY + ")." });
+        pInvites[target] = { from: me, at: Date.now() };
+        io.to(online[target]).emit("partyInvite", { fromCode: me, fromName: db.accounts[me].name || "Treinador" });
+        cb({ ok: true, name: db.accounts[target].name || "o jogador" });
+    });
+
+    socket.on("partyRespond", (data, cb) => {
+        cb = asFn(cb);
+        const me = needCode(cb); if (!me) return;
+        const from = normCode(data && data.code), inv = pInvites[me];
+        if (inv && Date.now() - inv.at > INVITE_TTL) delete pInvites[me];
+        if (!inv || inv.from !== from || Date.now() - inv.at > INVITE_TTL) return cb({ ok: false, error: "O convite expirou." });
+        delete pInvites[me];
+        if (!(data && data.accept)) {
+            if (online[from]) io.to(online[from]).emit("partyDeclined", { name: db.accounts[me].name || "O jogador" });
+            return cb({ ok: true });
+        }
+        if (partyOf[me]) return cb({ ok: false, error: "Você já está em um grupo." });
+        if (!online[from]) return cb({ ok: false, error: "Quem convidou saiu do jogo." });
+        let p = partyOf[from] && parties[partyOf[from]];
+        if (!p) { p = { id: "g" + (partySeq++), leader: from, members: [from] }; parties[p.id] = p; partyOf[from] = p.id; }
+        if (p.members.length >= MAX_PARTY) return cb({ ok: false, error: "O grupo já está cheio." });
+        p.members.push(me); partyOf[me] = p.id;
+        partyBroadcast(p);
+        cb({ ok: true });
+    });
+
+    socket.on("partyLeave", (data, cb) => {
+        cb = asFn(cb);
+        const me = socket.data.code;
+        if (me && partyOf[me]) partyRemove(me);
+        cb({ ok: true });
+    });
+
+    // XP compartilhado: quem derrota um Pokémon avisa o servidor, que repassa aos colegas do grupo
+    // que estão no MESMO mapa e perto (o aparelho decide quanto cada um recebe).
+    socket.on("partyXp", (data) => {
+        const me = socket.data.code;
+        if (!me || !partyOf[me] || !parties[partyOf[me]]) return;
+        const t = Date.now(), rec = (socket.data.xpTimes || []).filter((x) => t - x < 60000);
+        if (rec.length >= 40) return;
+        rec.push(t); socket.data.xpTimes = rec;
+        const amount = Math.max(0, Math.min(5000, parseInt(data && data.amount, 10) || 0));
+        const mine = players[socket.id];
+        if (!amount || !mine) return;
+        for (const c of parties[partyOf[me]].members) {
+            if (c === me) continue;
+            const sid = online[c], q = sid && players[sid];
+            if (!q || q.mapName !== mine.mapName) continue;
+            const dx = (q.x || 0) - (mine.x || 0), dy = (q.y || 0) - (mine.y || 0);
+            if (dx * dx + dy * dy > 3000 * 3000) continue;
+            io.to(sid).emit("partyXp", { fromName: (db.accounts[me] || {}).name || "Colega", amount });
+        }
+    });
+
     // --- CARTEIRA / PIX ---
     const walletEvent = (name, fn) => socket.on(name, async (data, cb) => {
         cb = asFn(cb);
@@ -392,6 +507,7 @@ io.on("connection", (socket) => {
         const code = socket.data.code;
         if (code && online[code] === socket.id) {
             delete online[code];
+            if (partyOf[code]) partyOff[code] = Date.now();      // fica no grupo por até 10 min (queda de sinal)
             if (db.accounts[code]) { db.accounts[code].lastSeen = Date.now(); save(); }
         }
         delete players[socket.id];
