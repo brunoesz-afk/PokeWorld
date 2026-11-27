@@ -43,19 +43,94 @@ public class SupabaseManager {
         return !userId.isEmpty();
     }
 
+    private String refreshToken = "";
+    private long expiresAtMs = 0;
+    private Context appContext;
+
     public void saveSession(Context context) {
-        if (context == null) return;
-        context.getSharedPreferences("supabase_session", Context.MODE_PRIVATE)
+        if (context != null) appContext = context.getApplicationContext();
+        if (appContext == null) return;
+        appContext.getSharedPreferences("supabase_session", Context.MODE_PRIVATE)
             .edit()
             .putString("access_token", accessToken)
             .putString("user_id", userId)
+            .putString("refresh_token", refreshToken)
+            .putLong("expires_at_ms", expiresAtMs)
             .apply();
     }
 
     public void loadSession(Context context) {
         if (context == null) return;
-        accessToken = context.getSharedPreferences("supabase_session", Context.MODE_PRIVATE).getString("access_token", "");
-        userId = context.getSharedPreferences("supabase_session", Context.MODE_PRIVATE).getString("user_id", "");
+        appContext = context.getApplicationContext();
+        android.content.SharedPreferences sp = appContext.getSharedPreferences("supabase_session", Context.MODE_PRIVATE);
+        accessToken = sp.getString("access_token", "");
+        userId = sp.getString("user_id", "");
+        refreshToken = sp.getString("refresh_token", "");
+        expiresAtMs = sp.getLong("expires_at_ms", 0);
+        if (expiresAtMs == 0 && !accessToken.isEmpty()) expiresAtMs = jwtExpiryMs(accessToken);
+        // sessão antiga sem refresh_token e já vencida: não dá para renovar, então volta a pedir o login (em vez de fingir que está online)
+        if (!userId.isEmpty() && refreshToken.isEmpty() && expiresAtMs > 0 && System.currentTimeMillis() > expiresAtMs) {
+            Log.w("SupabaseManager", "Sessão vencida e sem refresh_token: faça login de novo.");
+            accessToken = ""; userId = ""; expiresAtMs = 0;
+            sp.edit().clear().apply();
+        }
+    }
+
+    /** Lê o "exp" do JWT (segundos) -> ms; 0 se não der. */
+    private static long jwtExpiryMs(String jwt) {
+        try {
+            String[] parts = jwt.split("\\.");
+            if (parts.length < 2) return 0;
+            byte[] raw = android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE | android.util.Base64.NO_WRAP | android.util.Base64.NO_PADDING);
+            return new JSONObject(new String(raw, "UTF-8")).optLong("exp", 0) * 1000L;
+        } catch (Exception e) { return 0; }
+    }
+
+    private void readTokens(JSONObject res) {
+        accessToken = res.optString("access_token", accessToken);
+        String rt = res.optString("refresh_token", "");
+        if (!rt.isEmpty()) refreshToken = rt;
+        long inSec = res.optLong("expires_in", 0);
+        expiresAtMs = inSec > 0 ? System.currentTimeMillis() + inSec * 1000L : jwtExpiryMs(accessToken);
+    }
+
+    /**
+     * Cabeçalho Authorization sempre com token válido. O token do Supabase vale ~1 h: sem renovar, depois disso
+     * toda sincronização (perfil, time, coleção) falhava em silêncio com 401 e o site parava de atualizar.
+     * Só chamar fora da thread principal (faz rede quando precisa renovar).
+     */
+    private synchronized String bearer() {
+        if (!refreshToken.isEmpty() && System.currentTimeMillis() > expiresAtMs - 90_000L) {
+            try {
+                URL url = new URL(supabaseUrl + "/auth/v1/token?grant_type=refresh_token");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("apikey", supabaseAnonKey);
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setDoOutput(true);
+                JSONObject body = new JSONObject();
+                body.put("refresh_token", refreshToken);
+                OutputStream os = conn.getOutputStream();
+                os.write(body.toString().getBytes("UTF-8"));
+                os.close();
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    reader.close();
+                    readTokens(new JSONObject(sb.toString()));
+                    saveSession(null);
+                    Log.d("SupabaseManager", "Token renovado.");
+                } else {
+                    Log.e("SupabaseManager", "Falha ao renovar o token: HTTP " + code + " (faça login de novo)");
+                }
+            } catch (Exception e) {
+                Log.e("SupabaseManager", "Erro ao renovar o token: " + e.getMessage());
+            }
+        }
+        return "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken);
     }
 
     public void signOut(Context context) {
@@ -64,6 +139,8 @@ public class SupabaseManager {
         }
         accessToken = "";
         userId = "";
+        refreshToken = "";
+        expiresAtMs = 0;
     }
 
     public void signIn(Context context, String email, String password, AuthCallback callback) {
@@ -92,7 +169,7 @@ public class SupabaseManager {
                     reader.close();
 
                     JSONObject res = new JSONObject(sb.toString());
-                    this.accessToken = res.optString("access_token", "");
+                    readTokens(res);
                     JSONObject userObj = res.optJSONObject("user");
                     if (userObj != null) {
                         this.userId = userObj.optString("id", "");
@@ -118,7 +195,7 @@ public class SupabaseManager {
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("PATCH");
                 conn.setRequestProperty("apikey", supabaseAnonKey);
-                conn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+                conn.setRequestProperty("Authorization", bearer());
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setRequestProperty("Prefer", "return=minimal");
                 conn.setDoOutput(true);
@@ -161,7 +238,7 @@ public class SupabaseManager {
                 HttpURLConnection delConn = (HttpURLConnection) deleteUrl.openConnection();
                 delConn.setRequestMethod("DELETE");
                 delConn.setRequestProperty("apikey", supabaseAnonKey);
-                delConn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+                delConn.setRequestProperty("Authorization", bearer());
                 delConn.getResponseCode();
 
                 for (int i = 0; i < Math.min(party.size(), 6); i++) {
@@ -172,7 +249,7 @@ public class SupabaseManager {
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
                     conn.setRequestProperty("apikey", supabaseAnonKey);
-                    conn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+                    conn.setRequestProperty("Authorization", bearer());
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setDoOutput(true);
 
@@ -229,7 +306,7 @@ public class SupabaseManager {
         collectionSyncing = true;
         new Thread(() -> {
             try {
-                String auth = "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken);
+                String auth = bearer();
                 URL url = new URL(supabaseUrl + "/rest/v1/pokemon_collection?on_conflict=user_id,slot");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
@@ -267,7 +344,7 @@ public class SupabaseManager {
             HttpURLConnection c = (HttpURLConnection) url.openConnection();
             c.setRequestMethod("GET");
             c.setRequestProperty("apikey", supabaseAnonKey);
-            c.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+            c.setRequestProperty("Authorization", bearer());
             if (c.getResponseCode() != 200) return null;
             BufferedReader reader = new BufferedReader(new InputStreamReader(c.getInputStream()));
             StringBuilder sb = new StringBuilder();
@@ -295,7 +372,7 @@ public class SupabaseManager {
                 HttpURLConnection conn = (HttpURLConnection) profileUrl.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("apikey", supabaseAnonKey);
-                conn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+                conn.setRequestProperty("Authorization", bearer());
 
                 if (conn.getResponseCode() == 200) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -317,7 +394,7 @@ public class SupabaseManager {
                 HttpURLConnection pConn = (HttpURLConnection) partyUrl.openConnection();
                 pConn.setRequestMethod("GET");
                 pConn.setRequestProperty("apikey", supabaseAnonKey);
-                pConn.setRequestProperty("Authorization", "Bearer " + (accessToken.isEmpty() ? supabaseAnonKey : accessToken));
+                pConn.setRequestProperty("Authorization", bearer());
 
                 if (pConn.getResponseCode() == 200) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(pConn.getInputStream()));
