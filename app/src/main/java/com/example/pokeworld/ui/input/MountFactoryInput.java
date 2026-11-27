@@ -9,8 +9,10 @@ public class MountFactoryInput implements InputExtension {
     public boolean handle(float x, float y, GameView gv) {
         MountFactoryUI ui = (MountFactoryUI) gv.ui.getHandler(UIManager.UIState.MOUNT_FACTORY);
         
+        if (ui.exitBtn.contains(x, y)) { gv.ui.state = UIManager.UIState.EXPLORING; return true; }
+
         if (ui.upgradeSpeed.contains(x, y)) {
-            int cost = 50;
+            int cost = MountFactoryUI.SPEED_COST;
             if (gv.player.getInventory().getOrDefault("Madeira", 0) >= cost) {
                 for(int i=0; i<cost; i++) gv.player.useItem("Madeira");
                 int lv = gv.player.getInventory().getOrDefault("MountSpeed_Lv", 1);
@@ -20,15 +22,14 @@ public class MountFactoryInput implements InputExtension {
             } else gv.ui.showMessage("Falta Madeira!");
             return true;
         } else if (ui.saddleFire.contains(x, y)) {
-            craft(gv, "Sela de Fogo", "Essência de Fogo", 30);
+            if (gv.player.getInventory().getOrDefault("Sela de Fogo", 0) > 0) gv.ui.showMessage("Você já tem a Sela de Fogo."); else craft(gv, "Sela de Fogo", "Essência de Fogo", MountFactoryUI.SADDLE_COST);
             return true;
         } else if (ui.saddleWater.contains(x, y)) {
-            craft(gv, "Sela Aquática", "Cristal de Água", 30);
+            if (gv.player.getInventory().getOrDefault("Sela Aquática", 0) > 0) gv.ui.showMessage("Você já tem a Sela Aquática."); else craft(gv, "Sela Aquática", "Cristal de Água", MountFactoryUI.SADDLE_COST);
             return true;
         }
 
-        gv.ui.state = UIManager.UIState.EXPLORING;
-        return true;
+        return true;   // toque fora dos botões não fecha mais (a saída é o botão SAIR)
     }
 
     private void craft(GameView gv, String item, String res, int cost) {
