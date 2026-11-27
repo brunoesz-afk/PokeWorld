@@ -93,6 +93,60 @@ app.get("/", (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// STATUS (só para o dono): /status?key=SENHA  (JSON: /status?key=SENHA&format=json)
+// Defina STATUS_KEY nas variáveis de ambiente da hospedagem; sem ela a página fica desligada (404).
+// ---------------------------------------------------------------------------
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ago = (t) => {
+    if (!t) return "—";
+    const m = Math.round((Date.now() - t) / 60000);
+    if (m < 1) return "agora";
+    if (m < 60) return m + " min atrás";
+    if (m < 1440) return Math.floor(m / 60) + " h atrás";
+    return Math.floor(m / 1440) + " d atrás";
+};
+app.get("/status", (req, res) => {
+    const want = process.env.STATUS_KEY || "";
+    if (!want) return res.status(404).send("Not found");
+    const got = String(req.query.key || "");
+    const a = crypto.createHash("sha256").update(got).digest(), b = crypto.createHash("sha256").update(want).digest();
+    if (!crypto.timingSafeEqual(a, b)) return res.status(403).send("Chave inválida");
+
+    const now = Date.now(), day = 86400000;
+    const onlineList = Object.values(players).map((p) => ({
+        name: p.name, map: p.mapName, pet: p.petSpecies || "", registered: !!p.code, code: p.code || ""
+    }));
+    const accs = Object.entries(db.accounts).map(([code, a]) => ({ code, name: a.name || "Treinador", lastSeen: a.lastSeen || 0 }));
+    accs.sort((x, y) => y.lastSeen - x.lastSeen);
+    const out = {
+        online: onlineList.length,
+        accounts: accs.length,
+        playedToday: accs.filter((a) => now - a.lastSeen < day).length,
+        playedWeek: accs.filter((a) => now - a.lastSeen < 7 * day).length,
+        players: onlineList,
+        recent: accs.slice(0, 30)
+    };
+    if (req.query.format === "json") return res.json(out);
+
+    const rows = (arr, f) => arr.map(f).join("") || '<tr><td colspan="4">ninguém</td></tr>';
+    res.set("Content-Type", "text/html; charset=utf-8").send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="30"><title>PokeWorld – status</title>
+<style>body{font-family:system-ui,sans-serif;background:#14161c;color:#eee;margin:0;padding:18px;max-width:820px;margin:auto}
+h1{font-size:22px;color:#ffd75a}h2{font-size:16px;margin-top:26px;color:#ff9d3c}
+.k{display:flex;gap:10px;flex-wrap:wrap}.k div{background:#222633;border-radius:10px;padding:12px 16px;min-width:120px}
+.k b{display:block;font-size:26px;color:#7dff9a}table{width:100%;border-collapse:collapse;margin-top:8px}
+td,th{padding:6px 8px;border-bottom:1px solid #2c3140;text-align:left;font-size:14px}th{color:#9aa}small{color:#889}</style>
+<h1>PokeWorld – status do servidor</h1>
+<div class="k"><div><b>${out.online}</b>online agora</div><div><b>${out.playedToday}</b>jogaram em 24 h</div>
+<div><b>${out.playedWeek}</b>jogaram em 7 dias</div><div><b>${out.accounts}</b>contas no total</div></div>
+<h2>Online agora</h2><table><tr><th>Nome</th><th>Mapa</th><th>Pokémon</th><th>Código</th></tr>
+${rows(out.players, (p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.map)}</td><td>${esc(p.pet) || "—"}</td><td>${esc(p.code) || "<small>convidado</small>"}</td></tr>`)}</table>
+<h2>Últimos a jogar</h2><table><tr><th>Nome</th><th>Código</th><th>Visto</th><th></th></tr>
+${rows(out.recent, (a) => `<tr><td>${esc(a.name)}</td><td>${esc(a.code)}</td><td>${ago(a.lastSeen)}</td><td>${online[a.code] ? "🟢" : ""}</td></tr>`)}</table>
+<p><small>Atualiza sozinha a cada 30 s. “Contas” são as identificações do multiplayer/amigos (uma por aparelho/instalação).</small></p>`);
+});
+
+// ---------------------------------------------------------------------------
 // CARTEIRA / PIX (ver wallet.js). Variáveis de ambiente:
 //   DATABASE_URL     Postgres (obrigatório para cobrar de verdade; o disco do Render grátis é apagado)
 //   MP_ACCESS_TOKEN  access token do Mercado Pago (teste: TEST-..., produção: APP_USR-...)
